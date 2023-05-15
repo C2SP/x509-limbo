@@ -13,9 +13,6 @@ ifeq ($(OS),Windows_NT)
 	VENV_BIN := $(VENV)/Scripts
 endif
 
-# Optionally overridden by the user in the `test` target.
-TESTS ?=
-
 # Optionally overridden by the user/CI, to limit the installation to a specific
 # subset of development dependencies.
 INSTALL_EXTRA := dev
@@ -25,9 +22,7 @@ all:
 	@echo "Run my targets individually!"
 
 $(VENV)/pyvenv.cfg: pyproject.toml
-	# Create our Python 3 virtual environment
-	python3 -m venv $(VENV)
-	$(VENV_BIN)/python -m pip install --upgrade pip
+	python -m venv $(VENV) --upgrade-deps
 	$(VENV_BIN)/python -m pip install -e .[$(INSTALL_EXTRA)]
 
 .PHONY: dev
