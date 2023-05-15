@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr, constr
+from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr
 
 
 class PeerName(BaseModel):
@@ -85,7 +86,7 @@ class KnownEKUs(str, Enum):
 
 
 class OID(ConstrainedStr):
-    regex = "^([0-2])((\.0)|(\.[1-9][0-9]*))*$"
+    regex = r"^([0-2])((\.0)|(\.[1-9][0-9]*))*$"
     strict = True
 
 
