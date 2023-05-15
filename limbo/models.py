@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr
 
+PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"]
+
 
 class PeerName(BaseModel):
-    kind: StrictStr  # TODO: ratchet
-    value: StrictStr
+    kind: PeerKind = Field(..., description="The kind of peer")
+    value: StrictStr = Field(..., description="The peer's name")
 
 
 class SignatureAlgorithm(str, Enum):
@@ -86,6 +89,10 @@ class KnownEKUs(str, Enum):
 
 
 class OID(ConstrainedStr):
+    """
+    A "bare" OID, in dotted form.
+    """
+
     regex = r"^([0-2])((\.0)|(\.[1-9][0-9]*))*$"
     strict = True
 
@@ -96,6 +103,7 @@ class Testcase(BaseModel):
     """
 
     description: StrictStr = Field(..., description="A short, human-readable description")
+
     validation_kind: Literal["CLIENT"] | Literal["SERVER"] = Field(
         ..., description="The kind of validation to perform"
     )
@@ -103,19 +111,29 @@ class Testcase(BaseModel):
     expected_result: Literal["SUCCESS"] | Literal["ERROR"] = Field(
         ..., description="The expected validation result"
     )
+
     expected_peer_names: list[PeerName] = Field(..., description="The expected peer names")
 
     trusted_certs: list[StrictStr] = Field(
         ..., description="A list of CA certificates to consider trusted"
-    )  # TODO: ratchet
-    subject: StrictStr  # TODO: ratchet
+    )
+
+    subject: StrictStr = Field(..., description="The path to the EE or other subject certificate")
+
     untrusted_intermediates: list[StrictStr] = Field(
         ..., description="A list of untrusted intermediates to use during path building"
-    )  # TODO: ratchet
+    )
+
     peer_name: PeerName
-    validation_time: StrictStr  # TODO: ratchet
+
+    validation_time: datetime = Field(
+        ..., description="The time at which to perform the validation"
+    )
+
     signature_algorithms: list[SignatureAlgorithm]
+
     key_usage: list[KeyUsage]
+
     extended_key_usage: list[KnownEKUs | OID] = Field(
         ...,
         description="A list of extended key usages, either in well-known form or as OIDs",
