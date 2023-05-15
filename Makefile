@@ -28,10 +28,6 @@ $(VENV)/pyvenv.cfg: pyproject.toml
 .PHONY: dev
 dev: $(VENV)/pyvenv.cfg
 
-.PHONY: run
-run: $(VENV)/pyvenv.cfg
-	@. $(VENV_BIN)/activate && python -m $(PY_MODULE) $(ARGS)
-
 .PHONY: lint
 lint: $(VENV)/pyvenv.cfg
 	. $(VENV_BIN)/activate && \
@@ -48,3 +44,11 @@ reformat: $(VENV)/pyvenv.cfg
 .PHONY: edit
 edit:
 	$(EDITOR) $(ALL_PY_SRCS)
+
+.PHONY: run
+run: $(VENV)/pyvenv.cfg
+	@./$(VENV_BIN)/python -m $(PY_MODULE) $(ARGS)
+
+.PHONY: schema
+schema: $(VENV)/pyvenv.cfg
+	@$(MAKE) run ARGS=schema > limbo-schema.json

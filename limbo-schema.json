@@ -1,0 +1,259 @@
+{
+  "title": "Limbo",
+  "description": "The top-level testcase container.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "title": "Version",
+      "type": "integer"
+    },
+    "testcases": {
+      "title": "Testcases",
+      "description": "One or more testcases in this testsuite",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Testcase"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "testcases"
+  ],
+  "definitions": {
+    "PeerName": {
+      "title": "PeerName",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "description": "The kind of peer",
+          "anyOf": [
+            {
+              "enum": [
+                "RFC822"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DNS"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IP"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "value": {
+          "title": "Value",
+          "description": "The peer's name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ]
+    },
+    "SignatureAlgorithm": {
+      "title": "SignatureAlgorithm",
+      "description": "Valid X.509 signature algorithms.",
+      "enum": [
+        "RSA_WITH_MD5",
+        "RSA_WITH_SHA1",
+        "RSA_WITH_SHA224",
+        "RSA_WITH_SHA256",
+        "RSA_WITH_SHA384",
+        "RSA_WITH_SHA512",
+        "RSA_WITH_SHA3_224",
+        "RSA_WITH_SHA3_256",
+        "RSA_WITH_SHA3_384",
+        "RSA_WITH_SHA3_512",
+        "RSASSA_PSS",
+        "ECDSA_WITH_SHA1",
+        "ECDSA_WITH_SHA224",
+        "ECDSA_WITH_SHA256",
+        "ECDSA_WITH_SHA384",
+        "ECDSA_WITH_SHA512",
+        "ECDSA_WITH_SHA3_224",
+        "ECDSA_WITH_SHA3_256",
+        "ECDSA_WITH_SHA3_384",
+        "ECDSA_WITH_SHA3_512",
+        "DSA_WITH_SHA1",
+        "DSA_WITH_SHA224",
+        "DSA_WITH_SHA256",
+        "DSA_WITH_SHA384",
+        "DSA_WITH_SHA512",
+        "ED25519",
+        "ED448",
+        "GOSTR3411_94_WITH_3410_2001",
+        "GOSTR3410_2012_WITH_3411_2012_256",
+        "GOSTR3410_2012_WITH_3411_2012_512"
+      ],
+      "type": "string"
+    },
+    "KeyUsage": {
+      "title": "KeyUsage",
+      "description": "X.509 key usages.\n\nSee: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.3",
+      "enum": [
+        "digitalSignature",
+        "contentCommitment",
+        "keyEncipherment",
+        "dataEncipherment",
+        "keyAgreement",
+        "keyCertSign",
+        "cRLSign",
+        "encipher_only",
+        "decipher_only"
+      ],
+      "type": "string"
+    },
+    "KnownEKUs": {
+      "title": "KnownEKUs",
+      "description": "Well-known extended key usages, from RFC 5280.\n\nSee: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.12",
+      "enum": [
+        "anyExtendedKeyUsage",
+        "serverAuth",
+        "clientAuth",
+        "codeSigning",
+        "emailProtection",
+        "timeStamping",
+        "OCSPSigning"
+      ],
+      "type": "string"
+    },
+    "Testcase": {
+      "title": "Testcase",
+      "description": "Represents an individual Limbo testcase.",
+      "type": "object",
+      "properties": {
+        "description": {
+          "title": "Description",
+          "description": "A short, human-readable description",
+          "type": "string"
+        },
+        "validation_kind": {
+          "title": "Validation Kind",
+          "description": "The kind of validation to perform",
+          "anyOf": [
+            {
+              "enum": [
+                "CLIENT"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SERVER"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "expected_result": {
+          "title": "Expected Result",
+          "description": "The expected validation result",
+          "anyOf": [
+            {
+              "enum": [
+                "SUCCESS"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ERROR"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "expected_peer_names": {
+          "title": "Expected Peer Names",
+          "description": "The expected peer names",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeerName"
+          }
+        },
+        "trusted_certs": {
+          "title": "Trusted Certs",
+          "description": "A list of CA certificates to consider trusted",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "subject": {
+          "title": "Subject",
+          "description": "The path to the EE or other subject certificate",
+          "type": "string"
+        },
+        "untrusted_intermediates": {
+          "title": "Untrusted Intermediates",
+          "description": "A list of untrusted intermediates to use during path building",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "peer_name": {
+          "$ref": "#/definitions/PeerName"
+        },
+        "validation_time": {
+          "title": "Validation Time",
+          "description": "The time at which to perform the validation",
+          "type": "string",
+          "format": "date-time"
+        },
+        "signature_algorithms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SignatureAlgorithm"
+          }
+        },
+        "key_usage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyUsage"
+          }
+        },
+        "extended_key_usage": {
+          "title": "Extended Key Usage",
+          "description": "A list of extended key usages, either in well-known form or as OIDs",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/KnownEKUs"
+              },
+              {
+                "type": "string",
+                "pattern": "^([0-2])((\\.0)|(\\.[1-9][0-9]*))*$"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "description",
+        "validation_kind",
+        "expected_result",
+        "expected_peer_names",
+        "trusted_certs",
+        "subject",
+        "untrusted_intermediates",
+        "peer_name",
+        "validation_time",
+        "signature_algorithms",
+        "key_usage",
+        "extended_key_usage"
+      ]
+    }
+  }
+}
