@@ -4,7 +4,7 @@ from . import __version__
 from .models import Limbo
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="A self-management tool for x509-limbo")
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(required=True)
@@ -16,5 +16,5 @@ def main():
     args.func(args)
 
 
-def _schema(args: argparse.Namespace):
+def _schema(args: argparse.Namespace) -> None:
     print(Limbo.schema_json(indent=2))

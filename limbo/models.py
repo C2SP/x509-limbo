@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, Field, StrictInt, StrictStr, constr
+from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr, constr
 
 
 class PeerName(BaseModel):
@@ -84,7 +84,9 @@ class KnownEKUs(str, Enum):
     ocsp_signing = "OCSPSigning"
 
 
-OID = constr(strict=True, regex="^([0-2])((\.0)|(\.[1-9][0-9]*))*$")
+class OID(ConstrainedStr):
+    regex = "^([0-2])((\.0)|(\.[1-9][0-9]*))*$"
+    strict = True
 
 
 class Testcase(BaseModel):
