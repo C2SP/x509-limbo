@@ -1,0 +1,61 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "limbo"
+dynamic = ["version"]
+description = "x509-limbo's command line"
+readme = "README.md"
+
+# TODO: license, authors, etc.
+# license = { file = "LICENSE" }
+# authors = [
+#     { name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.author_email }}" },
+# ]
+
+dependencies = ["pydantic ~= 1.0"]
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+lint = [
+    "black>=22.3.0",
+    # NOTE: ruff is under active development, so we pin conservatively here
+    # and let Dependabot periodically perform this update.
+    "ruff < 0.0.255",
+    "mypy >= 1.0",
+]
+doc = []
+test = []
+dev = ["limbo[doc,test,lint]", "twine", "wheel", "build"]
+[project.scripts]
+"limbo" = "limbo._cli:main"
+
+[project.urls]
+# TODO
+
+[tool.black]
+line-length = 100
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+allow_redefinition = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+sqlite_cache = true
+strict_equality = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "UP", "I", "N", "YTT", "BLE", "C4", "SIM"]
+target-version = "py38"

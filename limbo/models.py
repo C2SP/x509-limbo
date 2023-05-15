@@ -5,17 +5,6 @@ from typing import Literal
 from pydantic import BaseModel, Field, StrictInt, StrictStr, constr
 
 
-class Limbo(BaseModel):
-    """
-    The top-level testcase container.
-    """
-
-    version: StrictInt
-    testcases: list[Testcase] = Field(
-        ..., description="One or more testcases in this testsuite"
-    )
-
-
 class PeerName(BaseModel):
     kind: StrictStr  # TODO: ratchet
     value: StrictStr
@@ -103,9 +92,7 @@ class Testcase(BaseModel):
     Represents an individual Limbo testcase.
     """
 
-    description: StrictStr = Field(
-        ..., description="A short, human-readable description"
-    )
+    description: StrictStr = Field(..., description="A short, human-readable description")
     validation_kind: Literal["CLIENT"] | Literal["SERVER"] = Field(
         ..., description="The kind of validation to perform"
     )
@@ -113,9 +100,7 @@ class Testcase(BaseModel):
     expected_result: Literal["SUCCESS"] | Literal["ERROR"] = Field(
         ..., description="The expected validation result"
     )
-    expected_peer_names: list[PeerName] = Field(
-        ..., description="The expected peer names"
-    )
+    expected_peer_names: list[PeerName] = Field(..., description="The expected peer names")
 
     trusted_certs: list[StrictStr] = Field(
         ..., description="A list of CA certificates to consider trusted"
@@ -134,5 +119,10 @@ class Testcase(BaseModel):
     )
 
 
-if __name__ == "__main__":
-    print(Testcase.schema_json(indent=2))
+class Limbo(BaseModel):
+    """
+    The top-level testcase container.
+    """
+
+    version: StrictInt
+    testcases: list[Testcase] = Field(..., description="One or more testcases in this testsuite")
