@@ -10,8 +10,7 @@ validation.
 This repository contains a self-managing tool called `limbo`.
 
 ```bash
-python -m venv env && source env/bin/activate
-python -m pip install -e .[dev]
+make dev && source env/bin/activate
 
 limbo --help
 ```
