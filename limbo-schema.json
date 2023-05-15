@@ -189,9 +189,9 @@
             "type": "string"
           }
         },
-        "subject": {
-          "title": "Subject",
-          "description": "The path to the EE or other subject certificate",
+        "peer_certificate": {
+          "title": "Peer Certificate",
+          "description": "The path to the peer (EE) certificate",
           "type": "string"
         },
         "untrusted_intermediates": {
@@ -246,7 +246,7 @@
         "expected_result",
         "expected_peer_names",
         "trusted_certs",
-        "subject",
+        "peer_certificate",
         "untrusted_intermediates",
         "peer_name",
         "validation_time",

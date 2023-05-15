@@ -118,7 +118,7 @@ class Testcase(BaseModel):
         ..., description="A list of CA certificates to consider trusted"
     )
 
-    subject: StrictStr = Field(..., description="The path to the EE or other subject certificate")
+    peer_certificate: StrictStr = Field(..., description="The path to the peer (EE) certificate")
 
     untrusted_intermediates: list[StrictStr] = Field(
         ..., description="A list of untrusted intermediates to use during path building"
