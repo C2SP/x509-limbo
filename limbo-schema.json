@@ -21,45 +21,6 @@
     "testcases"
   ],
   "definitions": {
-    "PeerName": {
-      "title": "PeerName",
-      "type": "object",
-      "properties": {
-        "kind": {
-          "title": "Kind",
-          "description": "The kind of peer",
-          "anyOf": [
-            {
-              "enum": [
-                "RFC822"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "DNS"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "IP"
-              ],
-              "type": "string"
-            }
-          ]
-        },
-        "value": {
-          "title": "Value",
-          "description": "The peer's name",
-          "type": "string"
-        }
-      },
-      "required": [
-        "kind",
-        "value"
-      ]
-    },
     "SignatureAlgorithm": {
       "title": "SignatureAlgorithm",
       "description": "Valid X.509 signature algorithms.",
@@ -127,6 +88,51 @@
       ],
       "type": "string"
     },
+    "PeerName": {
+      "title": "PeerName",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "description": "The kind of peer name",
+          "anyOf": [
+            {
+              "enum": [
+                "RFC822"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DNS"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IP"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "value": {
+          "title": "Value",
+          "description": "The peer's name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ]
+    },
     "Testcase": {
       "title": "Testcase",
       "description": "Represents an individual Limbo testcase.",
@@ -155,35 +161,17 @@
             }
           ]
         },
-        "expected_result": {
-          "title": "Expected Result",
-          "description": "The expected validation result",
-          "anyOf": [
-            {
-              "enum": [
-                "SUCCESS"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "ERROR"
-              ],
-              "type": "string"
-            }
-          ]
-        },
-        "expected_peer_names": {
-          "title": "Expected Peer Names",
-          "description": "The expected peer names",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/PeerName"
-          }
-        },
         "trusted_certs": {
           "title": "Trusted Certs",
           "description": "A list of CA certificates to consider trusted",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "untrusted_intermediates": {
+          "title": "Untrusted Intermediates",
+          "description": "A list of untrusted intermediates to use during path building",
           "type": "array",
           "items": {
             "type": "string"
@@ -194,17 +182,6 @@
           "description": "The path to the peer (EE) certificate",
           "type": "string"
         },
-        "untrusted_intermediates": {
-          "title": "Untrusted Intermediates",
-          "description": "A list of untrusted intermediates to use during path building",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "peer_name": {
-          "$ref": "#/definitions/PeerName"
-        },
         "validation_time": {
           "title": "Validation Time",
           "description": "The time at which to perform the validation",
@@ -212,6 +189,7 @@
           "format": "date-time"
         },
         "signature_algorithms": {
+          "description": "A list of acceptable signature algorithms to constrain against",
           "type": "array",
           "items": {
             "$ref": "#/definitions/SignatureAlgorithm"
@@ -238,21 +216,56 @@
               }
             ]
           }
+        },
+        "expected_result": {
+          "title": "Expected Result",
+          "description": "The expected validation result",
+          "anyOf": [
+            {
+              "enum": [
+                "SUCCESS"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ERROR"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "expected_peer_name": {
+          "title": "Expected Peer Name",
+          "description": "For client-side validation: the expected peer name, if any",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PeerName"
+            }
+          ]
+        },
+        "expected_peer_names": {
+          "title": "Expected Peer Names",
+          "description": "For server-side validation: the expected peer names, if any",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeerName"
+          }
         }
       },
       "required": [
         "description",
         "validation_kind",
-        "expected_result",
-        "expected_peer_names",
         "trusted_certs",
-        "peer_certificate",
         "untrusted_intermediates",
-        "peer_name",
+        "peer_certificate",
         "validation_time",
         "signature_algorithms",
         "key_usage",
-        "extended_key_usage"
+        "extended_key_usage",
+        "expected_result",
+        "expected_peer_name",
+        "expected_peer_names"
       ]
     }
   }

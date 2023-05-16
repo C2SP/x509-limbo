@@ -6,11 +6,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr
 
-PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"]
+PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"] | Literal["DN"]
 
 
 class PeerName(BaseModel):
-    kind: PeerKind = Field(..., description="The kind of peer")
+    kind: PeerKind = Field(..., description="The kind of peer name")
     value: StrictStr = Field(..., description="The peer's name")
 
 
@@ -108,35 +108,41 @@ class Testcase(BaseModel):
         ..., description="The kind of validation to perform"
     )
 
-    expected_result: Literal["SUCCESS"] | Literal["ERROR"] = Field(
-        ..., description="The expected validation result"
-    )
-
-    expected_peer_names: list[PeerName] = Field(..., description="The expected peer names")
-
     trusted_certs: list[StrictStr] = Field(
         ..., description="A list of CA certificates to consider trusted"
     )
-
-    peer_certificate: StrictStr = Field(..., description="The path to the peer (EE) certificate")
 
     untrusted_intermediates: list[StrictStr] = Field(
         ..., description="A list of untrusted intermediates to use during path building"
     )
 
-    peer_name: PeerName
+    peer_certificate: StrictStr = Field(..., description="The path to the peer (EE) certificate")
 
     validation_time: datetime = Field(
         ..., description="The time at which to perform the validation"
     )
 
-    signature_algorithms: list[SignatureAlgorithm]
+    signature_algorithms: list[SignatureAlgorithm] | None = Field(
+        ..., description="A list of acceptable signature algorithms to constrain against"
+    )
 
     key_usage: list[KeyUsage]
 
     extended_key_usage: list[KnownEKUs | OID] = Field(
         ...,
         description="A list of extended key usages, either in well-known form or as OIDs",
+    )
+
+    expected_result: Literal["SUCCESS"] | Literal["ERROR"] = Field(
+        ..., description="The expected validation result"
+    )
+
+    expected_peer_name: PeerName | None = Field(
+        ..., description="For client-side validation: the expected peer name, if any"
+    )
+
+    expected_peer_names: list[PeerName] | None = Field(
+        ..., description="For server-side validation: the expected peer names, if any"
     )
 
 

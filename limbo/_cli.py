@@ -22,9 +22,11 @@ def main() -> None:
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(required=True)
 
+    # `limbo schema`
     schema = subparsers.add_parser("schema", help="Dump the top-level JSON Schema for x509-limbo")
     schema.set_defaults(func=_schema)
 
+    # `limbo build-assets`
     build_assets = subparsers.add_parser("build-assets", help="Generate and dump testcase assets")
     build_assets.add_argument(
         "-o", "--output-dir", type=Path, help="The path to write assets to", required=True
