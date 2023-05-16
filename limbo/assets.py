@@ -5,8 +5,9 @@ Models and definitions for generating assets for Limbo testcases.
 from __future__ import annotations
 
 import datetime
+import functools
 import itertools
-from functools import cache
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Any, Callable, Iterable, ParamSpec, Sequence, TypeVar, overload
 
@@ -22,11 +23,29 @@ _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
 _ASSET_REGISTRY: set[str] = set()
 
 
+_Builder = Callable[[], bytes]
+
+
 class Asset:
-    def __init__(self, name: str, description: str, contents: bytes) -> None:
+    """
+    Represents a testcase asset.
+
+    Conceptually, an asset is a file on disk, one that can
+    be loaded (or regenerated) as needed.
+
+    In practice, testcases are frequently mutually interdependent,
+    and represent an "all or none" condition: they must *all* be loaded
+    from disk, or none must be (and must be fully regenerated instead).
+    """
+
+    def __init__(self, name: str, description: str, builder: _Builder) -> None:
         self.name = name
         self.description = description
-        self.contents = contents
+        self.builder = builder
+
+    @cached_property
+    def contents(self) -> bytes:
+        return self.builder()
 
     @cache
     def as_privkey(self) -> PrivateKeyTypes:
@@ -94,11 +113,11 @@ def _asset(
                 for args in itertools.product(*parametrize):
                     name_ = name.format(*args)
                     description_ = description.format(*args)
-                    result = func(*args)
-                    assets.append(Asset(name_, description_, result))
+                    builder = functools.partial(func, *args)
+                    assets.append(Asset(name_, description_, builder))
                 return assets
             else:
-                return Asset(name, description, func())
+                return Asset(name, description, func)
 
         return wrapped  # type: ignore[return-value]
 
