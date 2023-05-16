@@ -7,9 +7,10 @@ from __future__ import annotations
 import datetime
 import functools
 import itertools
+import logging
 from functools import cache, cached_property
 from pathlib import Path
-from typing import Any, Callable, Iterable, ParamSpec, Sequence, TypeVar, overload
+from typing import Any, Callable, Iterable, ParamSpec, Self, Sequence, TypeVar, overload
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -26,26 +27,54 @@ _ASSET_REGISTRY: set[str] = set()
 _Builder = Callable[[], bytes]
 
 
+logger = logging.getLogger(__name__)
+
+
 class Asset:
     """
     Represents a testcase asset.
 
-    Conceptually, an asset is a file on disk, one that can
-    be loaded (or regenerated) as needed.
+    Conceptually, an asset is a collection of bytes (a key, a certificate, etc.),
+    along with a name and a short human-readable description.
+    Assets are either constructed from a "builder" or loaded from disk
+    (by their name).
 
     In practice, testcases are frequently mutually interdependent,
-    and represent an "all or none" condition: they must *all* be loaded
-    from disk, or none must be (and must be fully regenerated instead).
+    meaning that loading them from disk while also generating new ones
+    must be done with care.
     """
 
     def __init__(self, name: str, description: str, builder: _Builder) -> None:
         self.name = name
         self.description = description
         self.builder = builder
+        self.dir: Path | None = None
+
+    def bind(self, dir: Path) -> Self:
+        self.dir = dir
+        return self
+
+    @cache
+    def load(self) -> bytes | None:
+        if self.dir is None:
+            raise ValueError("cannot load: asset not bound to a directory")
+
+        path = self.dir / self.name
+        return path.read_bytes() if path.exists() else None
 
     @cached_property
     def contents(self) -> bytes:
-        return self.builder()
+        # If this asset is bound to a directory, we can try loading from it.
+        # Otherwise, fall back on building it.
+        if self.dir:
+            logger.debug(f"{self.name} is bound, attempting to load from file")
+            contents = self.load()
+
+        if contents is None:
+            logger.debug(f"{self.name} is being constructed (either unbound or no file)")
+            contents = self.builder()
+
+        return contents
 
     @cache
     def as_privkey(self) -> PrivateKeyTypes:
@@ -255,7 +284,7 @@ def _intermediate_ca_pathlen_n(pathlen: int) -> bytes:
 def assets(load_from: Path) -> Iterable[Asset]:
     # TODO: Dedupe; This should be part of the decorator magic above.
 
-    yield _root_key()
-    yield _v3_root_ca()
-    yield _intermediate_key()
-    yield from _intermediate_ca_pathlen_n()
+    yield _root_key().bind(load_from)
+    yield _v3_root_ca().bind(load_from)
+    yield _intermediate_key().bind(load_from)
+    yield from (a.bind(load_from) for a in _intermediate_ca_pathlen_n())

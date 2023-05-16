@@ -1,10 +1,20 @@
 import argparse
+import logging
+import os
 import sys
 from pathlib import Path
 
 from . import __version__
 from .assets import assets
 from .models import Limbo
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+
+# NOTE: We configure the top package logger, rather than the root logger,
+# to avoid overly verbose logging in third-party code by default.
+package_logger = logging.getLogger("limbo")
+package_logger.setLevel(os.environ.get("LIMBO_LOGLEVEL", "INFO").upper())
 
 
 def main() -> None:
@@ -47,6 +57,6 @@ def _build_assets(args: argparse.Namespace) -> None:
 
         if path.exists() and not args.force:
             print(f"[!]\tNot overwriting {asset.name} without --force", file=sys.stderr)
-            sys.exit(1)
+            continue
 
         path.write_bytes(asset.contents)
