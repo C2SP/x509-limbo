@@ -1,0 +1,76 @@
+version: 1
+testcases:
+  - description: |
+      Verifies an EE certificate with the following chain:
+
+      ```
+      ee-from-intermediate-pathlen-0.pem
+        -> intermediate-ca-pathlen-0.pem
+        -> v3-root.pem
+      ```
+
+      This is a "trivial" verification: the intermediate
+      has a `pathlen:0` constraint, but the leaf is an end entity
+      and thus is allowed.
+
+    validation_kind: CLIENT
+    trusted_certs:
+      - assets/v3-root.pem
+    untrusted_intermediates:
+      - assets/ee-from-intermediate-pathlen-0.pem
+    peer_certificate: assets/ee-from-intermediate-pathlen-0.pem
+
+    expected_result: SUCCESS
+    expected_peer_name:
+      kind: DN
+      value: x509-limbo-ee-from-intermediate-pathlen-1
+
+  - description: |
+      Verifies an EE certificate with the following chain:
+
+      ```
+      ee-from-intermediate-pathlen-1.pem
+        -> intermediate-ca-pathlen-1.pem
+        -> v3-root.pem
+      ```
+
+      This is "trivial" like the testcase above, except that it
+      covers a potential implementation error in chain building:
+      the `pathlen:1` constraint in this case should **not** exclude
+      end entities less than or equal to that length.
+
+    validation_kind: CLIENT
+    trusted_certs:
+      - assets/v3-root.pem
+    untrusted_intermediates:
+      - assets/ee-from-intermediate-pathlen-0.pem
+    peer_certificate: assets/ee-from-intermediate-pathlen-0.pem
+
+    expected_result: SUCCESS
+    expected_peer_name:
+      kind: DN
+      value: x509-limbo-ee-from-intermediate-pathlen-0
+
+  - description: |
+      Verifies an EE certificate with the following chain:
+
+      ```
+      ee-from-intermediate-pathlen-2.pem
+        -> intermediate-ca-pathlen-2.pem
+        -> v3-root.pem
+      ```
+
+      This is identical to the previous testcase, but with
+      a `pathlen:2` constraint instead of `pathlen:1`.
+
+    validation_kind: CLIENT
+    trusted_certs:
+      - assets/v3-root.pem
+    untrusted_intermediates:
+      - assets/ee-from-intermediate-pathlen-0.pem
+    peer_certificate: assets/ee-from-intermediate-pathlen-0.pem
+
+    expected_result: SUCCESS
+    expected_peer_name:
+      kind: DN
+      value: x509-limbo-ee-from-intermediate-pathlen-2
