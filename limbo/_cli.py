@@ -1,10 +1,10 @@
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from . import __version__
-from .models import Limbo
 from .assets import assets
+from .models import Limbo
 
 
 def main() -> None:
@@ -41,7 +41,7 @@ def _build_assets(args: argparse.Namespace) -> None:
     # TODO: Think more about loading pre-existing assets, so that regenerating
     # doesn't blow away 100% of all state.
 
-    for asset in assets():
+    for asset in assets(load_from=output_dir):
         print(f"[+]\t{asset.name}", file=sys.stderr)
         path: Path = output_dir / asset.name
 

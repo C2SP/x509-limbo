@@ -4,11 +4,11 @@ Models and definitions for generating assets for Limbo testcases.
 
 from __future__ import annotations
 
-
 import datetime
-from functools import cache, partial
 import itertools
-from typing import Any, Callable, Iterable, ParamSpec, Sequence, TypeVar
+from functools import cache
+from pathlib import Path
+from typing import Any, Callable, Iterable, ParamSpec, Sequence, TypeVar, overload
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -41,6 +41,25 @@ _P = ParamSpec("_P")
 _F = TypeVar("_F", bound=Callable[..., Any])
 
 
+@overload
+def _asset(
+    name: str,
+    *,
+    description: str,
+    parametrize: Sequence[Any] | Sequence[Sequence[Any]],
+) -> Callable[[_F], Callable[_P, list[Asset]]]:
+    ...
+
+
+@overload
+def _asset(
+    name: str,
+    *,
+    description: str,
+) -> Callable[[_F], Callable[_P, Asset]]:
+    ...
+
+
 def _asset(
     name: str,
     *,
@@ -69,7 +88,7 @@ def _asset(
         # a given run -- without it, keys and other in-place generated
         # materials would change on each invocation.
         @cache
-        def wrapped() -> Asset:
+        def wrapped() -> Asset | list[Asset]:
             if parametrize:
                 assets = []
                 for args in itertools.product(*parametrize):
@@ -160,7 +179,7 @@ def _intermediate_key() -> bytes:
     description="intermediate CA, pathlen:{0}, via v3-root.pem",
     parametrize=[0, 1, 2],  # different pathlen constraints
 )
-def _intermediate_ca_pathlen_N(pathlen: int) -> bytes:
+def _intermediate_ca_pathlen_n(pathlen: int) -> bytes:
     subject_key: rsa.RSAPublicKey = (
         _intermediate_key().as_privkey().public_key()  # type: ignore[assignment]
     )
@@ -214,10 +233,10 @@ def _intermediate_ca_pathlen_N(pathlen: int) -> bytes:
     )
 
 
-def assets() -> Iterable[Asset]:
+def assets(load_from: Path) -> Iterable[Asset]:
     # TODO: Dedupe; This should be part of the decorator magic above.
 
     yield _root_key()
     yield _v3_root_ca()
     yield _intermediate_key()
-    yield from _intermediate_ca_pathlen_N()
+    yield from _intermediate_ca_pathlen_n()
