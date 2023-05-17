@@ -118,19 +118,21 @@ class Testcase(BaseModel):
 
     peer_certificate: StrictStr = Field(..., description="The path to the peer (EE) certificate")
 
-    validation_time: datetime = Field(
-        ..., description="The time at which to perform the validation"
+    validation_time: datetime | None = Field(
+        None, description="The time at which to perform the validation"
     )
 
     signature_algorithms: list[SignatureAlgorithm] | None = Field(
-        ..., description="A list of acceptable signature algorithms to constrain against"
+        None, description="A list of acceptable signature algorithms to constrain against"
     )
 
-    key_usage: list[KeyUsage]
+    key_usage: list[KeyUsage] | None = Field(None, description="A constraining list of key usages")
 
-    extended_key_usage: list[KnownEKUs | OID] = Field(
-        ...,
-        description="A list of extended key usages, either in well-known form or as OIDs",
+    extended_key_usage: list[KnownEKUs | OID] | None = Field(
+        None,
+        description=(
+            "A constraining list of extended key usages, either in well-known form or as OIDs"
+        ),
     )
 
     expected_result: Literal["SUCCESS"] | Literal["ERROR"] = Field(
@@ -138,11 +140,11 @@ class Testcase(BaseModel):
     )
 
     expected_peer_name: PeerName | None = Field(
-        ..., description="For client-side validation: the expected peer name, if any"
+        None, description="For client-side validation: the expected peer name, if any"
     )
 
     expected_peer_names: list[PeerName] | None = Field(
-        ..., description="For server-side validation: the expected peer names, if any"
+        None, description="For server-side validation: the expected peer names, if any"
     )
 
 

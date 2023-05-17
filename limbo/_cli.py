@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+import yaml
+
 from . import __version__
 from .assets import assets
 from .models import Limbo
@@ -29,12 +31,31 @@ def main() -> None:
     # `limbo build-assets`
     build_assets = subparsers.add_parser("build-assets", help="Generate and dump testcase assets")
     build_assets.add_argument(
-        "-o", "--output-dir", type=Path, help="The path to write assets to", required=True
+        "-o",
+        "--output-dir",
+        type=Path,
+        metavar="DIR",
+        help="The path to write assets to",
+        required=True,
     )
     build_assets.add_argument(
         "-f", "--force", action="store_true", help="Overwrite existing assets"
     )
     build_assets.set_defaults(func=_build_assets)
+
+    # `limbo compile`
+    compile = subparsers.add_parser(
+        "compile", help="Merge one or more YAML testcase groups into a single JSON testcase suite"
+    )
+    compile.add_argument("-f", "--force", action="store_true", help="Overwrite any existing output")
+    compile.add_argument(
+        "--testcases",
+        type=Path,
+        metavar="DIR",
+        help="The directory to load and store from",
+        required=True,
+    )
+    compile.set_defaults(func=_compile)
 
     args = parser.parse_args()
     args.func(args)
@@ -59,3 +80,17 @@ def _build_assets(args: argparse.Namespace) -> None:
             continue
 
         path.write_bytes(asset.contents)
+
+
+def _compile(args: argparse.Namespace) -> None:
+    testcase_dir: Path = args.testcases.resolve()
+
+    output_path = testcase_dir / "limbo.json"
+    if output_path.exists() and not args.force:
+        print(f"[!] Not overwriting {output_path} without --force", file=sys.stderr)
+        sys.exit(1)
+
+    for testcases in testcase_dir.glob("*.yml"):
+        print(f"[+] Loading testcases from {testcases.name}", file=sys.stderr)
+        loaded = yaml.safe_load(testcases.read_bytes())
+        Limbo(**loaded)
