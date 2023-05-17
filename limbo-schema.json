@@ -196,6 +196,7 @@
           }
         },
         "key_usage": {
+          "description": "A constraining list of key usages",
           "type": "array",
           "items": {
             "$ref": "#/definitions/KeyUsage"
@@ -203,7 +204,7 @@
         },
         "extended_key_usage": {
           "title": "Extended Key Usage",
-          "description": "A list of extended key usages, either in well-known form or as OIDs",
+          "description": "A constraining list of extended key usages, either in well-known form or as OIDs",
           "type": "array",
           "items": {
             "anyOf": [
@@ -259,13 +260,7 @@
         "trusted_certs",
         "untrusted_intermediates",
         "peer_certificate",
-        "validation_time",
-        "signature_algorithms",
-        "key_usage",
-        "extended_key_usage",
-        "expected_result",
-        "expected_peer_name",
-        "expected_peer_names"
+        "expected_result"
       ]
     }
   }
