@@ -93,4 +93,5 @@ def _compile(args: argparse.Namespace) -> None:
     for testcases in testcase_dir.glob("*.yml"):
         print(f"[+] Loading testcases from {testcases.name}", file=sys.stderr)
         loaded = yaml.safe_load(testcases.read_bytes())
-        Limbo(**loaded)
+        limbo = Limbo(**loaded)
+        print(f"[+]\tCollected {len(limbo.testcases)} testcases")
