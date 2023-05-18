@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr
+from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr, validator
 
 PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"] | Literal["DN"]
 
@@ -97,6 +98,12 @@ class OID(ConstrainedStr):
     strict = True
 
 
+def _file_exists(path: str) -> str:
+    if not Path(path).is_file():
+        raise ValueError(f"{path} must be a file")
+    return path
+
+
 class Testcase(BaseModel):
     """
     Represents an individual Limbo testcase.
@@ -146,6 +153,14 @@ class Testcase(BaseModel):
     expected_peer_names: list[PeerName] | None = Field(
         None, description="For server-side validation: the expected peer names, if any"
     )
+
+    _validate_trusted_certs = validator("trusted_certs", allow_reuse=True, each_item=True)(
+        _file_exists
+    )
+    _validate_untrusted_intermediates = validator(
+        "untrusted_intermediates", allow_reuse=True, each_item=True
+    )(_file_exists)
+    _validate_peer_certificate = validator("peer_certificate", allow_reuse=True)(_file_exists)
 
 
 class Limbo(BaseModel):

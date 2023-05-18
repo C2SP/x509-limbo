@@ -1,14 +1,16 @@
 import argparse
+import contextlib
 import logging
 import os
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 import yaml
 
 from . import __version__
 from .assets import assets
-from .models import Limbo
+from .models import Limbo, Testcase
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -17,6 +19,11 @@ logger = logging.getLogger(__name__)
 # to avoid overly verbose logging in third-party code by default.
 package_logger = logging.getLogger("limbo")
 package_logger.setLevel(os.environ.get("LIMBO_LOGLEVEL", "INFO").upper())
+
+
+def _die(msg: str) -> NoReturn:
+    logger.error(msg)
+    sys.exit(1)
 
 
 def main() -> None:
@@ -66,17 +73,17 @@ def _schema(args: argparse.Namespace) -> None:
 
 
 def _build_assets(args: argparse.Namespace) -> None:
-    print("[+] Generating assets...", file=sys.stderr)
+    logger.info("generating assets...")
 
     output_dir: Path = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for asset in assets(load_from=output_dir):
-        print(f"[+]\t{asset.name}", file=sys.stderr)
+        logger.info(f"generating {asset.name}")
         path: Path = output_dir / asset.name
 
         if path.exists() and not args.force:
-            print(f"[!]\tNot overwriting {asset.name} without --force", file=sys.stderr)
+            logger.warning(f"not overwriting {asset.name} without --force")
             continue
 
         path.write_bytes(asset.contents)
@@ -87,11 +94,22 @@ def _compile(args: argparse.Namespace) -> None:
 
     output_path = testcase_dir / "limbo.json"
     if output_path.exists() and not args.force:
-        print(f"[!] Not overwriting {output_path} without --force", file=sys.stderr)
-        sys.exit(1)
+        _die(f"not overwriting {output_path} without --force")
 
-    for testcases in testcase_dir.glob("*.yml"):
-        print(f"[+] Loading testcases from {testcases.name}", file=sys.stderr)
-        loaded = yaml.safe_load(testcases.read_bytes())
-        limbo = Limbo(**loaded)
-        print(f"[+]\tCollected {len(limbo.testcases)} testcases")
+    # NOTE: Paths in testcases are relative to the testcase directory,
+    # so we chdir to pass validation.
+    all_testcases: list[Testcase] = []
+    with contextlib.chdir(testcase_dir):
+        for testcases in testcase_dir.glob("*.yml"):
+            logger.info(f"loading testcases from {testcases.name}")
+            loaded = yaml.safe_load(testcases.read_bytes())
+            limbo = Limbo(**loaded)
+            logger.debug(f"{testcases.name}: collected {len(limbo.testcases)}")
+
+            if limbo.version != 1:
+                _die(f"unexpected limbo schema version: {limbo.version} != 1")
+
+            all_testcases.extend(limbo.testcases)
+
+        combined = Limbo(version=1, testcases=all_testcases)
+        output_path.write_text(combined.json(indent=2))
