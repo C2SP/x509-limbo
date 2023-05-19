@@ -19,7 +19,7 @@ jobs:
           cache-dependency-path: pyproject.toml
 
       - name: regenerate schema
-        run: make schema
+        run: make limbo-schema.json
 
       - name: fail if the schema has changed
         run: |
