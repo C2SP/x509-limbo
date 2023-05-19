@@ -33,6 +33,9 @@ def main() -> None:
 
     # `limbo schema`
     schema = subparsers.add_parser("schema", help="Dump the top-level JSON Schema for x509-limbo")
+    schema.add_argument(
+        "-o", "--output", type=Path, metavar="FILE", help="The path to write the schema to"
+    )
     schema.set_defaults(func=_schema)
 
     # `limbo build-assets`
@@ -69,7 +72,13 @@ def main() -> None:
 
 
 def _schema(args: argparse.Namespace) -> None:
-    print(Limbo.schema_json(indent=2))
+    if args.output:
+        io = args.output.open(mode="w")
+    else:
+        io = sys.stdout
+
+    with contextlib.closing(io):
+        print(Limbo.schema_json(indent=2), file=io)
 
 
 def _build_assets(args: argparse.Namespace) -> None:
