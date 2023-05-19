@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConstrainedStr, Field, StrictInt, StrictStr, validator
+from pydantic import BaseModel, ConstrainedStr, Field, StrictStr, validator
 
 PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"] | Literal["DN"]
 
