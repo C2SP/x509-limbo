@@ -13,6 +13,8 @@ ifeq ($(OS),Windows_NT)
 	VENV_BIN := $(VENV)/Scripts
 endif
 
+NEEDS_VENV = $(VENV)/pyvenv.cfg
+
 # Optionally overridden by the user/CI, to limit the installation to a specific
 # subset of development dependencies.
 INSTALL_EXTRA := dev
@@ -21,22 +23,22 @@ INSTALL_EXTRA := dev
 all:
 	@echo "Run my targets individually!"
 
-$(VENV)/pyvenv.cfg: pyproject.toml
+$(NEEDS_VENV): pyproject.toml
 	python -m venv $(VENV) --upgrade-deps
 	$(VENV_BIN)/python -m pip install -e .[$(INSTALL_EXTRA)]
 
 .PHONY: dev
-dev: $(VENV)/pyvenv.cfg
+dev: $(NEEDS_VENV)
 
 .PHONY: lint
-lint: $(VENV)/pyvenv.cfg
+lint: $(NEEDS_VENV)
 	. $(VENV_BIN)/activate && \
 		black --check $(ALL_PY_SRCS) && \
 		ruff $(ALL_PY_SRCS) && \
 		mypy $(PY_MODULE)
 
 .PHONY: reformat
-reformat: $(VENV)/pyvenv.cfg
+reformat: $(NEEDS_VENV)
 	. $(VENV_BIN)/activate && \
 		ruff --fix $(ALL_PY_SRCS) && \
 		black $(ALL_PY_SRCS)
@@ -46,9 +48,13 @@ edit:
 	$(EDITOR) $(ALL_PY_SRCS)
 
 .PHONY: run
-run: $(VENV)/pyvenv.cfg
+run: $(NEEDS_VENV)
 	@./$(VENV_BIN)/python -m $(PY_MODULE) $(ARGS)
 
 .PHONY: schema
-schema: $(VENV)/pyvenv.cfg
+schema: $(NEEDS_VENV)
 	@$(MAKE) run ARGS=schema > limbo-schema.json
+
+.PHONY: testcases
+testcases: $(NEEDS_VENV)
+	@$(MAKE) run ARGS="compile --testcases testcases/ --force"

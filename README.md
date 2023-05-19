@@ -30,3 +30,23 @@ make dev && source env/bin/activate
 
 limbo --help
 ```
+
+This tool can be used to regenerate the schema, as well as
+develop and manage testcases and testcase assets:
+
+```bash
+limbo schema --help
+limbo build-assets --help
+limbo compile --help
+```
+
+There are also two convenience `make` targets for quickly regenerating
+the schema and testcases:
+
+```bash
+# regenerates `limbo-schema.json`
+make schema
+
+# regenerates `testcases/limbo.json`
+make testcases
+```
