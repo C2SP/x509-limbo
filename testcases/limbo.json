@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "testcases": [
+    {
+      "id": "ee-certs-pathlen-constraints::ee-pathlen-0",
+      "description": "Verifies an EE certificate with the following chain:\n\n```\nee-from-intermediate-pathlen-0.pem\n  -> intermediate-ca-pathlen-0.pem\n  -> v3-root.pem\n```\n\nThis is a \"trivial\" verification: the intermediate\nhas a `pathlen:0` constraint, but the leaf is an end entity\nand thus is allowed.\n",
+      "validation_kind": "CLIENT",
+      "trusted_certs": [
+        "assets/v3-root.pem"
+      ],
+      "untrusted_intermediates": [
+        "assets/ee-from-intermediate-pathlen-0.pem"
+      ],
+      "peer_certificate": "assets/ee-from-intermediate-pathlen-0.pem",
+      "validation_time": null,
+      "signature_algorithms": null,
+      "key_usage": null,
+      "extended_key_usage": null,
+      "expected_result": "SUCCESS",
+      "expected_peer_name": {
+        "kind": "DN",
+        "value": "x509-limbo-ee-from-intermediate-pathlen-1"
+      },
+      "expected_peer_names": null
+    },
+    {
+      "id": "ee-certs-pathlen-constraints::ee-pathlen-1",
+      "description": "Verifies an EE certificate with the following chain:\n\n```\nee-from-intermediate-pathlen-1.pem\n  -> intermediate-ca-pathlen-1.pem\n  -> v3-root.pem\n```\n\nThis is \"trivial\" like the testcase above, except that it\ncovers a potential implementation error in chain building:\nthe `pathlen:1` constraint in this case should **not** exclude\nend entities less than or equal to that length.\n",
+      "validation_kind": "CLIENT",
+      "trusted_certs": [
+        "assets/v3-root.pem"
+      ],
+      "untrusted_intermediates": [
+        "assets/ee-from-intermediate-pathlen-0.pem"
+      ],
+      "peer_certificate": "assets/ee-from-intermediate-pathlen-0.pem",
+      "validation_time": null,
+      "signature_algorithms": null,
+      "key_usage": null,
+      "extended_key_usage": null,
+      "expected_result": "SUCCESS",
+      "expected_peer_name": {
+        "kind": "DN",
+        "value": "x509-limbo-ee-from-intermediate-pathlen-0"
+      },
+      "expected_peer_names": null
+    },
+    {
+      "id": "ee-certs-pathlen-constraints::ee-pathlen-2",
+      "description": "Verifies an EE certificate with the following chain:\n\n```\nee-from-intermediate-pathlen-2.pem\n  -> intermediate-ca-pathlen-2.pem\n  -> v3-root.pem\n```\n\nThis is identical to the previous testcase, but with\na `pathlen:2` constraint instead of `pathlen:1`.\n",
+      "validation_kind": "CLIENT",
+      "trusted_certs": [
+        "assets/v3-root.pem"
+      ],
+      "untrusted_intermediates": [
+        "assets/ee-from-intermediate-pathlen-0.pem"
+      ],
+      "peer_certificate": "assets/ee-from-intermediate-pathlen-0.pem",
+      "validation_time": null,
+      "signature_algorithms": null,
+      "key_usage": null,
+      "extended_key_usage": null,
+      "expected_result": "SUCCESS",
+      "expected_peer_name": {
+        "kind": "DN",
+        "value": "x509-limbo-ee-from-intermediate-pathlen-2"
+      },
+      "expected_peer_names": null
+    }
+  ]
+}
