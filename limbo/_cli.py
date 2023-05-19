@@ -108,9 +108,6 @@ def _compile(args: argparse.Namespace) -> None:
             limbo = Limbo(**loaded)
             logger.debug(f"{testcases.name}: collected {len(limbo.testcases)}")
 
-            if limbo.version != 1:
-                _die(f"unexpected limbo schema version: {limbo.version} != 1")
-
             # Rewrite each testcase's ID to be unique under the current namespace.
             for case in limbo.testcases:
                 case.id = TestCaseID(f"{namespace}::{case.id}")

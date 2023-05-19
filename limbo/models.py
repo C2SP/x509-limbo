@@ -186,7 +186,9 @@ class Limbo(BaseModel):
     The top-level testcase container.
     """
 
-    version: StrictInt
+    version: Literal[1] = Field(
+        ..., description="The limbo schema version; this must currently always be 1"
+    )
     testcases: list[Testcase] = Field(..., description="One or more testcases in this testsuite")
 
     @validator("testcases")

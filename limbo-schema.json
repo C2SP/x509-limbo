@@ -5,6 +5,10 @@
   "properties": {
     "version": {
       "title": "Version",
+      "description": "The limbo schema version; this must currently always be 1",
+      "enum": [
+        1
+      ],
       "type": "integer"
     },
     "testcases": {
@@ -141,7 +145,7 @@
         "id": {
           "title": "Id",
           "description": "A short, unique identifier for this testcase",
-          "pattern": "^\\w+$",
+          "pattern": "^([A-Za-z][A-Za-z0-9-]+::)*([A-Za-z][A-Za-z0-9-]+)$",
           "type": "string"
         },
         "description": {
