@@ -51,10 +51,9 @@ edit:
 run: $(NEEDS_VENV)
 	@./$(VENV_BIN)/python -m $(PY_MODULE) $(ARGS)
 
-.PHONY: schema
-schema: $(NEEDS_VENV)
-	@$(MAKE) run ARGS="schema -o limbo-schema.json"
+limbo-schema.json: $(NEEDS_VENV) $(PY_MODULE)/models.py
+	$(MAKE) run ARGS="schema -o limbo-schema.json"
 
 .PHONY: testcases
 testcases: $(NEEDS_VENV)
-	@$(MAKE) run ARGS="compile --testcases testcases/ --force"
+	$(MAKE) run ARGS="compile --testcases testcases/ --force"

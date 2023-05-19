@@ -11,6 +11,10 @@ PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"] | Literal["DN"]
 
 
 class PeerName(BaseModel):
+    """
+    Represents a peer (i.e., end entity) certificate's name (Subject or SAN).
+    """
+
     kind: PeerKind = Field(..., description="The kind of peer name")
     value: StrictStr = Field(..., description="The peer's name")
 
