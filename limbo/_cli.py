@@ -72,10 +72,7 @@ def main() -> None:
 
 
 def _schema(args: argparse.Namespace) -> None:
-    if args.output:
-        io = args.output.open(mode="w")
-    else:
-        io = sys.stdout
+    io = args.output.open(mode="w") if args.output else sys.stdout
 
     with contextlib.closing(io):
         print(Limbo.schema_json(indent=2), file=io)
