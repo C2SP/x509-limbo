@@ -10,7 +10,7 @@ import yaml
 
 from . import __version__
 from .assets import assets
-from .models import Limbo, Testcase
+from .models import Limbo, Testcase, TestCaseID
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -100,14 +100,20 @@ def _compile(args: argparse.Namespace) -> None:
     # so we chdir to pass validation.
     all_testcases: list[Testcase] = []
     with contextlib.chdir(testcase_dir):
-        for testcases in testcase_dir.glob("*.yml"):
-            logger.info(f"loading testcases from {testcases.name}")
+        for testcases in testcase_dir.glob("*.limbo.yml"):
+            namespace = testcases.name.removesuffix(".limbo.yml")
+            logger.info(f"loading testcases from {namespace}")
+
             loaded = yaml.safe_load(testcases.read_bytes())
             limbo = Limbo(**loaded)
             logger.debug(f"{testcases.name}: collected {len(limbo.testcases)}")
 
             if limbo.version != 1:
                 _die(f"unexpected limbo schema version: {limbo.version} != 1")
+
+            # Rewrite each testcase's ID to be unique under the current namespace.
+            for case in limbo.testcases:
+                case.id = TestCaseID(f"{namespace}::{case.id}")
 
             all_testcases.extend(limbo.testcases)
 

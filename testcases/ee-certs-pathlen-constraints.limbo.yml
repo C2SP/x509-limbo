@@ -1,6 +1,7 @@
 version: 1
 testcases:
-  - description: |
+  - id: ee-pathlen-0
+    description: |
       Verifies an EE certificate with the following chain:
 
       ```
@@ -25,7 +26,8 @@ testcases:
       kind: DN
       value: x509-limbo-ee-from-intermediate-pathlen-1
 
-  - description: |
+  - id: ee-pathlen-1
+    description: |
       Verifies an EE certificate with the following chain:
 
       ```
@@ -51,7 +53,8 @@ testcases:
       kind: DN
       value: x509-limbo-ee-from-intermediate-pathlen-0
 
-  - description: |
+  - id: ee-pathlen-2
+    description: |
       Verifies an EE certificate with the following chain:
 
       ```

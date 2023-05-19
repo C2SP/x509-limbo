@@ -60,3 +60,6 @@ warn_unused_ignores = true
 line-length = 100
 select = ["E", "F", "W", "UP", "I", "N", "YTT", "BLE", "C4", "SIM"]
 target-version = "py38"
+
+[tool.ruff.pep8-naming]
+classmethod-decorators = ["classmethod", "pydantic.validator"]

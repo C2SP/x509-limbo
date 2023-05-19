@@ -98,6 +98,22 @@ class OID(ConstrainedStr):
     strict = True
 
 
+_ID_COMPONENT = r"[A-Za-z][A-Za-z0-9-]+"
+_NAMESPACE = rf"{_ID_COMPONENT}::"
+
+
+class TestCaseID(ConstrainedStr):
+    """
+    Acceptable testcase IDs.
+
+    Testcase IDs look like `namespace::id`, where `namespace::` is optional
+    and only explicitly added when merging multiple testcase suites.
+    """
+
+    regex = rf"^({_NAMESPACE})*({_ID_COMPONENT})$"
+    strict = True
+
+
 def _file_exists(path: str) -> str:
     if not Path(path).is_file():
         raise ValueError(f"{path} must be a file")
@@ -108,6 +124,8 @@ class Testcase(BaseModel):
     """
     Represents an individual Limbo testcase.
     """
+
+    id: TestCaseID = Field(..., description="A short, unique identifier for this testcase")
 
     description: StrictStr = Field(..., description="A short, human-readable description")
 
@@ -170,3 +188,12 @@ class Limbo(BaseModel):
 
     version: StrictInt
     testcases: list[Testcase] = Field(..., description="One or more testcases in this testsuite")
+
+    @validator("testcases")
+    def validate_testcases_unique_ids(cls, v: list[Testcase]) -> list[Testcase]:
+        ids = set()
+        for case in v:
+            if case.id in ids:
+                raise ValueError(f"duplicated testcase id: {case.id}")
+            ids.add(case.id)
+        return v

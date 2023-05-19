@@ -138,6 +138,12 @@
       "description": "Represents an individual Limbo testcase.",
       "type": "object",
       "properties": {
+        "id": {
+          "title": "Id",
+          "description": "A short, unique identifier for this testcase",
+          "pattern": "^\\w+$",
+          "type": "string"
+        },
         "description": {
           "title": "Description",
           "description": "A short, human-readable description",
@@ -255,6 +261,7 @@
         }
       },
       "required": [
+        "id",
         "description",
         "validation_kind",
         "trusted_certs",
