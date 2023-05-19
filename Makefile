@@ -53,7 +53,7 @@ run: $(NEEDS_VENV)
 
 .PHONY: schema
 schema: $(NEEDS_VENV)
-	@$(MAKE) run ARGS=schema > limbo-schema.json
+	@$(MAKE) run ARGS="schema -o limbo-schema.json"
 
 .PHONY: testcases
 testcases: $(NEEDS_VENV)
