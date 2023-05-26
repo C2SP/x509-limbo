@@ -35,16 +35,16 @@ class Builder:
         self._validation_kind = "SERVER"
         return self
 
-    def trusted_certs(self, *certs: Asset) -> Self:
-        self._trusted_certs = [c.contents.decode() for c in certs]
+    def trusted_certs(self, *assets: Asset) -> Self:
+        self._trusted_certs = [c.cert_pem for c in assets]
         return self
 
-    def untrusted_intermediates(self, *certs: Asset) -> Self:
-        self._untrusted_intermediates = [c.contents.decode() for c in certs]
+    def untrusted_intermediates(self, *assets: Asset) -> Self:
+        self._untrusted_intermediates = [c.cert_pem for c in assets]
         return self
 
-    def peer_certificate(self, cert: Asset) -> Self:
-        self._peer_certificate = cert.contents.decode()
+    def peer_certificate(self, asset: Asset) -> Self:
+        self._peer_certificate = asset.cert_pem
         return self
 
     def validation_time(self, time: datetime) -> Self:

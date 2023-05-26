@@ -7,6 +7,7 @@ from __future__ import annotations
 import datetime
 import functools
 import logging
+from dataclasses import dataclass
 from functools import cache, cached_property
 from textwrap import dedent
 from typing import Any, Callable
@@ -21,45 +22,55 @@ _EPOCH = datetime.datetime.fromtimestamp(0)
 _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
 
 
-_Builder = Callable[[], bytes]
-
-
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class CertificatePair:
+    """
+    An X.509 certificate and its associated private key.
+    """
+
+    cert: x509.Certificate
+    key: PrivateKeyTypes
+
+
+_Builder = Callable[[], CertificatePair]
 
 
 class Asset:
     """
-    Represents a testcase asset.
-
-    Conceptually, an asset is a collection of bytes (a key, a certificate, etc.),
-    along with a name and a short human-readable description.
-    Assets are either constructed from a "builder" or loaded from disk
-    (by their name).
-
-    In practice, testcases are frequently mutually interdependent,
-    meaning that loading them from disk while also generating new ones
-    must be done with care.
+    Represents a testcase asset, i.e. a `CertificatePair` with an name
+    and a short description.
     """
 
     def __init__(self, name: str, description: str, builder: _Builder) -> None:
         self.name = name
         self.description = description
-        self.builder = builder
+        self.cert_pair = builder()
 
     @cached_property
-    def contents(self) -> bytes:
-        return self.builder()
+    def key(self) -> PrivateKeyTypes:
+        return self.cert_pair.key
 
-    @cache
-    def as_privkey(self) -> PrivateKeyTypes:
-        return serialization.load_pem_private_key(self.contents, password=None)
+    @cached_property
+    def key_pem(self) -> str:
+        return self.key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption(),
+        ).decode()
 
-    @cache
-    def as_cert(self) -> x509.Certificate:
-        return x509.load_pem_x509_certificate(self.contents)
+    @cached_property
+    def cert(self) -> x509.Certificate:
+        return self.cert_pair.cert
+
+    @cached_property
+    def cert_pem(self) -> str:
+        return self.cert.public_bytes(encoding=serialization.Encoding.PEM).decode()
 
 
-def _asset(func: Callable) -> Callable:
+def _asset(func: Callable[..., CertificatePair]) -> Callable[..., Asset]:
     name = func.__name__.replace("_", "-")
     description = dedent(func.__doc__).strip() if func.__doc__ else name
 
@@ -71,24 +82,12 @@ def _asset(func: Callable) -> Callable:
 
 
 @_asset
-def root_key() -> bytes:
-    """
-    A 4096-bit RSA key for `v3_root_ca`.
-    """
-    key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
-    return key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption(),
-    )
-
-
-@_asset
-def v3_root_ca() -> bytes:
+def v3_root_ca() -> CertificatePair:
     """
     An X.509v3 root CA.
     """
-    key: rsa.RSAPrivateKey = root_key().as_privkey()
+    key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
         x509.Name(
@@ -130,26 +129,12 @@ def v3_root_ca() -> bytes:
         private_key=key,
         algorithm=hashes.SHA256(),
     )
-    return certificate.public_bytes(
-        encoding=serialization.Encoding.PEM,
-    )
+
+    return CertificatePair(certificate, key)
 
 
 @_asset
-def intermediate_key() -> bytes:
-    """
-    A 2048-bit RSA key for v3-intermediate.pem
-    """
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    return key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption(),
-    )
-
-
-@_asset
-def intermediate_ca_pathlen_n(pathlen: int) -> bytes:
+def intermediate_ca_pathlen_n(pathlen: int) -> CertificatePair:
     """
     An intermediate CAs chained up to a root CA.
 
@@ -161,8 +146,8 @@ def intermediate_ca_pathlen_n(pathlen: int) -> bytes:
     * That certificates are correctly uniqued by both their key **and** their
       subject (as each intermediate generated here shares the same key)
     """
-    subject_key: rsa.RSAPublicKey = intermediate_key().as_privkey().public_key()
-    signing_key: rsa.RSAPrivateKey = root_key().as_privkey()
+    subject_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    signing_key = v3_root_ca().key
 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
@@ -184,7 +169,7 @@ def intermediate_ca_pathlen_n(pathlen: int) -> bytes:
     builder = builder.not_valid_before(_EPOCH)
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
-    builder = builder.public_key(subject_key)
+    builder = builder.public_key(subject_key.public_key())
     builder = builder.add_extension(
         x509.BasicConstraints(ca=True, path_length=pathlen),
         critical=True,
@@ -207,13 +192,12 @@ def intermediate_ca_pathlen_n(pathlen: int) -> bytes:
         private_key=signing_key,
         algorithm=hashes.SHA256(),
     )
-    return certificate.public_bytes(
-        encoding=serialization.Encoding.PEM,
-    )
+
+    return CertificatePair(certificate, subject_key)
 
 
 @_asset
-def ee_cert_from_intermediate_pathlen_n(intermediate: int) -> bytes:
+def ee_cert_from_intermediate_pathlen_n(intermediate: int) -> CertificatePair:
     """
     An end-entity (EE) certificate chained through a particular
     `pathlen:N` constrained intermediate CA.
@@ -229,7 +213,7 @@ def ee_cert_from_intermediate_pathlen_n(intermediate: int) -> bytes:
     """
     # NOTE: Throwaway keys, since we only care that they're distinct.
     ee_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    signing_key: rsa.RSAPrivateKey = intermediate_key().as_privkey()
+    signing_key = intermediate_ca_pathlen_n(intermediate).key
 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
@@ -276,6 +260,5 @@ def ee_cert_from_intermediate_pathlen_n(intermediate: int) -> bytes:
         private_key=signing_key,
         algorithm=hashes.SHA256(),
     )
-    return certificate.public_bytes(
-        encoding=serialization.Encoding.PEM,
-    )
+
+    return CertificatePair(certificate, ee_key)
