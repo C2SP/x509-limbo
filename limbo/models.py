@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConstrainedStr, Field, StrictStr, validator
@@ -118,12 +117,6 @@ class TestCaseID(ConstrainedStr):
     strict = True
 
 
-def _file_exists(path: str) -> str:
-    if not Path(path).is_file():
-        raise ValueError(f"{path} must be a file")
-    return path
-
-
 class Testcase(BaseModel):
     """
     Represents an individual Limbo testcase.
@@ -138,14 +131,14 @@ class Testcase(BaseModel):
     )
 
     trusted_certs: list[StrictStr] = Field(
-        ..., description="A list of CA certificates to consider trusted"
+        ..., description="A list of PEM-encoded CA certificates to consider trusted"
     )
 
     untrusted_intermediates: list[StrictStr] = Field(
-        ..., description="A list of untrusted intermediates to use during path building"
+        ..., description="A list of PEM-encoded untrusted intermediates to use during path building"
     )
 
-    peer_certificate: StrictStr = Field(..., description="The path to the peer (EE) certificate")
+    peer_certificate: StrictStr = Field(..., description="The PEM-encoded peer (EE) certificate")
 
     validation_time: datetime | None = Field(
         None, description="The time at which to perform the validation"
@@ -164,7 +157,7 @@ class Testcase(BaseModel):
         ),
     )
 
-    expected_result: Literal["SUCCESS"] | Literal["ERROR"] = Field(
+    expected_result: Literal["SUCCESS"] | Literal["FAILURE"] = Field(
         ..., description="The expected validation result"
     )
 
@@ -175,14 +168,6 @@ class Testcase(BaseModel):
     expected_peer_names: list[PeerName] | None = Field(
         None, description="For server-side validation: the expected peer names, if any"
     )
-
-    _validate_trusted_certs = validator("trusted_certs", allow_reuse=True, each_item=True)(
-        _file_exists
-    )
-    _validate_untrusted_intermediates = validator(
-        "untrusted_intermediates", allow_reuse=True, each_item=True
-    )(_file_exists)
-    _validate_peer_certificate = validator("peer_certificate", allow_reuse=True)(_file_exists)
 
 
 class Limbo(BaseModel):

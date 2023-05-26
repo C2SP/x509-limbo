@@ -6,11 +6,11 @@ from __future__ import annotations
 
 import datetime
 import functools
-import itertools
 import logging
 from functools import cache, cached_property
 from pathlib import Path
-from typing import Any, Callable, Iterable, ParamSpec, Self, Sequence, TypeVar, overload
+from textwrap import dedent
+from typing import Any, Callable, Self
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -20,8 +20,6 @@ from cryptography.x509 import NameOID
 
 _EPOCH = datetime.datetime.fromtimestamp(0)
 _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
-
-_ASSET_REGISTRY: dict[str, Asset] = {}
 
 
 _Builder = Callable[[], bytes]
@@ -86,86 +84,22 @@ class Asset:
         return x509.load_pem_x509_certificate(self.contents)
 
 
-_P = ParamSpec("_P")
-_F = TypeVar("_F", bound=Callable[..., Any])
+def _asset(func: Callable) -> Callable:
+    name = func.__name__.replace("_", "-")
+    description = dedent(func.__doc__).strip() if func.__doc__ else name
+
+    @cache
+    def _wrapped(*args: list[Any]) -> Asset:
+        return Asset(name, description, functools.partial(func, *args))
+
+    return _wrapped
 
 
-@overload
-def _asset(
-    name: str,
-    *,
-    description: str,
-    parametrize: Sequence[Any] | Sequence[Sequence[Any]],
-) -> Callable[[_F], Callable[_P, list[Asset]]]:
-    ...
-
-
-@overload
-def _asset(
-    name: str,
-    *,
-    description: str,
-) -> Callable[[_F], Callable[_P, Asset]]:
-    ...
-
-
-def _asset(
-    name: str,
-    *,
-    description: str,
-    parametrize: Sequence[Any] | Sequence[Sequence[Any]] | None = None,
-) -> Callable[[_F], Callable[_P, Asset | list[Asset]]]:
-    if parametrize and not isinstance(parametrize[0], Sequence):
-        parametrize = [parametrize]
-
-    def wrapper(func: Callable[_P, bytes]) -> Callable[_P, Asset | list[Asset]]:
-        # NOTE: This caching decorator ensures consistency within
-        # a given run -- without it, keys and other in-place generated
-        # materials would change on each invocation.
-        @cache
-        def wrapped() -> Asset | list[Asset]:
-            if parametrize:
-                assets = []
-                for args in itertools.product(*parametrize):
-                    name_ = name.format(*args)
-                    if name_ in _ASSET_REGISTRY:
-                        raise ValueError(f"invalid asset: {name} already registered")
-
-                    description_ = description.format(*args)
-                    builder = functools.partial(func, *args)
-                    asset = Asset(name_, description_, builder)
-
-                    _ASSET_REGISTRY[name_] = asset
-                    assets.append(asset)
-                return assets
-            else:
-                if name in _ASSET_REGISTRY:
-                    raise ValueError(f"invalid asset: {name} already registered")
-
-                asset = Asset(name, description, func)
-                _ASSET_REGISTRY[name] = asset
-                return asset
-
-        return wrapped  # type: ignore[return-value]
-
-    return wrapper
-
-
-# TODO: May be needed in the future, but not yet.
-# def _get_asset(name: str) -> Asset:
-#     """
-#     Retrieve an asset by name.
-
-#     Name lookups are done through an internal registry that gets populated
-#     as each `Asset` is "concretized," meaning that a successful lookup
-#     requires that the corresponding `Asset` has already been used at least
-#     once.
-#     """
-#     return _ASSET_REGISTRY[name]
-
-
-@_asset("root.key", description="A 4096-bit RSA key for v3-root.pem")
-def _root_key() -> bytes:
+@_asset
+def root_key() -> bytes:
+    """
+    A 4096-bit RSA key for `v3_root_ca`.
+    """
     key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
     return key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -174,9 +108,12 @@ def _root_key() -> bytes:
     )
 
 
-@_asset("v3-root.pem", description="An x509v3 root CA")
-def _v3_root_ca() -> bytes:
-    key: rsa.RSAPrivateKey = _root_key().as_privkey()  # type: ignore[assignment]
+@_asset
+def v3_root_ca() -> bytes:
+    """
+    An X.509v3 root CA.
+    """
+    key: rsa.RSAPrivateKey = root_key().as_privkey()
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
         x509.Name(
@@ -223,8 +160,11 @@ def _v3_root_ca() -> bytes:
     )
 
 
-@_asset("intermediate.key", description="A 2048-bit RSA key for v3-intermediate.pem")
-def _intermediate_key() -> bytes:
+@_asset
+def intermediate_key() -> bytes:
+    """
+    A 2048-bit RSA key for v3-intermediate.pem
+    """
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     return key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -233,16 +173,12 @@ def _intermediate_key() -> bytes:
     )
 
 
-@_asset(
-    "intermediate-ca-pathlen-{0}.pem",
-    description="intermediate CA, pathlen:{0}, via v3-root.pem",
-    parametrize=[0, 1, 2],  # different pathlen constraints
-)
-def _intermediate_ca_pathlen_n(pathlen: int) -> bytes:
+@_asset
+def intermediate_ca_pathlen_n(pathlen: int) -> bytes:
     """
-    Generates intermediate CAs chained up to a root CA.
+    An intermediate CAs chained up to a root CA.
 
-    Each intermediate CA has a `pathlen:N` constraint, where `N` varies.
+    The intermediate CA has a `pathlen:N` constraint, where `N` varies.
 
     These intermediates can be used to assert various behaviors, including:
 
@@ -250,10 +186,8 @@ def _intermediate_ca_pathlen_n(pathlen: int) -> bytes:
     * That certificates are correctly uniqued by both their key **and** their
       subject (as each intermediate generated here shares the same key)
     """
-    subject_key: rsa.RSAPublicKey = (
-        _intermediate_key().as_privkey().public_key()  # type: ignore[assignment]
-    )
-    signing_key: rsa.RSAPrivateKey = _root_key().as_privkey()  # type: ignore[assignment]
+    subject_key: rsa.RSAPublicKey = intermediate_key().as_privkey().public_key()
+    signing_key: rsa.RSAPrivateKey = root_key().as_privkey()
 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
@@ -303,14 +237,10 @@ def _intermediate_ca_pathlen_n(pathlen: int) -> bytes:
     )
 
 
-@_asset(
-    "ee-from-intermediate-pathlen-{0}.pem",
-    description="EE cert via intermediate-ca-pathlen-{0}.pem",
-    parametrize=[0, 1, 2],
-)
-def _ee_cert_from_intermediate_pathlen_n(intermediate: int) -> bytes:
+@_asset
+def ee_cert_from_intermediate_pathlen_n(intermediate: int) -> bytes:
     """
-    Generates end-entity (EE) certificates chained through a particular
+    An end-entity (EE) certificate chained through a particular
     `pathlen:N` constrained intermediate CA.
 
     Each of these EE certificates is valid but can be used to assert various
@@ -324,7 +254,7 @@ def _ee_cert_from_intermediate_pathlen_n(intermediate: int) -> bytes:
     """
     # NOTE: Throwaway keys, since we only care that they're distinct.
     ee_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    signing_key: rsa.RSAPrivateKey = _intermediate_key().as_privkey()  # type: ignore[assignment]
+    signing_key: rsa.RSAPrivateKey = intermediate_key().as_privkey()
 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
@@ -374,13 +304,3 @@ def _ee_cert_from_intermediate_pathlen_n(intermediate: int) -> bytes:
     return certificate.public_bytes(
         encoding=serialization.Encoding.PEM,
     )
-
-
-def assets(load_from: Path) -> Iterable[Asset]:
-    # TODO: Dedupe; This should be part of the decorator magic above.
-
-    yield _root_key().bind(load_from)
-    yield _v3_root_ca().bind(load_from)
-    yield _intermediate_key().bind(load_from)
-    yield from (a.bind(load_from) for a in _intermediate_ca_pathlen_n())
-    yield from (a.bind(load_from) for a in _ee_cert_from_intermediate_pathlen_n())
