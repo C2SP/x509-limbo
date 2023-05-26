@@ -118,12 +118,6 @@
                 "IP"
               ],
               "type": "string"
-            },
-            {
-              "enum": [
-                "DN"
-              ],
-              "type": "string"
             }
           ]
         },

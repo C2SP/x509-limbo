@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConstrainedStr, Field, StrictStr, validator
 
-PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"] | Literal["DN"]
+PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"]
 
 
 class PeerName(BaseModel):
