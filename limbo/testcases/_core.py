@@ -1,7 +1,3 @@
-"""
-Models and definitions for generating Limbo testcases.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -10,14 +6,11 @@ from typing import Callable, Self
 
 from limbo.assets import (
     Asset,
-    ee_cert_from_intermediate_pathlen_n,
-    intermediate_ca_pathlen_n,
-    v3_root_ca,
 )
 from limbo.models import OID, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
 
 
-class _TestcaseBuilder:
+class Builder:
     def __init__(self, id: str, description: str):
         self._id = id
         self._description = description
@@ -42,11 +35,11 @@ class _TestcaseBuilder:
         self._validation_kind = "SERVER"
         return self
 
-    def trusted_certs(self, *certs: list[Asset]) -> Self:
+    def trusted_certs(self, *certs: Asset) -> Self:
         self._trusted_certs = [c.contents.decode() for c in certs]
         return self
 
-    def untrusted_intermediates(self, *certs: list[Asset]) -> Self:
+    def untrusted_intermediates(self, *certs: Asset) -> Self:
         self._untrusted_intermediates = [c.contents.decode() for c in certs]
         return self
 
@@ -103,84 +96,25 @@ class _TestcaseBuilder:
         )
 
 
-def _testcase(func: Callable) -> Callable:
+registry: dict[str, Callable] = {}
+
+
+def testcase(func: Callable) -> Callable:
+    namespace = func.__module__.replace("_", "-")
     name = func.__name__.replace("_", "-")
+    id = f"{namespace}::{name}"
+
+    if id in registry:
+        raise ValueError("uh oh")
+
     description = dedent(func.__doc__).strip() if func.__doc__ else name
 
     def wrapped() -> Testcase:
-        builder = _TestcaseBuilder(id=name, description=description)
+        builder = Builder(id=id, description=description)
 
         func(builder)
 
         return builder.build()
 
+    registry[id] = wrapped
     return wrapped
-
-
-@_testcase
-def ee_with_intermediate_pathlen_0(builder: _TestcaseBuilder) -> None:
-    """
-    Verifies an EE certificate with the following chains:
-
-    ```
-    EE -> intermediate (pathlen:0) -> root
-    ```
-
-    This is a "trivial" verification: the intermediate has a `pathlen:0`
-    constraint, but the leaf is an end entity and is therefore allowed.
-    """
-    builder = builder.client_validation()
-    builder = (
-        builder.trusted_certs(v3_root_ca())
-        .untrusted_intermediates(intermediate_ca_pathlen_n(0))
-        .peer_certificate(ee_cert_from_intermediate_pathlen_n(0))
-        .succeeds()
-    )
-
-    builder.succeeds()
-
-
-@_testcase
-def ee_with_intermediate_pathlen_1(builder: _TestcaseBuilder) -> None:
-    """
-    Verifies an EE certificate with the following chains:
-
-    ```
-    EE -> intermediate (pathlen:1) -> root
-    ```
-
-    This is a "trivial" verification: the intermediate has a `pathlen:1`
-    constraint, but the leaf is an end entity and is therefore allowed.
-    """
-    builder = builder.client_validation()
-    builder = (
-        builder.trusted_certs(v3_root_ca())
-        .untrusted_intermediates(intermediate_ca_pathlen_n(1))
-        .peer_certificate(ee_cert_from_intermediate_pathlen_n(1))
-        .succeeds()
-    )
-
-    builder.succeeds()
-
-
-@_testcase
-def ee_with_intermediate_pathlen_2(builder: _TestcaseBuilder) -> None:
-    """
-    Verifies an EE certificate with the following chains:
-
-    ```
-    EE -> intermediate (pathlen:2) -> root
-    ```
-
-    This is a "trivial" verification: the intermediate has a `pathlen:2`
-    constraint, but the leaf is an end entity and is therefore allowed.
-    """
-    builder = builder.client_validation()
-    builder = (
-        builder.trusted_certs(v3_root_ca())
-        .untrusted_intermediates(intermediate_ca_pathlen_n(2))
-        .peer_certificate(ee_cert_from_intermediate_pathlen_n(2))
-        .succeeds()
-    )
-
-    builder.succeeds()

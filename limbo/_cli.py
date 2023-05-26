@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
+from limbo import testcases
+
 from . import __version__
 from .models import Limbo
 
@@ -37,16 +39,12 @@ def main() -> None:
 
     # `limbo compile`
     compile = subparsers.add_parser(
-        "compile", help="Merge one or more YAML testcase groups into a single JSON testcase suite"
+        "compile", help="Generate all testcases and produce a single JSON test suite"
+    )
+    compile.add_argument(
+        "-o", "--output", type=Path, metavar="FILE", help="The path to write the testcase suite to"
     )
     compile.add_argument("-f", "--force", action="store_true", help="Overwrite any existing output")
-    compile.add_argument(
-        "--testcases",
-        type=Path,
-        metavar="DIR",
-        help="The directory to load and store from",
-        required=True,
-    )
     compile.set_defaults(func=_compile)
 
     args = parser.parse_args()
@@ -61,30 +59,9 @@ def _schema(args: argparse.Namespace) -> None:
 
 
 def _compile(args: argparse.Namespace) -> None:
-    pass
-    # testcase_dir: Path = args.testcases.resolve()
+    all_testcases = [testcase() for _, testcase in testcases.registry.items()]
+    combined = Limbo(version=1, testcases=all_testcases)
 
-    # output_path = testcase_dir / "limbo.json"
-    # if output_path.exists() and not args.force:
-    #     _die(f"not overwriting {output_path} without --force")
-
-    # # NOTE: Paths in testcases are relative to the testcase directory,
-    # # so we chdir to pass validation.
-    # all_testcases: list[Testcase] = []
-    # with contextlib.chdir(testcase_dir):
-    #     for testcases in testcase_dir.glob("*.limbo.yml"):
-    #         namespace = testcases.name.removesuffix(".limbo.yml")
-    #         logger.info(f"loading testcases from {namespace}")
-
-    #         loaded = yaml.safe_load(testcases.read_bytes())
-    #         limbo = Limbo(**loaded)
-    #         logger.debug(f"{testcases.name}: collected {len(limbo.testcases)}")
-
-    #         # Rewrite each testcase's ID to be unique under the current namespace.
-    #         for case in limbo.testcases:
-    #             case.id = TestCaseID(f"{namespace}::{case.id}")
-
-    #         all_testcases.extend(limbo.testcases)
-
-    #     combined = Limbo(version=1, testcases=all_testcases)
-    #     output_path.write_text(combined.json(indent=2))
+    io = args.output.open(mode="w") if args.output else sys.stdout
+    with contextlib.closing(io):
+        print(combined.json(indent=2), file=io)

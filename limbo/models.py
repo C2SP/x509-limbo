@@ -101,7 +101,7 @@ class OID(ConstrainedStr):
     strict = True
 
 
-_ID_COMPONENT = r"[A-Za-z][A-Za-z0-9-]+"
+_ID_COMPONENT = r"[A-Za-z][A-Za-z0-9-.]+"
 _NAMESPACE = rf"{_ID_COMPONENT}::"
 
 
