@@ -8,9 +8,8 @@ import datetime
 import functools
 import logging
 from functools import cache, cached_property
-from pathlib import Path
 from textwrap import dedent
-from typing import Any, Callable, Self
+from typing import Any, Callable
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -46,34 +45,10 @@ class Asset:
         self.name = name
         self.description = description
         self.builder = builder
-        self.dir: Path | None = None
-
-    def bind(self, dir: Path) -> Self:
-        self.dir = dir
-        return self
-
-    @cache
-    def load(self) -> bytes | None:
-        if self.dir is None:
-            raise ValueError("cannot load: asset not bound to a directory")
-
-        path = self.dir / self.name
-        return path.read_bytes() if path.exists() else None
 
     @cached_property
     def contents(self) -> bytes:
-        # If this asset is bound to a directory, we can try loading from it.
-        # Otherwise, fall back on building it.
-        contents: bytes | None = None
-        if self.dir:
-            logger.debug(f"{self.name} is bound, attempting to load from file")
-            contents = self.load()
-
-        if contents is None:
-            logger.debug(f"{self.name} is being constructed (either unbound or no file)")
-            contents = self.builder()
-
-        return contents
+        return self.builder()
 
     @cache
     def as_privkey(self) -> PrivateKeyTypes:
