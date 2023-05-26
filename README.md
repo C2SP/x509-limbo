@@ -14,10 +14,8 @@ To use it, you'll need to understand (and use) three pieces:
 
 1. [`limbo-schema.json`](./limbo-schema.json): The testcase schema. This is
    provided as a [JSON Schema](https://json-schema.org/) definition.
-2. [`testcases/limbo.json`](./testcases/limbo.json): The combined testcase
+2. [`limbo.json`](./limbo.json): The combined testcase
    suite. The structure of this file conforms to the schema above.
-3. [`testcases/assets`](./testcases/assets/): The test assets (keys, X.509
-   certificates, etc.) used by individual testcases.
 
 The schema will tell you how to consume the combined testcase suite.
 
@@ -36,17 +34,13 @@ develop and manage testcases and testcase assets:
 
 ```bash
 limbo schema --help
-limbo build-assets --help
 limbo compile --help
 ```
 
 There are also two convenience `make` targets for quickly regenerating
-the schema and testcases:
+the schema and test suite:
 
 ```bash
-# regenerates `limbo-schema.json`
-make schema
-
-# regenerates `testcases/limbo.json`
-make testcases
+make limbo-schema.json
+make limbo.json
 ```

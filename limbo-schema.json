@@ -140,7 +140,7 @@
         "id": {
           "title": "Id",
           "description": "A short, unique identifier for this testcase",
-          "pattern": "^([A-Za-z][A-Za-z0-9-]+::)*([A-Za-z][A-Za-z0-9-]+)$",
+          "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$",
           "type": "string"
         },
         "description": {
@@ -168,7 +168,7 @@
         },
         "trusted_certs": {
           "title": "Trusted Certs",
-          "description": "A list of CA certificates to consider trusted",
+          "description": "A list of PEM-encoded CA certificates to consider trusted",
           "type": "array",
           "items": {
             "type": "string"
@@ -176,7 +176,7 @@
         },
         "untrusted_intermediates": {
           "title": "Untrusted Intermediates",
-          "description": "A list of untrusted intermediates to use during path building",
+          "description": "A list of PEM-encoded untrusted intermediates to use during path building",
           "type": "array",
           "items": {
             "type": "string"
@@ -184,7 +184,7 @@
         },
         "peer_certificate": {
           "title": "Peer Certificate",
-          "description": "The path to the peer (EE) certificate",
+          "description": "The PEM-encoded peer (EE) certificate",
           "type": "string"
         },
         "validation_time": {
@@ -235,7 +235,7 @@
             },
             {
               "enum": [
-                "ERROR"
+                "FAILURE"
               ],
               "type": "string"
             }
