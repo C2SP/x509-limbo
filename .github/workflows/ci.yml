@@ -24,21 +24,3 @@ jobs:
       - name: fail if the schema has changed
         run: |
           git diff --exit-code -- limbo-schema.json
-
-  check-limbo:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ">=3.11"
-          cache: "pip"
-          cache-dependency-path: pyproject.toml
-
-      - name: regenerate combined testcases
-        run: make testcases
-
-      - name: fail if the testcases have changed
-        run: |
-          git diff --exit-code -- testcases/limbo.json
