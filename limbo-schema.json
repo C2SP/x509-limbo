@@ -145,7 +145,7 @@
         },
         "description": {
           "title": "Description",
-          "description": "A short, human-readable description",
+          "description": "A short, Markdown-formatted description",
           "type": "string"
         },
         "validation_kind": {

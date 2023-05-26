@@ -124,7 +124,7 @@ class Testcase(BaseModel):
 
     id: TestCaseID = Field(..., description="A short, unique identifier for this testcase")
 
-    description: StrictStr = Field(..., description="A short, human-readable description")
+    description: StrictStr = Field(..., description="A short, Markdown-formatted description")
 
     validation_kind: Literal["CLIENT"] | Literal["SERVER"] = Field(
         ..., description="The kind of validation to perform"
