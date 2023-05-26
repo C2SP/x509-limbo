@@ -105,7 +105,7 @@ def testcase(func: Callable) -> Callable:
     id = f"{namespace}::{name}"
 
     if id in registry:
-        raise ValueError("uh oh")
+        raise ValueError(f"duplicate testcase name: {id} is already registered")
 
     description = dedent(func.__doc__).strip() if func.__doc__ else name
 
