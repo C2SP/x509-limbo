@@ -5,7 +5,7 @@ from textwrap import dedent
 from typing import Callable, Self
 
 from limbo.assets import (
-    Asset,
+    CertificatePair,
 )
 from limbo.models import OID, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
 
@@ -35,16 +35,16 @@ class Builder:
         self._validation_kind = "SERVER"
         return self
 
-    def trusted_certs(self, *assets: Asset) -> Self:
-        self._trusted_certs = [c.cert_pem for c in assets]
+    def trusted_certs(self, *certs: CertificatePair) -> Self:
+        self._trusted_certs = [c.cert_pem for c in certs]
         return self
 
-    def untrusted_intermediates(self, *assets: Asset) -> Self:
-        self._untrusted_intermediates = [c.cert_pem for c in assets]
+    def untrusted_intermediates(self, *certs: CertificatePair) -> Self:
+        self._untrusted_intermediates = [c.cert_pem for c in certs]
         return self
 
-    def peer_certificate(self, asset: Asset) -> Self:
-        self._peer_certificate = asset.cert_pem
+    def peer_certificate(self, cert: CertificatePair) -> Self:
+        self._peer_certificate = cert.cert_pem
         return self
 
     def validation_time(self, time: datetime) -> Self:

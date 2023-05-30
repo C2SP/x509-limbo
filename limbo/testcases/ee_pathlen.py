@@ -1,4 +1,4 @@
-from limbo.assets import ee_cert_from_intermediate_pathlen_n, intermediate_ca_pathlen_n, v3_root_ca
+from limbo.assets import ee_cert, intermediate_ca_pathlen_n, v3_root_ca
 from limbo.testcases._core import Builder, testcase
 
 
@@ -14,11 +14,15 @@ def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
     This is a "trivial" verification: the intermediate has a `pathlen:0`
     constraint, but the leaf is an end entity and is therefore allowed.
     """
+    root = v3_root_ca()
+    intermediate = intermediate_ca_pathlen_n(root, 0)
+    leaf = ee_cert(intermediate)
+
     builder = builder.client_validation()
     builder = (
-        builder.trusted_certs(v3_root_ca())
-        .untrusted_intermediates(intermediate_ca_pathlen_n(0))
-        .peer_certificate(ee_cert_from_intermediate_pathlen_n(0))
+        builder.trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
         .succeeds()
     )
 
@@ -37,11 +41,16 @@ def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
     This is a "trivial" verification: the intermediate has a `pathlen:1`
     constraint, but the leaf is an end entity and is therefore allowed.
     """
+
+    root = v3_root_ca()
+    intermediate = intermediate_ca_pathlen_n(root, 1)
+    leaf = ee_cert(intermediate)
+
     builder = builder.client_validation()
     builder = (
-        builder.trusted_certs(v3_root_ca())
-        .untrusted_intermediates(intermediate_ca_pathlen_n(1))
-        .peer_certificate(ee_cert_from_intermediate_pathlen_n(1))
+        builder.trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
         .succeeds()
     )
 
@@ -60,11 +69,16 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     This is a "trivial" verification: the intermediate has a `pathlen:2`
     constraint, but the leaf is an end entity and is therefore allowed.
     """
+
+    root = v3_root_ca()
+    intermediate = intermediate_ca_pathlen_n(root, 2)
+    leaf = ee_cert(intermediate)
+
     builder = builder.client_validation()
     builder = (
-        builder.trusted_certs(v3_root_ca())
-        .untrusted_intermediates(intermediate_ca_pathlen_n(2))
-        .peer_certificate(ee_cert_from_intermediate_pathlen_n(2))
+        builder.trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
         .succeeds()
     )
 

@@ -1,16 +1,13 @@
 """
-Models and definitions for generating assets for Limbo testcases.
+Models and definitions for generating certificate assets for Limbo testcases.
 """
 
 from __future__ import annotations
 
 import datetime
-import functools
 import logging
 from dataclasses import dataclass
 from functools import cache, cached_property
-from textwrap import dedent
-from typing import Any, Callable
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -25,7 +22,7 @@ _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True)
 class CertificatePair:
     """
     An X.509 certificate and its associated private key.
@@ -33,25 +30,6 @@ class CertificatePair:
 
     cert: x509.Certificate
     key: PrivateKeyTypes
-
-
-_Builder = Callable[[], CertificatePair]
-
-
-class Asset:
-    """
-    Represents a testcase asset, i.e. a `CertificatePair` with an name
-    and a short description.
-    """
-
-    def __init__(self, name: str, description: str, builder: _Builder) -> None:
-        self.name = name
-        self.description = description
-        self.cert_pair = builder()
-
-    @cached_property
-    def key(self) -> PrivateKeyTypes:
-        return self.cert_pair.key
 
     @cached_property
     def key_pem(self) -> str:
@@ -62,26 +40,11 @@ class Asset:
         ).decode()
 
     @cached_property
-    def cert(self) -> x509.Certificate:
-        return self.cert_pair.cert
-
-    @cached_property
     def cert_pem(self) -> str:
         return self.cert.public_bytes(encoding=serialization.Encoding.PEM).decode()
 
 
-def _asset(func: Callable[..., CertificatePair]) -> Callable[..., Asset]:
-    name = func.__name__.replace("_", "-")
-    description = dedent(func.__doc__).strip() if func.__doc__ else name
-
-    @cache
-    def _wrapped(*args: list[Any]) -> Asset:
-        return Asset(name, description, functools.partial(func, *args))
-
-    return _wrapped
-
-
-@_asset
+@cache
 def v3_root_ca() -> CertificatePair:
     """
     An X.509v3 root CA.
@@ -133,10 +96,10 @@ def v3_root_ca() -> CertificatePair:
     return CertificatePair(certificate, key)
 
 
-@_asset
-def intermediate_ca_pathlen_n(pathlen: int) -> CertificatePair:
+@cache
+def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> CertificatePair:
     """
-    An intermediate CAs chained up to a root CA.
+    An intermediate CA chained up to a root CA.
 
     The intermediate CA has a `pathlen:N` constraint, where `N` varies.
 
@@ -147,7 +110,6 @@ def intermediate_ca_pathlen_n(pathlen: int) -> CertificatePair:
       subject (as each intermediate generated here shares the same key)
     """
     subject_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    signing_key = v3_root_ca().key
 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
@@ -159,13 +121,7 @@ def intermediate_ca_pathlen_n(pathlen: int) -> CertificatePair:
             ]
         )
     )
-    builder = builder.issuer_name(
-        x509.Name(
-            [
-                x509.NameAttribute(NameOID.COMMON_NAME, "x509-limbo-root"),
-            ]
-        )
-    )
+    builder = builder.issuer_name(parent.cert.issuer)
     builder = builder.not_valid_before(_EPOCH)
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
@@ -189,51 +145,31 @@ def intermediate_ca_pathlen_n(pathlen: int) -> CertificatePair:
         critical=False,
     )
     certificate = builder.sign(
-        private_key=signing_key,
+        private_key=parent.key,
         algorithm=hashes.SHA256(),
     )
 
     return CertificatePair(certificate, subject_key)
 
 
-@_asset
-def ee_cert_from_intermediate_pathlen_n(intermediate: int) -> CertificatePair:
+@cache
+def ee_cert(parent: CertificatePair) -> CertificatePair:
     """
-    An end-entity (EE) certificate chained through a particular
-    `pathlen:N` constrained intermediate CA.
-
-    Each of these EE certificates is valid but can be used to assert various
-    behaviors, including:
-
-    * That an intermediate's `pathlen:N` constraint doesn't incorrectly
-      trigger on non-exact matches (e.g. `M: M <= N` passes)
-    * That the correct intermediate path is built (e.g.
-      `ee-from-intermediate-pathlen-0.pem` **must** build through
-      `intermediate-ca-pathlen-0.pem` due to subject matching)
+    Produces an end-entity (EE) certificate, signed by the given `parent`'s
+    key.
     """
     # NOTE: Throwaway keys, since we only care that they're distinct.
     ee_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    signing_key = intermediate_ca_pathlen_n(intermediate).key
 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
         x509.Name(
             [
-                x509.NameAttribute(
-                    NameOID.COMMON_NAME, f"x509-limbo-ee-from-intermediate-pathlen-{intermediate}"
-                ),
+                x509.NameAttribute(NameOID.COMMON_NAME, "x509-limbo-ee"),
             ]
         )
     )
-    builder = builder.issuer_name(
-        x509.Name(
-            [
-                x509.NameAttribute(
-                    NameOID.COMMON_NAME, f"x509-limbo-intermediate-pathlen-{intermediate}"
-                ),
-            ]
-        )
-    )
+    builder = builder.issuer_name(parent.cert.issuer)
     builder = builder.not_valid_before(_EPOCH)
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
@@ -257,7 +193,7 @@ def ee_cert_from_intermediate_pathlen_n(intermediate: int) -> CertificatePair:
         critical=False,
     )
     certificate = builder.sign(
-        private_key=signing_key,
+        private_key=parent.key,
         algorithm=hashes.SHA256(),
     )
 
