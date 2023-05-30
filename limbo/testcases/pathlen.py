@@ -1,4 +1,3 @@
-from cgi import test
 from limbo.assets import ee_cert, intermediate_ca_pathlen_n, v3_root_ca
 from limbo.testcases._core import Builder, testcase
 
