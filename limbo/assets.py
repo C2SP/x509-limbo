@@ -45,9 +45,9 @@ class CertificatePair:
 
 
 @cache
-def v3_root_ca() -> CertificatePair:
+def v3_root_ca(*, aki: bool = True, ski: bool = True) -> CertificatePair:
     """
-    An X.509v3 root CA.
+    A (configurable) X.509v3 root CA.
     """
     key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
 
@@ -70,6 +70,10 @@ def v3_root_ca() -> CertificatePair:
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
     builder = builder.public_key(key.public_key())
+    builder = builder.add_extension(
+        x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+        critical=False,
+    )
     builder = builder.add_extension(
         x509.BasicConstraints(ca=True, path_length=None),
         critical=True,
@@ -109,7 +113,7 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
     * That certificates are correctly uniqued by both their key **and** their
       subject (as each intermediate generated here shares the same key)
     """
-    subject_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     builder = x509.CertificateBuilder()
     builder = builder.subject_name(
@@ -125,7 +129,15 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
     builder = builder.not_valid_before(_EPOCH)
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
-    builder = builder.public_key(subject_key.public_key())
+    builder = builder.public_key(key.public_key())
+    builder = builder.add_extension(
+        x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+        critical=False,
+    )
+    builder = builder.add_extension(
+        x509.AuthorityKeyIdentifier.from_issuer_public_key(parent.key.public_key()),
+        critical=False,
+    )
     builder = builder.add_extension(
         x509.BasicConstraints(ca=True, path_length=pathlen),
         critical=True,
@@ -149,7 +161,7 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
         algorithm=hashes.SHA256(),
     )
 
-    return CertificatePair(certificate, subject_key)
+    return CertificatePair(certificate, key)
 
 
 @cache
@@ -174,6 +186,14 @@ def ee_cert(parent: CertificatePair) -> CertificatePair:
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
     builder = builder.public_key(ee_key.public_key())
+    builder = builder.add_extension(
+        x509.SubjectKeyIdentifier.from_public_key(ee_key.public_key()),
+        critical=False,
+    )
+    builder = builder.add_extension(
+        x509.AuthorityKeyIdentifier.from_issuer_public_key(parent.key.public_key()),
+        critical=False,
+    )
     builder = builder.add_extension(
         x509.BasicConstraints(ca=False, path_length=None),
         critical=True,
