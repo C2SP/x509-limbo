@@ -1,3 +1,4 @@
+from cgi import test
 from limbo.assets import ee_cert, intermediate_ca_pathlen_n, v3_root_ca
 from limbo.testcases._core import Builder, testcase
 
@@ -5,10 +6,10 @@ from limbo.testcases._core import Builder, testcase
 @testcase
 def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
     """
-    Verifies an EE certificate with the following chains:
+    Produces the following **valid** chain:
 
     ```
-    EE -> intermediate (pathlen:0) -> root
+    root -> intermediate (pathlen:0) -> EE
     ```
 
     This is a "trivial" verification: the intermediate has a `pathlen:0`
@@ -32,10 +33,10 @@ def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
 @testcase
 def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
     """
-    Verifies an EE certificate with the following chains:
+    Produces the following **valid** chain:
 
     ```
-    EE -> intermediate (pathlen:1) -> root
+    root -> intermediate (pathlen:1) -> EE
     ```
 
     This is a "trivial" verification: the intermediate has a `pathlen:1`
@@ -60,10 +61,10 @@ def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
 @testcase
 def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     """
-    Verifies an EE certificate with the following chains:
+    Produces the following **valid** chain:
 
     ```
-    EE -> intermediate (pathlen:2) -> root
+    root -> intermediate (pathlen:2) -> EE
     ```
 
     This is a "trivial" verification: the intermediate has a `pathlen:2`
@@ -83,3 +84,32 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     )
 
     builder.succeeds()
+
+
+@testcase
+def intermediate_violates_pathlen_0(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate (pathlen:0) -> intermediate (pathlen:0)
+    ```
+
+    This violates the first intermediate's `pathlen:0` constraint,
+    which requires that any subsequent certificate be an end-entity and not
+    a CA itself.
+    """
+
+    root = v3_root_ca()
+    first_intermediate = intermediate_ca_pathlen_n(root, 0)
+    second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 0)
+
+    builder = builder.client_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(first_intermediate)
+        .peer_certificate(second_intermediate)
+        .succeeds()
+    )
+
+    builder.fails()
