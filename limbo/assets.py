@@ -145,7 +145,7 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
         critical=False,
     )
     certificate = builder.sign(
-        private_key=parent.key,
+        private_key=parent.key,  # type: ignore[arg-type]
         algorithm=hashes.SHA256(),
     )
 
@@ -193,7 +193,7 @@ def ee_cert(parent: CertificatePair) -> CertificatePair:
         critical=False,
     )
     certificate = builder.sign(
-        private_key=parent.key,
+        private_key=parent.key,  # type: ignore[arg-type]
         algorithm=hashes.SHA256(),
     )
 
