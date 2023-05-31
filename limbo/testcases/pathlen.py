@@ -112,3 +112,32 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     )
 
     builder.fails()
+
+
+@testcase
+def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate (pathlen:1) -> intermediate (pathlen:2) -> EE
+    ```
+
+    This violates the first intermediate's `pathlen:1` constraint,
+    which allows a subsequent intermediate but not one that widens
+    the `pathlen` (as `pathlen:2` does).
+    """
+
+    root = v3_root_ca()
+    first_intermediate = intermediate_ca_pathlen_n(root, 2)
+    second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 2)
+
+    builder = builder.client_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(first_intermediate)
+        .peer_certificate(second_intermediate)
+        .succeeds()
+    )
+
+    builder.fails()
