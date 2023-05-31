@@ -135,7 +135,9 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
         critical=False,
     )
     builder = builder.add_extension(
-        x509.AuthorityKeyIdentifier.from_issuer_public_key(parent.key.public_key()),
+        x509.AuthorityKeyIdentifier.from_issuer_public_key(
+            parent.key.public_key()  # type: ignore[arg-type]
+        ),
         critical=False,
     )
     builder = builder.add_extension(
@@ -191,7 +193,9 @@ def ee_cert(parent: CertificatePair) -> CertificatePair:
         critical=False,
     )
     builder = builder.add_extension(
-        x509.AuthorityKeyIdentifier.from_issuer_public_key(parent.key.public_key()),
+        x509.AuthorityKeyIdentifier.from_issuer_public_key(
+            parent.key.public_key()  # type: ignore[arg-type]
+        ),
         critical=False,
     )
     builder = builder.add_extension(
