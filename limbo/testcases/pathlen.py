@@ -26,8 +26,6 @@ def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
         .succeeds()
     )
 
-    builder.succeeds()
-
 
 @testcase
 def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
@@ -53,8 +51,6 @@ def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
         .peer_certificate(leaf)
         .succeeds()
     )
-
-    builder.succeeds()
 
 
 @testcase
@@ -82,8 +78,6 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
         .succeeds()
     )
 
-    builder.succeeds()
-
 
 @testcase
 def intermediate_violates_pathlen_0(builder: Builder) -> None:
@@ -108,10 +102,8 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate)
         .peer_certificate(second_intermediate)
-        .succeeds()
+        .fails()
     )
-
-    builder.fails()
 
 
 @testcase
@@ -137,7 +129,5 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate)
         .peer_certificate(second_intermediate)
-        .succeeds()
+        .fails()
     )
-
-    builder.fails()
