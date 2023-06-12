@@ -5,6 +5,10 @@
   "properties": {
     "version": {
       "title": "Version",
+      "description": "The limbo schema version; this must currently always be 1",
+      "enum": [
+        1
+      ],
       "type": "integer"
     },
     "testcases": {
@@ -21,45 +25,6 @@
     "testcases"
   ],
   "definitions": {
-    "PeerName": {
-      "title": "PeerName",
-      "type": "object",
-      "properties": {
-        "kind": {
-          "title": "Kind",
-          "description": "The kind of peer",
-          "anyOf": [
-            {
-              "enum": [
-                "RFC822"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "DNS"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "IP"
-              ],
-              "type": "string"
-            }
-          ]
-        },
-        "value": {
-          "title": "Value",
-          "description": "The peer's name",
-          "type": "string"
-        }
-      },
-      "required": [
-        "kind",
-        "value"
-      ]
-    },
     "SignatureAlgorithm": {
       "title": "SignatureAlgorithm",
       "description": "Valid X.509 signature algorithms.",
@@ -127,14 +92,60 @@
       ],
       "type": "string"
     },
+    "PeerName": {
+      "title": "PeerName",
+      "description": "Represents a peer (i.e., end entity) certificate's name (Subject or SAN).",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "description": "The kind of peer name",
+          "anyOf": [
+            {
+              "enum": [
+                "RFC822"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DNS"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IP"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "value": {
+          "title": "Value",
+          "description": "The peer's name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ]
+    },
     "Testcase": {
       "title": "Testcase",
       "description": "Represents an individual Limbo testcase.",
       "type": "object",
       "properties": {
+        "id": {
+          "title": "Id",
+          "description": "A short, unique identifier for this testcase",
+          "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$",
+          "type": "string"
+        },
         "description": {
           "title": "Description",
-          "description": "A short, human-readable description",
+          "description": "A short, Markdown-formatted description",
           "type": "string"
         },
         "validation_kind": {
@@ -155,35 +166,17 @@
             }
           ]
         },
-        "expected_result": {
-          "title": "Expected Result",
-          "description": "The expected validation result",
-          "anyOf": [
-            {
-              "enum": [
-                "SUCCESS"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "ERROR"
-              ],
-              "type": "string"
-            }
-          ]
-        },
-        "expected_peer_names": {
-          "title": "Expected Peer Names",
-          "description": "The expected peer names",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/PeerName"
-          }
-        },
         "trusted_certs": {
           "title": "Trusted Certs",
-          "description": "A list of CA certificates to consider trusted",
+          "description": "A list of PEM-encoded CA certificates to consider trusted",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "untrusted_intermediates": {
+          "title": "Untrusted Intermediates",
+          "description": "A list of PEM-encoded untrusted intermediates to use during path building",
           "type": "array",
           "items": {
             "type": "string"
@@ -191,19 +184,8 @@
         },
         "peer_certificate": {
           "title": "Peer Certificate",
-          "description": "The path to the peer (EE) certificate",
+          "description": "The PEM-encoded peer (EE) certificate",
           "type": "string"
-        },
-        "untrusted_intermediates": {
-          "title": "Untrusted Intermediates",
-          "description": "A list of untrusted intermediates to use during path building",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "peer_name": {
-          "$ref": "#/definitions/PeerName"
         },
         "validation_time": {
           "title": "Validation Time",
@@ -212,12 +194,14 @@
           "format": "date-time"
         },
         "signature_algorithms": {
+          "description": "A list of acceptable signature algorithms to constrain against",
           "type": "array",
           "items": {
             "$ref": "#/definitions/SignatureAlgorithm"
           }
         },
         "key_usage": {
+          "description": "A constraining list of key usages",
           "type": "array",
           "items": {
             "$ref": "#/definitions/KeyUsage"
@@ -225,7 +209,7 @@
         },
         "extended_key_usage": {
           "title": "Extended Key Usage",
-          "description": "A list of extended key usages, either in well-known form or as OIDs",
+          "description": "A constraining list of extended key usages, either in well-known form or as OIDs",
           "type": "array",
           "items": {
             "anyOf": [
@@ -238,21 +222,51 @@
               }
             ]
           }
+        },
+        "expected_result": {
+          "title": "Expected Result",
+          "description": "The expected validation result",
+          "anyOf": [
+            {
+              "enum": [
+                "SUCCESS"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "FAILURE"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "expected_peer_name": {
+          "title": "Expected Peer Name",
+          "description": "For client-side validation: the expected peer name, if any",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PeerName"
+            }
+          ]
+        },
+        "expected_peer_names": {
+          "title": "Expected Peer Names",
+          "description": "For server-side validation: the expected peer names, if any",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeerName"
+          }
         }
       },
       "required": [
+        "id",
         "description",
         "validation_kind",
-        "expected_result",
-        "expected_peer_names",
         "trusted_certs",
-        "peer_certificate",
         "untrusted_intermediates",
-        "peer_name",
-        "validation_time",
-        "signature_algorithms",
-        "key_usage",
-        "extended_key_usage"
+        "peer_certificate",
+        "expected_result"
       ]
     }
   }
