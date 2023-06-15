@@ -125,7 +125,7 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
             ]
         )
     )
-    builder = builder.issuer_name(parent.cert.issuer)
+    builder = builder.issuer_name(parent.cert.subject)
     builder = builder.not_valid_before(_EPOCH)
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
@@ -183,7 +183,7 @@ def ee_cert(parent: CertificatePair) -> CertificatePair:
             ]
         )
     )
-    builder = builder.issuer_name(parent.cert.issuer)
+    builder = builder.issuer_name(parent.cert.subject)
     builder = builder.not_valid_before(_EPOCH)
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
