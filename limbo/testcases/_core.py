@@ -1,16 +1,91 @@
 from __future__ import annotations
 
 from datetime import datetime
+from functools import cache
 from textwrap import dedent
 from typing import Callable, Self
 
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
+
 from limbo.assets import (
+    _EPOCH,
+    _ONE_THOUSAND_YEARS_OF_TORMENT,
     CertificatePair,
 )
 from limbo.models import OID, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
 
 
 class Builder:
+    # @cache
+    def root_ca(
+        self,
+        *,
+        issuer: x509.Name,
+        subject: x509.Name | None = None,
+        serial: bytes | None = None,
+        not_before: datetime = _EPOCH,
+        not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
+        key: PrivateKeyTypes | None = None,
+        aki: bool = False,
+        ski: bool = True,
+    ) -> CertificatePair:
+        if subject is None:
+            subject = issuer
+
+        if serial is None:
+            serial = x509.random_serial_number()
+
+        if key is None:
+            key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+
+        builder = x509.CertificateBuilder(
+            issuer_name=issuer,
+            subject_name=subject,
+            public_key=key.public_key(),
+            serial_number=serial,
+            not_valid_before=not_before,
+            not_valid_after=not_after,
+        )
+
+        builder = builder.add_extension(
+            # TODO: Configurability here.
+            x509.BasicConstraints(ca=True, path_length=None),
+            critical=True,
+        )
+
+        builder = builder.add_extension(
+            # TODO: Configurability here.
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        )
+
+        if aki:
+            builder = builder.add_extension(
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False
+            )
+        if ski:
+            builder = builder.add_extension(
+                x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+                critical=False,
+            )
+
+        cert = builder.sign(key, algorithm=hashes.SHA256())
+
+        return CertificatePair(cert, key)
+
     def __init__(self, id: str, description: str):
         self._id = id
         self._description = description

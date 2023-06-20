@@ -70,10 +70,15 @@ def v3_root_ca(*, aki: bool = True, ski: bool = True) -> CertificatePair:
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
     builder = builder.public_key(key.public_key())
-    builder = builder.add_extension(
-        x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
-        critical=False,
-    )
+    if ski:
+        builder = builder.add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+            critical=False,
+        )
+    if aki:
+        builder = builder.add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False
+        )
     builder = builder.add_extension(
         x509.BasicConstraints(ca=True, path_length=None),
         critical=True,
@@ -200,7 +205,7 @@ def ee_cert(parent: CertificatePair) -> CertificatePair:
     )
     builder = builder.add_extension(
         x509.BasicConstraints(ca=False, path_length=None),
-        critical=True,
+        critical=False,
     )
     builder = builder.add_extension(
         x509.KeyUsage(

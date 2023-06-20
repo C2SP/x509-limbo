@@ -1,0 +1,27 @@
+"""
+RFC5280 profile tests.
+"""
+
+from limbo.assets import ee_cert
+from limbo.testcases._core import testcase, Builder
+
+from cryptography import x509
+
+# TODO: Intentionally mis-matching algorithm fields.
+
+
+@testcase
+def test_empty_issuer(builder: Builder):
+    # Intentionally empty issuer name.
+    issuer = x509.Name([])
+    subject = x509.Name.from_rfc4514_string("CN=empty-issuer")
+    root = builder.root_ca(issuer=issuer, subject=subject)
+    leaf = ee_cert(root)
+
+    builder = builder.client_validation()
+    builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+# TODO: Empty serial number, overlength serial number.
+
+# TODO: Critical AKI
