@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from functools import cache
 from textwrap import dedent
 from typing import Callable, Self
 
@@ -25,7 +24,7 @@ class Builder:
         *,
         issuer: x509.Name,
         subject: x509.Name | None = None,
-        serial: bytes | None = None,
+        serial: int | None = None,
         not_before: datetime = _EPOCH,
         not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
@@ -44,7 +43,7 @@ class Builder:
         builder = x509.CertificateBuilder(
             issuer_name=issuer,
             subject_name=subject,
-            public_key=key.public_key(),
+            public_key=key.public_key(),  # type: ignore[arg-type]
             serial_number=serial,
             not_valid_before=not_before,
             not_valid_after=not_after,
@@ -74,15 +73,20 @@ class Builder:
 
         if aki:
             builder = builder.add_extension(
-                x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(
+                    key.public_key()  # type: ignore[arg-type]
+                ),
+                critical=False,
             )
         if ski:
             builder = builder.add_extension(
-                x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+                x509.SubjectKeyIdentifier.from_public_key(
+                    key.public_key()  # type: ignore[arg-type]
+                ),
                 critical=False,
             )
 
-        cert = builder.sign(key, algorithm=hashes.SHA256())
+        cert = builder.sign(key, algorithm=hashes.SHA256())  # type: ignore[arg-type]
 
         return CertificatePair(cert, key)
 
