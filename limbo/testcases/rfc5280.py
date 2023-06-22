@@ -11,7 +11,17 @@ from limbo.testcases._core import Builder, testcase
 
 
 @testcase
-def test_empty_issuer(builder: Builder) -> None:
+def empty_issuer(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    This chain is invalid solely because of the EE cert's construction:
+    it has an empty issuer name, which isn't allowed under the RFC 5280 profile.
+    """
     # Intentionally empty issuer name.
     issuer = x509.Name([])
     subject = x509.Name.from_rfc4514_string("CN=empty-issuer")
