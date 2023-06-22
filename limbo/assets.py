@@ -45,7 +45,7 @@ class CertificatePair:
 
 
 @cache
-def v3_root_ca(*, aki: bool = True, ski: bool = True) -> CertificatePair:
+def v3_root_ca() -> CertificatePair:
     """
     A (configurable) X.509v3 root CA.
     """
