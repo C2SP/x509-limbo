@@ -1,5 +1,7 @@
 package main
 
+//go:generate go run github.com/atombender/go-jsonschema/cmd/gojsonschema@latest -v -p main -o schema.go ../../limbo-schema.json
+
 import (
 	"bytes"
 	"crypto/x509"
