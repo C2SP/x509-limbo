@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -26,18 +27,22 @@ func main() {
 	}
 	fmt.Printf("Loaded testcases from %s\n", *testCasePath)
 
-	var success int
+	var success, fail int
 	for _, tc := range testcases.Testcases {
 		fmt.Printf("test id=%s ... ", tc.Id)
 		if err := evaluateTestcase(tc); err != nil {
 			fmt.Printf("fail\n\n%+#v\n\nTest description:\n\n%s\n", err, tc.Description)
+			fail++
 		} else {
 			fmt.Printf("ok\n")
 			success++
 		}
 	}
 
-	fmt.Printf("done! %d/%d testcases succeeded.\n", success, len(testcases.Testcases))
+	fmt.Printf("done! succeeded/failed/total %d/%d/%d.\n", success, fail, len(testcases.Testcases))
+	if fail > 0 {
+		os.Exit(1)
+	}
 }
 
 func loadTestcases(path string) (testcases LimboSchemaJson, err error) {
