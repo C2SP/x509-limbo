@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from textwrap import dedent
-from typing import Callable, Self
+from typing import Callable, Literal, Self
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -13,6 +13,8 @@ from limbo.assets import (
     _EPOCH,
     _ONE_THOUSAND_YEARS_OF_TORMENT,
     CertificatePair,
+    _Extension,
+    ext,
 )
 from limbo.models import OID, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
 
@@ -22,14 +24,34 @@ class Builder:
     def root_ca(
         self,
         *,
-        issuer: x509.Name,
+        issuer: x509.Name = x509.Name.from_rfc4514_string("CN=x509-limbo-root"),
         subject: x509.Name | None = None,
         serial: int | None = None,
         not_before: datetime = _EPOCH,
         not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
-        aki: bool = False,
-        ski: bool = True,
+        basic_constraints: _Extension[x509.BasicConstraints]
+        | None = ext(
+            x509.BasicConstraints(ca=True, path_length=None),
+            critical=True,
+        ),
+        key_usage: _Extension[x509.KeyUsage]
+        | None = ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        ),
+        aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = None,
+        ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
     ) -> CertificatePair:
         if subject is None:
             subject = issuer
@@ -49,36 +71,28 @@ class Builder:
             not_valid_after=not_after,
         )
 
-        builder = builder.add_extension(
-            # TODO: Configurability here.
-            x509.BasicConstraints(ca=True, path_length=None),
-            critical=True,
-        )
+        if basic_constraints:
+            builder = builder.add_extension(
+                basic_constraints.ext,
+                critical=basic_constraints.critical,
+            )
 
-        builder = builder.add_extension(
-            # TODO: Configurability here.
-            x509.KeyUsage(
-                digital_signature=False,
-                key_cert_sign=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=False,
-                encipher_only=False,
-                decipher_only=False,
-            ),
-            critical=False,
-        )
+        if key_usage:
+            builder = builder.add_extension(key_usage.ext, critical=key_usage.critical)
 
-        if aki:
+        if isinstance(aki, _Extension):
+            builder = builder.add_extension(aki.ext, critical=aki.critical)
+        elif aki:
             builder = builder.add_extension(
                 x509.AuthorityKeyIdentifier.from_issuer_public_key(
                     key.public_key()  # type: ignore[arg-type]
                 ),
                 critical=False,
             )
-        if ski:
+
+        if isinstance(ski, _Extension):
+            builder = builder.add_extension(ski.ext, critical=ski.critical)
+        elif ski:
             builder = builder.add_extension(
                 x509.SubjectKeyIdentifier.from_public_key(
                     key.public_key()  # type: ignore[arg-type]

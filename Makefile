@@ -61,3 +61,7 @@ limbo.json: $(NEEDS_VENV)
 .PHONY: testcases
 testcases: $(NEEDS_VENV)
 	$(MAKE) run ARGS="compile --testcases testcases/ --force"
+
+.PHONY: test-go
+test-go:
+	$(MAKE) -C harness/gocryptox509 run

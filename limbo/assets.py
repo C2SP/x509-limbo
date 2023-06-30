@@ -8,15 +8,17 @@ import datetime
 import logging
 from dataclasses import dataclass
 from functools import cache, cached_property
+from typing import Generic, TypeVar
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
-from cryptography.x509 import NameOID
+from cryptography.x509 import ExtensionType, NameOID
 
 _EPOCH = datetime.datetime.fromtimestamp(0)
 _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
+_ExtensionType = TypeVar("_ExtensionType", bound=ExtensionType)
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,23 @@ class CertificatePair:
     @cached_property
     def cert_pem(self) -> str:
         return self.cert.public_bytes(encoding=serialization.Encoding.PEM).decode()
+
+
+@dataclass(frozen=True)
+class _Extension(Generic[_ExtensionType]):
+    """
+    An X.509 extension and its criticality.
+    """
+
+    ext: _ExtensionType
+    critical: bool
+
+
+def ext(extension: _ExtensionType, *, critical: bool) -> _Extension[_ExtensionType]:
+    """
+    Constructs a new _Extension to pass into certificate builder helpers.
+    """
+    return _Extension(extension, critical)
 
 
 @cache
@@ -70,15 +89,15 @@ def v3_root_ca() -> CertificatePair:
     builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
     builder = builder.serial_number(x509.random_serial_number())
     builder = builder.public_key(key.public_key())
-    if ski:
-        builder = builder.add_extension(
-            x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
-            critical=False,
-        )
-    if aki:
-        builder = builder.add_extension(
-            x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False
-        )
+
+    builder = builder.add_extension(
+        x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+        critical=False,
+    )
+
+    builder = builder.add_extension(
+        x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False
+    )
     builder = builder.add_extension(
         x509.BasicConstraints(ca=True, path_length=None),
         critical=True,
@@ -172,7 +191,9 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
 
 
 @cache
-def ee_cert(parent: CertificatePair) -> CertificatePair:
+def ee_cert(
+    parent: CertificatePair, *, extra_extension: _Extension | None = None
+) -> CertificatePair:
     """
     Produces an end-entity (EE) certificate, signed by the given `parent`'s
     key.
@@ -221,6 +242,9 @@ def ee_cert(parent: CertificatePair) -> CertificatePair:
         ),
         critical=False,
     )
+    if extra_extension is not None:
+        builder = builder.add_extension(extra_extension.ext, extra_extension.critical)
+
     certificate = builder.sign(
         private_key=parent.key,  # type: ignore[arg-type]
         algorithm=hashes.SHA256(),
