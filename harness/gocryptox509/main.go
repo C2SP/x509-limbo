@@ -73,11 +73,42 @@ const (
 
 func evaluateTestcase(testcase Testcase) error {
 	_ = spew.Dump
-	ts := time.Now()
+
+	var ts time.Time
+	if testcase.ValidationTime == nil {
+		ts = time.Now()
+	} else {
+		var err error
+		ts, err = time.Parse(time.RFC3339, *testcase.ValidationTime)
+
+		if err != nil {
+			return errors.Wrap(err, "unable to parse testcase time as RFC3339")
+		}
+	}
+
 	expectSuccess := testcase.ExpectedResult == resultSuccess
+
+	// TODO: Support testcases that constrain signature algorthms.
+	if len(testcase.SignatureAlgorithms) != 0 {
+		return fmt.Errorf("signature algorithm checks not supported yet")
+	}
+
+	// TODO: Support testcases that constrain key usages.
+	if len(testcase.KeyUsage) != 0 {
+		return fmt.Errorf("key usage checks not supported yet")
+	}
+
+	// TODO: Support testcases that constrain extended key usages.
+	if len(testcase.ExtendedKeyUsage) != 0 {
+		return fmt.Errorf("extended key usage checks not supported yet")
+	}
 
 	switch testcase.ValidationKind {
 	case validationKindClient:
+		// TODO: Support testcases that specify the peer's name.
+		if testcase.ExpectedPeerName != nil {
+			return fmt.Errorf("peer name checks not supported yet")
+		}
 		roots, intermediates := x509.NewCertPool(), x509.NewCertPool()
 		roots.AppendCertsFromPEM(concatPEMCerts(testcase.TrustedCerts))
 		intermediates.AppendCertsFromPEM(concatPEMCerts(testcase.UntrustedIntermediates))
