@@ -121,7 +121,7 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     """
 
     root = v3_root_ca()
-    first_intermediate = intermediate_ca_pathlen_n(root, 2)
+    first_intermediate = intermediate_ca_pathlen_n(root, 1)
     second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 2)
 
     builder = builder.client_validation()
