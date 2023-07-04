@@ -68,27 +68,24 @@ void evaluate_testcase(json &testcase)
     auto id = testcase["id"].template get<std::string>();
     std::cerr << "Evaluating case: " << id << std::endl;
 
-    auto peer_pem = testcase["peer_certificate"].template get<std::string>();
-    auto peer = pem_to_x509(peer_pem);
-
     X509_STORE_ptr store(X509_STORE_new(), X509_STORE_free);
     X509_STORE_set_flags(store.get(), X509_V_FLAG_X509_STRICT);
     for (auto &cert : testcase["trusted_certs"])
     {
         auto cert_pem = cert.template get<std::string>();
         auto cert_x509 = pem_to_x509(cert_pem);
+        // TODO(ww): Ownership is murky here, but appears to work;
+        // probably because X509_STORE_add_cert does its own up-ref.
         X509_STORE_add_cert(store.get(), cert_x509.get());
     }
 
-    X509_STORE_CTX_ptr ctx(X509_STORE_CTX_new(), X509_STORE_CTX_free);
-
     auto untrusted = x509_stack(testcase["untrusted_intermediates"]);
+    auto peer_pem = testcase["peer_certificate"].template get<std::string>();
+    auto peer = pem_to_x509(peer_pem);
+    X509_STORE_CTX_ptr ctx(X509_STORE_CTX_new(), X509_STORE_CTX_free);
     X509_STORE_CTX_init(ctx.get(), store.get(), peer.get(), untrusted.get());
 
     // X509_STORE_CTX_set_time(ctx.get(), 0, 0);
-
-    // auto trusted = x509_stack(testcase["trusted_certs"]);
-    // X509_STORE_CTX_set0_trusted_stack(ctx.get(), trusted.get());
 
     auto status = X509_verify_cert(ctx.get());
     if (status)
