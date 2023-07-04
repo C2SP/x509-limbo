@@ -123,11 +123,12 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     root = v3_root_ca()
     first_intermediate = intermediate_ca_pathlen_n(root, 1)
     second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 2)
+    leaf = ee_cert(second_intermediate)
 
     builder = builder.client_validation()
     builder = (
         builder.trusted_certs(root)
-        .untrusted_intermediates(first_intermediate)
-        .peer_certificate(second_intermediate)
+        .untrusted_intermediates(first_intermediate, second_intermediate)
+        .peer_certificate(leaf)
         .fails()
     )
