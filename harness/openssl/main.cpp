@@ -87,15 +87,15 @@ void evaluate_testcase(json &testcase)
 
     // X509_STORE_CTX_set_time(ctx.get(), 0, 0);
 
-    auto status = X509_verify_cert(ctx.get());
-    if (status)
+    auto should_pass = testcase["expected_result"] == "SUCCESS";
+    auto does_pass = X509_verify_cert(ctx.get());
+    if (should_pass ^ does_pass)
     {
-        std::cerr << "\tPASS" << std::endl;
+        std::cerr << "\tFAIL " << does_pass << std::endl;
     }
     else
     {
-        std::cerr << "\tFAIL: " << status << std::endl;
-        std::cerr << "\t" << X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx.get())) << std::endl;
+        std::cerr << "\tPASS" << std::endl;
     }
 }
 
