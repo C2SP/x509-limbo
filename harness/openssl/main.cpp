@@ -13,7 +13,8 @@ using json = nlohmann::json;
 
 static void SK_X509_free(stack_st_X509 *ptr)
 {
-    sk_X509_free(ptr);
+    // NOTE: This also frees each member of the `STACK_OF(X509)`.
+    sk_X509_pop_free(ptr, X509_free);
 }
 
 using BIO_ptr = std::unique_ptr<BIO, decltype(&BIO_free)>;
@@ -38,14 +39,6 @@ X509_ptr pem_to_x509(std::string &pem)
         barf("failed to parse cert");
     }
 
-    auto *subject = X509_get_subject_name(cert);
-    auto *subject_str = X509_NAME_oneline(subject, nullptr, 0);
-    std::cerr << "SUBJECT: " << subject_str << std::endl;
-
-    auto *issuer = X509_get_issuer_name(cert);
-    auto *issuer_str = X509_NAME_oneline(issuer, nullptr, 0);
-    std::cerr << "ISSUER: " << issuer_str << std::endl;
-
     return X509_ptr(cert, X509_free);
 }
 
@@ -56,15 +49,18 @@ STACK_OF_X509_ptr x509_stack(json &certs)
         barf("unexpected type: expected an array of certs");
     }
 
-    STACK_OF_X509_ptr stack(sk_X509_new_reserve(nullptr, certs.size()), SK_X509_free);
+    auto *stack = sk_X509_new_reserve(nullptr, certs.size());
     for (auto &cert : certs)
     {
         auto cert_pem = cert.template get<std::string>();
         auto cert_x509 = pem_to_x509(cert_pem);
-        sk_X509_push(stack.get(), cert_x509.get());
+        // NOTE: Our `STACK_OF_X509_ptr` takes ownership here,
+        // since on destruction it uses `sk_X509_pop_free` instead
+        // of `sk_X509_free`.
+        sk_X509_push(stack, cert_x509.release());
     }
 
-    return stack;
+    return STACK_OF_X509_ptr(stack, SK_X509_free);
 }
 
 void evaluate_testcase(json &testcase)
@@ -77,25 +73,22 @@ void evaluate_testcase(json &testcase)
 
     X509_STORE_ptr store(X509_STORE_new(), X509_STORE_free);
     X509_STORE_set_flags(store.get(), X509_V_FLAG_X509_STRICT);
-    // for (auto &cert : testcase["trusted_certs"])
-    // {
-    //     auto cert_pem = cert.template get<std::string>();
-    //     auto cert_x509 = pem_to_x509(cert_pem);
-    //     X509_STORE_add_cert(store.get(), cert_x509.get());
-    // }
-    // X509_STORE_set_flags(store.get(), X509_V_FLAG_PARTIAL_CHAIN);
+    for (auto &cert : testcase["trusted_certs"])
+    {
+        auto cert_pem = cert.template get<std::string>();
+        auto cert_x509 = pem_to_x509(cert_pem);
+        X509_STORE_add_cert(store.get(), cert_x509.get());
+    }
 
     X509_STORE_CTX_ptr ctx(X509_STORE_CTX_new(), X509_STORE_CTX_free);
 
     auto untrusted = x509_stack(testcase["untrusted_intermediates"]);
-    std::cerr << "# untrusted: " << sk_X509_num(untrusted.get()) << std::endl;
     X509_STORE_CTX_init(ctx.get(), store.get(), peer.get(), untrusted.get());
 
-    X509_STORE_CTX_set_time(ctx.get(), 0, 0);
+    // X509_STORE_CTX_set_time(ctx.get(), 0, 0);
 
-    auto trusted = x509_stack(testcase["trusted_certs"]);
-    std::cerr << "# trusted: " << sk_X509_num(trusted.get()) << std::endl;
-    X509_STORE_CTX_set0_trusted_stack(ctx.get(), trusted.get());
+    // auto trusted = x509_stack(testcase["trusted_certs"]);
+    // X509_STORE_CTX_set0_trusted_stack(ctx.get(), trusted.get());
 
     auto status = X509_verify_cert(ctx.get());
     if (status)
