@@ -12,7 +12,7 @@ from pydantic.schema import schema
 from limbo import testcases
 
 from . import __version__
-from .models import Limbo, LimboResult
+from .models import Limbo
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
