@@ -1,10 +1,12 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/x509_vfy.h>
+#include "date.hpp"
 #include "json.hpp"
 
 #define LIMBO_JSON "../../limbo.json"
@@ -85,7 +87,20 @@ void evaluate_testcase(json &testcase)
     X509_STORE_CTX_ptr ctx(X509_STORE_CTX_new(), X509_STORE_CTX_free);
     X509_STORE_CTX_init(ctx.get(), store.get(), peer.get(), untrusted.get());
 
-    // X509_STORE_CTX_set_time(ctx.get(), 0, 0);
+    if (testcase["validation_time"].is_string())
+    {
+        std::istringstream ss(testcase["validation_time"].template get<std::string>());
+        date::sys_seconds tp;
+        ss >> date::parse("%FT%T%Ez", tp);
+
+        if (ss.fail())
+        {
+            barf("couldn't parse RFC 3339 time from testcase?");
+        }
+
+        auto tm = std::chrono::system_clock::to_time_t(tp);
+        X509_STORE_CTX_set_time(ctx.get(), 0, tm);
+    }
 
     auto should_pass = testcase["expected_result"] == "SUCCESS";
     auto does_pass = X509_verify_cert(ctx.get());
