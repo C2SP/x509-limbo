@@ -1,15 +1,18 @@
 import argparse
 import contextlib
+import json
 import logging
 import os
 import sys
 from pathlib import Path
 from typing import NoReturn
 
+from pydantic.schema import schema
+
 from limbo import testcases
 
 from . import __version__
-from .models import Limbo
+from .models import Limbo, LimboResult
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -65,7 +68,8 @@ def _schema(args: argparse.Namespace) -> None:
     io = args.output.open(mode="w") if args.output else sys.stdout
 
     with contextlib.closing(io):
-        print(Limbo.schema_json(indent=2), file=io)
+        top = schema([Limbo, LimboResult], title="x509-limbo schemas")
+        print(json.dumps(top, indent=2), file=io)
 
 
 def _compile(args: argparse.Namespace) -> None:

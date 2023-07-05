@@ -1,29 +1,5 @@
 {
-  "title": "Limbo",
-  "description": "The top-level testcase container.",
-  "type": "object",
-  "properties": {
-    "version": {
-      "title": "Version",
-      "description": "The limbo schema version; this must currently always be 1",
-      "enum": [
-        1
-      ],
-      "type": "integer"
-    },
-    "testcases": {
-      "title": "Testcases",
-      "description": "One or more testcases in this testsuite",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Testcase"
-      }
-    }
-  },
-  "required": [
-    "version",
-    "testcases"
-  ],
+  "title": "x509-limbo schemas",
   "definitions": {
     "SignatureAlgorithm": {
       "title": "SignatureAlgorithm",
@@ -267,6 +243,113 @@
         "untrusted_intermediates",
         "peer_certificate",
         "expected_result"
+      ]
+    },
+    "Limbo": {
+      "title": "Limbo",
+      "description": "The top-level testcase container.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "title": "Version",
+          "description": "The limbo schema version; this must currently always be 1",
+          "enum": [
+            1
+          ],
+          "type": "integer"
+        },
+        "testcases": {
+          "title": "Testcases",
+          "description": "One or more testcases in this testsuite",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Testcase"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "testcases"
+      ]
+    },
+    "TestcaseResult": {
+      "title": "TestcaseResult",
+      "description": "Represents the outcome of evaluating a testcase.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "description": "A short, unique identifier for the testcase",
+          "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$",
+          "type": "string"
+        },
+        "actual_result": {
+          "title": "Actual Result",
+          "description": "The result of evaluating the testcase; this should be compared to `Testcase.expected_result`",
+          "anyOf": [
+            {
+              "enum": [
+                "SUCCESS"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "FAILURE"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SKIPPED"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "context": {
+          "title": "Context",
+          "description": "Any context for FAILURE or SKIPPED results; can be multiple lines",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "actual_result",
+        "context"
+      ]
+    },
+    "LimboResult": {
+      "title": "LimboResult",
+      "description": "The top-level testcase result container.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "title": "Version",
+          "description": "The limbo-result schema version; this must currently always be 1",
+          "enum": [
+            1
+          ],
+          "type": "integer"
+        },
+        "harness": {
+          "title": "Harness",
+          "description": "A short, unique identifier for the harness that produced these results",
+          "type": "string"
+        },
+        "results": {
+          "title": "Results",
+          "description": "One or more results for testcase evaluations",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestcaseResult"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "harness",
+        "results"
       ]
     }
   }
