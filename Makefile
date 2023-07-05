@@ -65,3 +65,7 @@ testcases: $(NEEDS_VENV)
 .PHONY: test-go
 test-go:
 	$(MAKE) -C harness/gocryptox509 run
+
+.PHONY: test-openssl
+test-openssl:
+	$(MAKE) -C harness/openssl run

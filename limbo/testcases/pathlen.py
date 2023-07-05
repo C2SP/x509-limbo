@@ -79,13 +79,19 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     )
 
 
+# TODO: Distinct success testcase for `root -> inter (path:0) -> inter (path:0)`
+# See the note in RFC 5280 4.2.1.9; when an intermediate is in the leaf
+# position, it is not treated as an intermediate and its pathlen constraint
+# has no effect.
+
+
 @testcase
 def intermediate_violates_pathlen_0(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
     ```
-    root -> intermediate (pathlen:0) -> intermediate (pathlen:0)
+    root -> intermediate (pathlen:0) -> intermediate (pathlen:0) -> EE
     ```
 
     This violates the first intermediate's `pathlen:0` constraint,
@@ -96,16 +102,19 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     root = v3_root_ca()
     first_intermediate = intermediate_ca_pathlen_n(root, 0)
     second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 0)
+    leaf = ee_cert(second_intermediate)
 
     builder = builder.client_validation()
     builder = (
         builder.trusted_certs(root)
-        .untrusted_intermediates(first_intermediate)
-        .peer_certificate(second_intermediate)
+        .untrusted_intermediates(first_intermediate, second_intermediate)
+        .peer_certificate(leaf)
         .fails()
     )
 
 
+# TODO: Evaluate the correctness of this testcase: RFC 5280 doesn't technically
+# forbid broadening pathlen constraints; they're just nonsense.
 @testcase
 def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     """
@@ -121,13 +130,43 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     """
 
     root = v3_root_ca()
-    first_intermediate = intermediate_ca_pathlen_n(root, 2)
+    first_intermediate = intermediate_ca_pathlen_n(root, 1)
     second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 2)
+    leaf = ee_cert(second_intermediate)
 
     builder = builder.client_validation()
     builder = (
         builder.trusted_certs(root)
-        .untrusted_intermediates(first_intermediate)
-        .peer_certificate(second_intermediate)
+        .untrusted_intermediates(first_intermediate, second_intermediate)
+        .peer_certificate(leaf)
+        .fails()
+    )
+
+
+@testcase
+def intermediate_pathlen_too_long(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate (pathlen:1) -> intermediate (pathlen:0) -> intermediate (pathlen:0) -> EE
+    ```
+
+    This violates the second intermediate's `pathlen:0` constraint, which
+    forbids any subsequent issuing certificates (which the third intermediate
+    is).
+    """
+
+    root = v3_root_ca()
+    first_intermediate = intermediate_ca_pathlen_n(root, 1)
+    second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 0)
+    third_intermediate = intermediate_ca_pathlen_n(second_intermediate, 0)
+    leaf = ee_cert(third_intermediate)
+
+    builder = builder.client_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(first_intermediate, second_intermediate, third_intermediate)
+        .peer_certificate(leaf)
         .fails()
     )

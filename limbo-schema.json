@@ -1,29 +1,5 @@
 {
-  "title": "Limbo",
-  "description": "The top-level testcase container.",
-  "type": "object",
-  "properties": {
-    "version": {
-      "title": "Version",
-      "description": "The limbo schema version; this must currently always be 1",
-      "enum": [
-        1
-      ],
-      "type": "integer"
-    },
-    "testcases": {
-      "title": "Testcases",
-      "description": "One or more testcases in this testsuite",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Testcase"
-      }
-    }
-  },
-  "required": [
-    "version",
-    "testcases"
-  ],
+  "title": "x509-limbo schemas",
   "definitions": {
     "SignatureAlgorithm": {
       "title": "SignatureAlgorithm",
@@ -267,6 +243,33 @@
         "untrusted_intermediates",
         "peer_certificate",
         "expected_result"
+      ]
+    },
+    "Limbo": {
+      "title": "Limbo",
+      "description": "The top-level testcase container.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "title": "Version",
+          "description": "The limbo schema version; this must currently always be 1",
+          "enum": [
+            1
+          ],
+          "type": "integer"
+        },
+        "testcases": {
+          "title": "Testcases",
+          "description": "One or more testcases in this testsuite",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Testcase"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "testcases"
       ]
     }
   }
