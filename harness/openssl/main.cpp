@@ -178,8 +178,7 @@ int main()
 
     json limbo_result = {
         {"version", 1},
-        // TODO: Should include the OpenSSL version, for disambiguation.
-        {"harness", "openssl"},
+        {"harness", std::string("openssl-") + OPENSSL_VERSION_STR},
         {"results", std::move(results)},
     };
     std::ofstream o(LIMBO_RESULTS_OUT);
