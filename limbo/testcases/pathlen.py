@@ -85,7 +85,7 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     Produces the following **invalid** chain:
 
     ```
-    root -> intermediate (pathlen:0) -> intermediate (pathlen:0)
+    root -> intermediate (pathlen:0) -> intermediate (pathlen:0) -> EE
     ```
 
     This violates the first intermediate's `pathlen:0` constraint,
@@ -96,12 +96,13 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     root = v3_root_ca()
     first_intermediate = intermediate_ca_pathlen_n(root, 0)
     second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 0)
+    leaf = ee_cert(second_intermediate)
 
     builder = builder.client_validation()
     builder = (
         builder.trusted_certs(root)
-        .untrusted_intermediates(first_intermediate)
-        .peer_certificate(second_intermediate)
+        .untrusted_intermediates(first_intermediate, second_intermediate)
+        .peer_certificate(leaf)
         .fails()
     )
 
