@@ -91,7 +91,7 @@ void evaluate_testcase(json &testcase)
     auto does_pass = X509_verify_cert(ctx.get());
     if (should_pass ^ does_pass)
     {
-        std::cerr << "\tFAIL " << does_pass << std::endl;
+        std::cerr << "\tFAIL " << does_pass << "/" << should_pass << std::endl;
     }
     else
     {
