@@ -100,7 +100,7 @@ registry: dict[str, Callable] = {}
 
 
 def testcase(func: Callable) -> Callable:
-    namespace = func.__module__.replace("_", "-")
+    namespace = func.__module__.split(".")[-1].replace("_", "-")
     name = func.__name__.replace("_", "-")
     id = f"{namespace}::{name}"
 
