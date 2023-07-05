@@ -25,7 +25,7 @@ using STACK_OF_X509_ptr = std::unique_ptr<STACK_OF(X509), decltype(&SK_X509_free
 using X509_STORE_ptr = std::unique_ptr<X509_STORE, decltype(&X509_STORE_free)>;
 using X509_STORE_CTX_ptr = std::unique_ptr<X509_STORE_CTX, decltype(&X509_STORE_CTX_free)>;
 
-[[noreturn]] void barf(const char *msg)
+[[noreturn]] void barf(const std::string &msg)
 {
     std::cerr << "Internal error: " << msg << std::endl;
     std::exit(1);
@@ -65,8 +65,50 @@ STACK_OF_X509_ptr x509_stack(json &certs)
     return STACK_OF_X509_ptr(stack, SK_X509_free);
 }
 
-void evaluate_testcase(json &testcase)
+json skip(const json &testcase, const std::string &reason)
 {
+    json result;
+
+    auto id = testcase["id"].template get<std::string>();
+    result["id"] = id;
+    result["actual_result"] = "SKIPPED";
+    result["context"] = reason;
+
+    return result;
+}
+
+json evaluate_testcase(json &testcase)
+{
+    if (testcase["validation_kind"] != "CLIENT")
+    {
+        return skip(testcase, "non-CLIENT testcases not supported yet");
+    }
+
+    if (!testcase["signature_algorithms"].is_null())
+    {
+        return skip(testcase, "signature_algorithms not supported yet");
+    }
+
+    if (!testcase["key_usage"].is_null())
+    {
+        return skip(testcase, "key_usage not supported yet");
+    }
+
+    if (!testcase["extended_key_usage"].is_null())
+    {
+        return skip(testcase, "extended_key_usage not supported yet");
+    }
+
+    if (!testcase["expected_peer_name"].is_null())
+    {
+        return skip(testcase, "expected_peer_name not supported yet");
+    }
+
+    if (!testcase["expected_peer_names"].is_null())
+    {
+        return skip(testcase, "expected_peer_names not supported yet");
+    }
+
     auto id = testcase["id"].template get<std::string>();
     std::cerr << "Evaluating case: " << id << std::endl;
 
@@ -112,6 +154,8 @@ void evaluate_testcase(json &testcase)
     {
         std::cerr << "\tPASS" << std::endl;
     }
+
+    return {};
 }
 
 int main()

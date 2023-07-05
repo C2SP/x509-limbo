@@ -188,3 +188,41 @@ class Limbo(BaseModel):
                 raise ValueError(f"duplicated testcase id: {case.id}")
             ids.add(case.id)
         return v
+
+
+class TestcaseResult(BaseModel):
+    """
+    Represents the outcome of evaluating a testcase.
+    """
+
+    id: TestCaseID = Field(..., description="A short, unique identifier for the testcase")
+
+    actual_result: Literal["SUCCESS"] | Literal["FAILURE"] | Literal["SKIPPED"] = Field(
+        ...,
+        description=(
+            "The result of evaluating the testcase; this should be compared to "
+            "`Testcase.expected_result`"
+        ),
+    )
+
+    context: StrictStr | None = Field(
+        ..., description="Any context for FAILURE or SKIPPED results; can be multiple lines"
+    )
+
+
+class LimboResult(BaseModel):
+    """
+    The top-level testcase result container.
+    """
+
+    version: Literal[1] = Field(
+        ..., description="The limbo-result schema version; this must currently always be 1"
+    )
+
+    harness: StrictStr = Field(
+        ..., description="A short, unique identifier for the harness that produced these results"
+    )
+
+    results: list[TestcaseResult] = Field(
+        ..., description="One or more results for testcase evaluations"
+    )
