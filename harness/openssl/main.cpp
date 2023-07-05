@@ -10,6 +10,7 @@
 #include "json.hpp"
 
 #define LIMBO_JSON "../../limbo.json"
+#define LIMBO_RESULTS_OUT "./results.json"
 
 using json = nlohmann::json;
 
@@ -70,6 +71,9 @@ json skip(const json &testcase, const std::string &reason)
     json result;
 
     auto id = testcase["id"].template get<std::string>();
+
+    std::cerr << "SKIP: id=" << id << " reason=" << reason << std::endl;
+
     result["id"] = id;
     result["actual_result"] = "SKIPPED";
     result["context"] = reason;
@@ -161,11 +165,12 @@ json evaluate_testcase(json &testcase)
 int main()
 {
     std::ifstream f(LIMBO_JSON);
-    json data = json::parse(f);
+    json limbo = json::parse(f);
 
-    for (auto &testcase : data["testcases"])
+    json results;
+    for (auto &testcase : limbo["testcases"])
     {
-        evaluate_testcase(testcase);
+        results.emplace_back(evaluate_testcase(testcase));
     }
 
     return 0;
