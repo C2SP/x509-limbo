@@ -19,7 +19,7 @@ class Builder:
         self._untrusted_intermediates: list[str] = []
         self._peer_certificate: str | None = None
         self._validation_time: datetime | None = None
-        self._signature_algorithms: list[SignatureAlgorithm] = []
+        self._signature_algorithms: list[SignatureAlgorithm] | None = None
         self._key_usage: list[KeyUsage] | None = None
         self._extended_key_usage: list[KnownEKUs | OID] | None = None
 
