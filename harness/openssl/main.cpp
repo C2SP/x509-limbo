@@ -32,7 +32,7 @@ using X509_STORE_CTX_ptr = std::unique_ptr<X509_STORE_CTX, decltype(&X509_STORE_
     std::exit(1);
 }
 
-X509_ptr pem_to_x509(std::string &pem)
+X509_ptr pem_to_x509(const std::string &pem)
 {
     X509 *cert = nullptr;
     BIO_ptr cert_bio(BIO_new_mem_buf(pem.data(), pem.length()), BIO_free);
@@ -45,7 +45,7 @@ X509_ptr pem_to_x509(std::string &pem)
     return X509_ptr(cert, X509_free);
 }
 
-STACK_OF_X509_ptr x509_stack(json &certs)
+STACK_OF_X509_ptr x509_stack(const json &certs)
 {
     if (!certs.is_array())
     {
@@ -66,11 +66,9 @@ STACK_OF_X509_ptr x509_stack(json &certs)
     return STACK_OF_X509_ptr(stack, SK_X509_free);
 }
 
-json skip(const json &testcase, const std::string &reason)
+json skip(const std::string &id, const std::string &reason)
 {
     json result;
-
-    auto id = testcase["id"].template get<std::string>();
 
     std::cerr << "SKIP: id=" << id << " reason=" << reason << std::endl;
 
@@ -81,40 +79,40 @@ json skip(const json &testcase, const std::string &reason)
     return result;
 }
 
-json evaluate_testcase(json &testcase)
+json evaluate_testcase(const json &testcase)
 {
+    auto id = testcase["id"].template get<std::string>();
+    std::cerr << "Evaluating case: " << id << std::endl;
+
     if (testcase["validation_kind"] != "CLIENT")
     {
-        return skip(testcase, "non-CLIENT testcases not supported yet");
+        return skip(id, "non-CLIENT testcases not supported yet");
     }
 
     if (!testcase["signature_algorithms"].is_null())
     {
-        return skip(testcase, "signature_algorithms not supported yet");
+        return skip(id, "signature_algorithms not supported yet");
     }
 
     if (!testcase["key_usage"].is_null())
     {
-        return skip(testcase, "key_usage not supported yet");
+        return skip(id, "key_usage not supported yet");
     }
 
     if (!testcase["extended_key_usage"].is_null())
     {
-        return skip(testcase, "extended_key_usage not supported yet");
+        return skip(id, "extended_key_usage not supported yet");
     }
 
     if (!testcase["expected_peer_name"].is_null())
     {
-        return skip(testcase, "expected_peer_name not supported yet");
+        return skip(id, "expected_peer_name not supported yet");
     }
 
     if (!testcase["expected_peer_names"].is_null())
     {
-        return skip(testcase, "expected_peer_names not supported yet");
+        return skip(id, "expected_peer_names not supported yet");
     }
-
-    auto id = testcase["id"].template get<std::string>();
-    std::cerr << "Evaluating case: " << id << std::endl;
 
     X509_STORE_ptr store(X509_STORE_new(), X509_STORE_free);
     X509_STORE_set_flags(store.get(), X509_V_FLAG_X509_STRICT);
@@ -159,7 +157,12 @@ json evaluate_testcase(json &testcase)
         std::cerr << "\tPASS" << std::endl;
     }
 
-    return {};
+    return {
+        {"id", id},
+        {"actual_result", does_pass ? "SUCCESS" : "FAILURE"},
+        // NOTE: default-constructed json{} is null.
+        {"context", does_pass ? json{} : X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx.get()))},
+    };
 }
 
 int main()
@@ -172,6 +175,15 @@ int main()
     {
         results.emplace_back(evaluate_testcase(testcase));
     }
+
+    json limbo_result = {
+        {"version", 1},
+        // TODO: Should include the OpenSSL version, for disambiguation.
+        {"harness", "openssl"},
+        {"results", std::move(results)},
+    };
+    std::ofstream o(LIMBO_RESULTS_OUT);
+    o << std::setw(2) << limbo_result << std::endl;
 
     return 0;
 }
