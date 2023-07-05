@@ -68,7 +68,7 @@ def _schema(args: argparse.Namespace) -> None:
     io = args.output.open(mode="w") if args.output else sys.stdout
 
     with contextlib.closing(io):
-        top = schema([Limbo, LimboResult], title="x509-limbo schemas")
+        top = schema([Limbo], title="x509-limbo schemas")
         print(json.dumps(top, indent=2), file=io)
 
 
