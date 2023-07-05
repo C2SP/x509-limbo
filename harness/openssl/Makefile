@@ -7,6 +7,10 @@ LDLIBS = -l crypto
 .PHONY: all
 all: main
 
+.PHONY: run
+run: main
+	./main
+
 .PHONY: clean
 clean:
 	rm -f main
