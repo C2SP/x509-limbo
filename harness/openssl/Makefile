@@ -6,7 +6,7 @@ LDFLAGS = $(shell pkg-config --libs libcrypto)
 all: main
 
 .PHONY: debug
-debug: CXXFLAGS += -fsanitize=address,undefined
+debug: CXXFLAGS += -g -fsanitize=address,undefined
 debug: main
 
 .PHONY: run
