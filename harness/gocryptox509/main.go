@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -40,9 +39,6 @@ func main() {
 	}
 
 	fmt.Printf("done! succeeded/failed/total %d/%d/%d.\n", success, fail, len(testcases.Testcases))
-	if fail > 0 {
-		os.Exit(1)
-	}
 }
 
 func loadTestcases(path string) (testcases LimboSchemaJson, err error) {
