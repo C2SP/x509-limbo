@@ -1,8 +1,10 @@
+ifdef $(BREW)
 CXX = /opt/homebrew/opt/llvm/bin/clang++
+endif
+
 CXXFLAGS = -std=c++17
-CPPFLAGS = -I /opt/homebrew/opt/openssl@3.1/include
-LDFLAGS = -L /opt/homebrew/opt/openssl@3.1/lib
-LDLIBS = -l crypto
+CPPFLAGS = `pkg-config --cflags openssl`
+LDFLAGS = `pkg-config --libs openssl`
 
 .PHONY: all
 all: main
