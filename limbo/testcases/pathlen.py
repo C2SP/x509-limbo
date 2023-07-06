@@ -1,4 +1,4 @@
-from limbo.assets import ee_cert, intermediate_ca_pathlen_n, v3_root_ca
+from limbo.assets import ee_cert, intermediate_ca_pathlen_n
 from limbo.testcases._core import Builder, testcase
 
 
@@ -14,7 +14,7 @@ def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
     This is a "trivial" verification: the intermediate has a `pathlen:0`
     constraint, but the leaf is an end entity and is therefore allowed.
     """
-    root = v3_root_ca()
+    root = builder.root_ca()
     intermediate = intermediate_ca_pathlen_n(root, 0)
     leaf = ee_cert(intermediate)
 
@@ -40,7 +40,7 @@ def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
     constraint, but the leaf is an end entity and is therefore allowed.
     """
 
-    root = v3_root_ca()
+    root = builder.root_ca()
     intermediate = intermediate_ca_pathlen_n(root, 1)
     leaf = ee_cert(intermediate)
 
@@ -66,7 +66,7 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     constraint, but the leaf is an end entity and is therefore allowed.
     """
 
-    root = v3_root_ca()
+    root = builder.root_ca()
     intermediate = intermediate_ca_pathlen_n(root, 2)
     leaf = ee_cert(intermediate)
 
@@ -93,7 +93,7 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     a CA itself.
     """
 
-    root = v3_root_ca()
+    root = builder.root_ca()
     first_intermediate = intermediate_ca_pathlen_n(root, 0)
     second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 0)
 
@@ -120,7 +120,7 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     the `pathlen` (as `pathlen:2` does).
     """
 
-    root = v3_root_ca()
+    root = builder.root_ca()
     first_intermediate = intermediate_ca_pathlen_n(root, 2)
     second_intermediate = intermediate_ca_pathlen_n(first_intermediate, 2)
 

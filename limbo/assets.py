@@ -64,68 +64,9 @@ def ext(extension: _ExtensionType, *, critical: bool) -> _Extension[_ExtensionTy
 
 
 @cache
-def v3_root_ca() -> CertificatePair:
-    """
-    A (configurable) X.509v3 root CA.
-    """
-    key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
-
-    builder = x509.CertificateBuilder()
-    builder = builder.subject_name(
-        x509.Name(
-            [
-                x509.NameAttribute(NameOID.COMMON_NAME, "x509-limbo-root"),
-            ]
-        )
-    )
-    builder = builder.issuer_name(
-        x509.Name(
-            [
-                x509.NameAttribute(NameOID.COMMON_NAME, "x509-limbo-root"),
-            ]
-        )
-    )
-    builder = builder.not_valid_before(_EPOCH)
-    builder = builder.not_valid_after(_ONE_THOUSAND_YEARS_OF_TORMENT)
-    builder = builder.serial_number(x509.random_serial_number())
-    builder = builder.public_key(key.public_key())
-
-    builder = builder.add_extension(
-        x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
-        critical=False,
-    )
-
-    builder = builder.add_extension(
-        x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False
-    )
-    builder = builder.add_extension(
-        x509.BasicConstraints(ca=True, path_length=None),
-        critical=True,
-    )
-    builder = builder.add_extension(
-        x509.KeyUsage(
-            digital_signature=False,
-            key_cert_sign=True,
-            content_commitment=False,
-            key_encipherment=False,
-            data_encipherment=False,
-            key_agreement=False,
-            crl_sign=False,
-            encipher_only=False,
-            decipher_only=False,
-        ),
-        critical=False,
-    )
-    certificate = builder.sign(
-        private_key=key,
-        algorithm=hashes.SHA256(),
-    )
-
-    return CertificatePair(certificate, key)
-
-
-@cache
-def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> CertificatePair:
+def intermediate_ca_pathlen_n(
+    parent: CertificatePair, pathlen: int, *, extra_extension: _Extension | None = None
+) -> CertificatePair:
     """
     An intermediate CA chained up to a root CA.
 
@@ -182,6 +123,9 @@ def intermediate_ca_pathlen_n(parent: CertificatePair, pathlen: int) -> Certific
         ),
         critical=False,
     )
+    if extra_extension:
+        builder = builder.add_extension(extra_extension.ext, critical=extra_extension.critical)
+
     certificate = builder.sign(
         private_key=parent.key,  # type: ignore[arg-type]
         algorithm=hashes.SHA256(),

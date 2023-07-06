@@ -52,6 +52,7 @@ class Builder:
         ),
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = None,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
+        extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
     ) -> CertificatePair:
         if subject is None:
             subject = issuer
@@ -99,6 +100,9 @@ class Builder:
                 ),
                 critical=False,
             )
+
+        if extra_extension:
+            builder = builder.add_extension(extra_extension.ext, critical=extra_extension.critical)
 
         cert = builder.sign(key, algorithm=hashes.SHA256())  # type: ignore[arg-type]
 
