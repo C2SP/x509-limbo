@@ -65,16 +65,13 @@ def wildcard_embedded_leftmost_san(builder: Builder) -> None:
     Produces a chain with an EE cert.
 
     This EE cert contains a Subject Alternative Name with the dNSName "ba*.example.com".
-    This should verify successfully against the domain "baz.example.com", per the
-    [RFC 6125 profile].
+    This should **fail to verify** against the domain "baz.example.com", per the
+    [CA/B BR profile].
 
-    > The client MAY match a presented identifier in which the wildcard
-    > character is not the only character of the label (e.g.,
-    > baz*.example.net and *baz.example.net and b*z.example.net would
-    > be taken to match baz1.example.net and foobaz.example.net and
-    > buzz.example.net, respectively).
+    > Wildcard Domain Name: A string starting with “*.” (U+002A ASTERISK, U+002E FULL STOP)
+    > immediately followed by a Fully-Qualified Domain Name.
 
-    [RFC 6125 profile]: https://www.rfc-editor.org/rfc/rfc6125.html#section-6.4.3
+    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
 
     root = builder.root_ca()
@@ -87,7 +84,7 @@ def wildcard_embedded_leftmost_san(builder: Builder) -> None:
         builder.trusted_certs(root)
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="baz.example.com"))
-    ).succeeds()
+    ).fails()
 
 
 @testcase
