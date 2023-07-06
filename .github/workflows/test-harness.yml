@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  test-gocryptox509:
+  gocryptox509:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -18,3 +18,10 @@ jobs:
 
       - name: run tests
         run: make test-go
+  openssl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: run tests
+        run: make CXX=clang++ test-openssl
