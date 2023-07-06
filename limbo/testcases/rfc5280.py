@@ -151,6 +151,34 @@ def critical_aki(builder: Builder) -> None:
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
+def missing_aki(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root cert is missing the AKI extension, which is disallowed under the
+    [RFC 5280 profile].
+
+    > To facilitate certification path construction, this extension MUST
+    > appear in all conforming CA certificates, that is, all certificates
+    > including the basic constraints extension (Section 4.2.1.9) where the
+    > value of cA is TRUE.
+
+    Note: for roots, the SKI should be the same value as the AKI, therefore,
+    this extension isn't strictly necessary, although required by the RFC.
+
+    [RFC 5280 profile]: https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.2
+    """
+    root = builder.root_ca(aki=None)
+    leaf = ee_cert(root)
+
+    builder = builder.client_validation()
+    builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
 @testcase
 def critical_ski(builder: Builder) -> None:
     """

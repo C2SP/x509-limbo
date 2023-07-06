@@ -105,9 +105,12 @@ func evaluateTestcase(testcase Testcase) error {
 
 	switch testcase.ValidationKind {
 	case validationKindClient:
-		// TODO: Support testcases that specify the peer's name.
-		if testcase.ExpectedPeerName != nil {
-			return fmt.Errorf("peer name checks not supported yet")
+		var dnsName string
+		if peerName, ok := testcase.ExpectedPeerName.(PeerName); ok {
+			if peerName.Kind.(string) != "DNS" {
+				return fmt.Errorf("non-DNS peer name checks not supported yet")
+			}
+			dnsName = peerName.Value
 		}
 		roots, intermediates := x509.NewCertPool(), x509.NewCertPool()
 		roots.AppendCertsFromPEM(concatPEMCerts(testcase.TrustedCerts))
@@ -126,6 +129,7 @@ func evaluateTestcase(testcase Testcase) error {
 		}
 
 		opts := x509.VerifyOptions{
+			DNSName:       dnsName,
 			Intermediates: intermediates,
 			Roots:         roots,
 			CurrentTime:   ts,

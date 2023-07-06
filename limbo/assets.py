@@ -14,7 +14,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
-from cryptography.x509 import ExtensionType, NameOID
+from cryptography.x509 import ExtensionType, NameOID, SubjectAlternativeName
 
 _EPOCH = datetime.datetime.fromtimestamp(0)
 _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
@@ -100,8 +100,8 @@ def intermediate_ca_pathlen_n(
         critical=False,
     )
     builder = builder.add_extension(
-        x509.AuthorityKeyIdentifier.from_issuer_public_key(
-            parent.key.public_key()  # type: ignore[arg-type]
+        x509.AuthorityKeyIdentifier.from_issuer_subject_key_identifier(
+            parent.cert.extensions.get_extension_for_class(x509.SubjectKeyIdentifier).value
         ),
         critical=False,
     )
@@ -136,7 +136,10 @@ def intermediate_ca_pathlen_n(
 
 @cache
 def ee_cert(
-    parent: CertificatePair, *, extra_extension: _Extension | None = None
+    parent: CertificatePair,
+    subject_alternative_name: _Extension[SubjectAlternativeName] | None = None,
+    *,
+    extra_extension: _Extension | None = None,
 ) -> CertificatePair:
     """
     Produces an end-entity (EE) certificate, signed by the given `parent`'s
@@ -186,6 +189,10 @@ def ee_cert(
         ),
         critical=False,
     )
+    if subject_alternative_name is not None:
+        builder = builder.add_extension(
+            subject_alternative_name.ext, subject_alternative_name.critical
+        )
     if extra_extension is not None:
         builder = builder.add_extension(extra_extension.ext, extra_extension.critical)
 

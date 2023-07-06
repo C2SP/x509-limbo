@@ -108,6 +108,14 @@ class Builder:
 
         return CertificatePair(cert, key)
 
+    def intermediate_ca(self, pathlen: int, *args, **kwargs) -> CertificatePair:
+        if not kwargs["basic_constraints"]:
+            kwargs["basic_constraints"] = ext(
+                x509.BasicConstraints(True, path_length=pathlen), critical=False
+            )
+
+        return self.root_ca(*args, **kwargs)
+
     def __init__(self, id: str, description: str):
         self._id = id
         self._description = description
