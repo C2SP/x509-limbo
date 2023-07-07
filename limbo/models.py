@@ -125,7 +125,7 @@ class Testcase(BaseModel):
     id: TestCaseID = Field(..., description="A short, unique identifier for this testcase")
 
     features: list[StrictStr] | None = Field(
-        ...,
+        None,
         description=(
             "One or more human-readable tags that describe OPTIONAL functionality described "
             "by this testcase. Implementers should use this to specify testcases for non-mandatory "
