@@ -119,6 +119,14 @@
           "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$",
           "type": "string"
         },
+        "features": {
+          "title": "Features",
+          "description": "One or more human-readable tags that describe OPTIONAL functionality described by this testcase. Implementers should use this to specify testcases for non-mandatory X.509 behavior (like certificate policy validation) or for 'pedantic' cases. Consumers that don't understand a given feature should skip tests that are marked with it.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "description": {
           "title": "Description",
           "description": "A short, Markdown-formatted description",
@@ -237,6 +245,7 @@
       },
       "required": [
         "id",
+        "features",
         "description",
         "validation_kind",
         "trusted_certs",

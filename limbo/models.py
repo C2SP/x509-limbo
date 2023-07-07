@@ -124,6 +124,17 @@ class Testcase(BaseModel):
 
     id: TestCaseID = Field(..., description="A short, unique identifier for this testcase")
 
+    features: list[StrictStr] | None = Field(
+        ...,
+        description=(
+            "One or more human-readable tags that describe OPTIONAL functionality described "
+            "by this testcase. Implementers should use this to specify testcases for non-mandatory "
+            "X.509 behavior (like certificate policy validation) or for 'pedantic' cases. "
+            "Consumers that don't understand a given feature should skip tests that are "
+            "marked with it."
+        ),
+    )
+
     description: StrictStr = Field(..., description="A short, Markdown-formatted description")
 
     validation_kind: Literal["CLIENT"] | Literal["SERVER"] = Field(
