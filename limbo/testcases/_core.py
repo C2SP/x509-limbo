@@ -28,8 +28,8 @@ class Builder:
         self._expected_peer_name: PeerName | None = None
         self._expected_peer_names: list[PeerName] | None = None
 
-    def features(self, tags: list[str]) -> Self:
-        self._features = tags
+    def features(self, feats: list[str]) -> Self:
+        self._features = feats
         return self
 
     def client_validation(self) -> Self:
