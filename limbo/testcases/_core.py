@@ -7,12 +7,13 @@ from typing import Callable, Self
 from limbo.assets import (
     CertificatePair,
 )
-from limbo.models import OID, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
+from limbo.models import OID, Feature, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
 
 
 class Builder:
     def __init__(self, id: str, description: str):
         self._id = id
+        self._features: list[Feature] | None = None
         self._description = description
         self._validation_kind: str | None = None
         self._trusted_certs: list[str] = []
@@ -26,6 +27,10 @@ class Builder:
         self._expected_result: str | None = None
         self._expected_peer_name: PeerName | None = None
         self._expected_peer_names: list[PeerName] | None = None
+
+    def features(self, feats: list[Feature]) -> Self:
+        self._features = feats
+        return self
 
     def client_validation(self) -> Self:
         self._validation_kind = "CLIENT"
@@ -82,6 +87,7 @@ class Builder:
     def build(self) -> Testcase:
         return Testcase(
             id=self._id,
+            features=self._features,
             description=self._description,
             validation_kind=self._validation_kind,
             trusted_certs=self._trusted_certs,
