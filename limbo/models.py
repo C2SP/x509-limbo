@@ -117,6 +117,28 @@ class TestCaseID(ConstrainedStr):
     strict = True
 
 
+class Feature(str, Enum):
+    """
+    Feature tags for testcases.
+    """
+
+    has_cert_policies = "has-cert-policies"
+    """
+    For implementations that explicitly support X.509 certificate policy extensions.
+    """
+
+    no_cert_policies = "no-cert-policies"
+    """
+    For implementations that explicitly do not support X.509 certificate policy extensions.
+    """
+
+    pedantic_pathlen = "pedantic-pathlen"
+    """
+    "Pedantic" path length constraint tests (i.e. not required by RFC 5280,
+    but should be rejected as inconsistent/incoherent/etc.)
+    """
+
+
 class Testcase(BaseModel):
     """
     Represents an individual Limbo testcase.
@@ -124,7 +146,7 @@ class Testcase(BaseModel):
 
     id: TestCaseID = Field(..., description="A short, unique identifier for this testcase")
 
-    features: list[StrictStr] | None = Field(
+    features: list[Feature] | None = Field(
         None,
         description=(
             "One or more human-readable tags that describe OPTIONAL functionality described "

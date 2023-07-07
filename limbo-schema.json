@@ -1,6 +1,16 @@
 {
   "title": "x509-limbo schemas",
   "definitions": {
+    "Feature": {
+      "title": "Feature",
+      "description": "Feature tags for testcases.",
+      "enum": [
+        "has-cert-policies",
+        "no-cert-policies",
+        "pedantic-pathlen"
+      ],
+      "type": "string"
+    },
     "SignatureAlgorithm": {
       "title": "SignatureAlgorithm",
       "description": "Valid X.509 signature algorithms.",
@@ -120,11 +130,10 @@
           "type": "string"
         },
         "features": {
-          "title": "Features",
           "description": "One or more human-readable tags that describe OPTIONAL functionality described by this testcase. Implementers should use this to specify testcases for non-mandatory X.509 behavior (like certificate policy validation) or for 'pedantic' cases. Consumers that don't understand a given feature should skip tests that are marked with it.",
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/Feature"
           }
         },
         "description": {
