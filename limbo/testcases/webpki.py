@@ -197,7 +197,6 @@ def unicode_emoji_san(builder: Builder) -> None:
     [RFC 5280 profile]: https://www.rfc-editor.org/rfc/rfc5280#section-7.2
     """
 
-    """ """
     root = builder.root_ca()
     leaf = ee_cert(
         root,
