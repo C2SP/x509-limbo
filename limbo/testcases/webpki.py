@@ -212,3 +212,28 @@ def unicode_emoji_san(builder: Builder) -> None:
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="xn--628h.example.com"))
     ).fails()
+
+
+@testcase
+def malformed_aia(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains an Authority Information Access extension with malformed
+    contents. This is **invalid** per the [CA/B BR profile].
+
+    > The AuthorityInfoAccessSyntax MUST contain one or more AccessDescriptions.
+
+    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
+    """
+    root = builder.root_ca()
+    leaf = ee_cert(
+        root,
+        extra_extension=ext(
+            x509.UnrecognizedExtension(x509.OID_AUTHORITY_INFORMATION_ACCESS, b"malformed"),
+            critical=False,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
