@@ -5,7 +5,7 @@ RFC5280 profile tests.
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from limbo.assets import ee_cert, ext, intermediate_ca_pathlen_n
+from limbo.assets import ee_cert, ext
 from limbo.testcases._core import Builder, testcase
 
 # TODO: Intentionally mis-matching algorithm fields.
@@ -100,7 +100,7 @@ def unknown_critical_extension_intermediate(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    intermediate = intermediate_ca_pathlen_n(
+    intermediate = builder.intermediate_ca(
         root,
         0,
         extra_extension=ext(
