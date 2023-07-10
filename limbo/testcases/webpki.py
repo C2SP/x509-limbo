@@ -17,7 +17,7 @@ def cryptographydotio_chain(builder: Builder) -> None:
     Verifies against a saved copy of `cryptography.io`'s chain. This should
     trivially succeed.
     """
-    chain_path = _ASSETS_PATH / "cryptography.io.cer"
+    chain_path = _ASSETS_PATH / "cryptography.io.pem"
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
 
     leaf, root = chain.pop(0), chain.pop(-1)
@@ -33,7 +33,7 @@ def cryptographydotio_chain_mising_intermediate(builder: Builder) -> None:
     Verifies against a saved copy of `cryptography.io`'s chain, but without its
     intermediates. This should trivially fail.
     """
-    chain_path = _ASSETS_PATH / "cryptography.io.cer"
+    chain_path = _ASSETS_PATH / "cryptography.io.pem"
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
 
     leaf, root = chain.pop(0), chain.pop(-1)
