@@ -28,6 +28,22 @@ def cryptographydotio_chain(builder: Builder) -> None:
 
 
 @testcase
+def cryptographydotio_chain_mising_intermediate(builder: Builder) -> None:
+    """
+    Verifies against a saved copy of `cryptography.io`'s chain, but without its
+    intermediates. This should trivially fail.
+    """
+    chain_path = _ASSETS_PATH / "cryptography.io.cer"
+    chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
+
+    leaf, root = chain.pop(0), chain.pop(-1)
+    builder = builder.client_validation().validation_time(
+        datetime.fromisoformat("2023-07-10T00:00:00Z")
+    )
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
 def exact_san(builder: Builder) -> None:
     """
     Produces a chain with an EE cert.
