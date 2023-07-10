@@ -14,6 +14,7 @@ from limbo.assets import (
     _EPOCH,
     _ONE_THOUSAND_YEARS_OF_TORMENT,
     CertificatePair,
+    Certificate,
     _Extension,
     ext,
 )
@@ -246,15 +247,15 @@ class Builder:
         self._validation_kind = "SERVER"
         return self
 
-    def trusted_certs(self, *certs: CertificatePair) -> Self:
+    def trusted_certs(self, *certs: Certificate) -> Self:
         self._trusted_certs = [c.cert_pem for c in certs]
         return self
 
-    def untrusted_intermediates(self, *certs: CertificatePair) -> Self:
+    def untrusted_intermediates(self, *certs: Certificate) -> Self:
         self._untrusted_intermediates = [c.cert_pem for c in certs]
         return self
 
-    def peer_certificate(self, cert: CertificatePair) -> Self:
+    def peer_certificate(self, cert: Certificate) -> Self:
         self._peer_certificate = cert.cert_pem
         return self
 

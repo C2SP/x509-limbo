@@ -8,6 +8,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 from functools import cache, cached_property
+from pathlib import Path
 from typing import Generic, TypeVar
 
 from cryptography import x509
@@ -18,6 +19,7 @@ from cryptography.x509 import ExtensionType, NameOID, SubjectAlternativeName
 
 _EPOCH = datetime.datetime.fromtimestamp(0)
 _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
+_ASSETS_PATH = Path(__file__).parent.parent / "assets"
 _ExtensionType = TypeVar("_ExtensionType", bound=ExtensionType)
 
 
@@ -25,12 +27,24 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class CertificatePair:
+class Certificate:
+    """
+    An X.509 certificate.
+    """
+
+    cert: x509.Certificate
+
+    @cached_property
+    def cert_pem(self) -> str:
+        return self.cert.public_bytes(encoding=serialization.Encoding.PEM).decode()
+
+
+@dataclass(frozen=True)
+class CertificatePair(Certificate):
     """
     An X.509 certificate and its associated private key.
     """
 
-    cert: x509.Certificate
     key: PrivateKeyTypes
 
     @cached_property
@@ -40,10 +54,6 @@ class CertificatePair:
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption(),
         ).decode()
-
-    @cached_property
-    def cert_pem(self) -> str:
-        return self.cert.public_bytes(encoding=serialization.Encoding.PEM).decode()
 
 
 @dataclass(frozen=True)
