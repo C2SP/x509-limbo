@@ -13,8 +13,8 @@ from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 from limbo.assets import (
     _EPOCH,
     _ONE_THOUSAND_YEARS_OF_TORMENT,
-    CertificatePair,
     Certificate,
+    CertificatePair,
     _Extension,
     ext,
 )

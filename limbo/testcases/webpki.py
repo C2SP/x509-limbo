@@ -3,9 +3,10 @@ Web PKI (CA/B Forum) profile tests.
 """
 
 from datetime import datetime
+
 from cryptography import x509
 
-from limbo.assets import Certificate, ee_cert, ext, _ASSETS_PATH
+from limbo.assets import _ASSETS_PATH, Certificate, ee_cert, ext
 from limbo.models import PeerName
 from limbo.testcases._core import Builder, testcase
 
