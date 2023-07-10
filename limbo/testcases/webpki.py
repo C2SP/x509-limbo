@@ -2,6 +2,7 @@
 Web PKI (CA/B Forum) profile tests.
 """
 
+import datetime
 from cryptography import x509
 
 from limbo.assets import Certificate, ee_cert, ext, _ASSETS_PATH
@@ -12,14 +13,14 @@ from limbo.testcases._core import Builder, testcase
 @testcase
 def cryptographydotio_chain(builder: Builder) -> None:
     """
-    Verifies against a copy of `cryptography.io`'s chain on disk. This should
+    Verifies against a saved copy of `cryptography.io`'s chain. This should
     trivially succeed.
     """
     chain_path = _ASSETS_PATH / "cryptography.io.cer"
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
 
     leaf, root = chain.pop(0), chain.pop(-1)
-    builder = builder.client_validation()
+    builder = builder.client_validation().validation_time(datetime.datetime(2023, 7, 10))
     builder.trusted_certs(root).peer_certificate(leaf).untrusted_intermediates(*chain).succeeds()
 
 

@@ -10,18 +10,23 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"runtime"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
-type testcaseResult uint
+type testcaseResult string
 
 const (
-	testcaseFailed testcaseResult = iota
-	testcasePassed
-	testcaseSkipped
+	validationKindClient = "CLIENT"
+	validationKindServer = "SERVER"
+
+	testcaseFailed  testcaseResult = "FAILURE"
+	testcasePassed  testcaseResult = "SUCCESS"
+	testcaseSkipped testcaseResult = "SKIPPED"
 )
 
 func (r testcaseResult) String() string {
@@ -29,8 +34,21 @@ func (r testcaseResult) String() string {
 	return s[r]
 }
 
+type result struct {
+	ID      string         `json:"id"`
+	Result  testcaseResult `json:"actual_result"`
+	Context string         `json:"context"`
+}
+
+type results struct {
+	Version uint     `json:"version"`
+	Harness string   `json:"harness"`
+	Results []result `json:"results"`
+}
+
 func main() {
 	testCasePath := flag.String("testcases", "../../limbo.json", "testcases")
+	resultsPath := flag.String("results", "./results.json", "results")
 	flag.Parse()
 
 	testcases, err := loadTestcases(*testCasePath)
@@ -39,21 +57,44 @@ func main() {
 	}
 	fmt.Printf("Loaded testcases from %s\n", *testCasePath)
 
-	var pass, fail, skip int
+	resultsFile, err := os.Create(*resultsPath)
+	if err != nil {
+		panic(err)
+	}
+	resultsEncoder := json.NewEncoder(resultsFile)
+
+	var (
+		pass, fail, skip int
+		outputResults    results
+	)
 	for _, tc := range testcases.Testcases {
 		fmt.Printf("Running test %s ... ", tc.Id)
-		result, err := evaluateTestcase(tc)
-		fmt.Printf("%s\n", result)
-		switch result {
+		r, err := evaluateTestcase(tc)
+		fmt.Printf("%s\n", r)
+
+		var context string
+		switch r {
 		case testcaseFailed:
 			fmt.Printf("%s\nerr=%+#v\n", tc.Description, err)
+			context = err.Error()
 			fail++
 		case testcasePassed:
 			pass++
 		case testcaseSkipped:
 			skip++
+			continue
 		}
+
+		outputResults.Results = append(outputResults.Results, result{
+			ID:      tc.Id,
+			Context: context,
+			Result:  r,
+		})
 	}
+
+	outputResults.Version = 1
+	outputResults.Harness = fmt.Sprintf("gocryptox509-%s", runtime.Version())
+	resultsEncoder.Encode(outputResults)
 
 	fmt.Printf("done! passed/failed/skipped/total %d/%d/%d/%d.\n", pass, fail, skip, len(testcases.Testcases))
 }
@@ -76,14 +117,6 @@ func concatPEMCerts(certs []string) []byte {
 	return buf.Bytes()
 }
 
-const (
-	validationKindClient = "CLIENT"
-	validationKindServer = "SERVER"
-
-	resultSuccess = "SUCCESS"
-	resultFailure = "FAILURE"
-)
-
 func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	_ = spew.Dump
 
@@ -99,7 +132,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		}
 	}
 
-	expectSuccess := testcase.ExpectedResult == resultSuccess
+	expectSuccess := testcase.ExpectedResult == testcasePassed
 
 	// TODO: Support testcases that constrain signature algorthms.
 	if len(testcase.SignatureAlgorithms) != 0 {
