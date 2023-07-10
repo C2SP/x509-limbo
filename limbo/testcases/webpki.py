@@ -2,7 +2,7 @@
 Web PKI (CA/B Forum) profile tests.
 """
 
-import datetime
+from datetime import datetime
 from cryptography import x509
 
 from limbo.assets import Certificate, ee_cert, ext, _ASSETS_PATH
@@ -20,7 +20,9 @@ def cryptographydotio_chain(builder: Builder) -> None:
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
 
     leaf, root = chain.pop(0), chain.pop(-1)
-    builder = builder.client_validation().validation_time(datetime.datetime(2023, 7, 10))
+    builder = builder.client_validation().validation_time(
+        datetime.fromisoformat("2023-07-10T00:00:00Z")
+    )
     builder.trusted_certs(root).peer_certificate(leaf).untrusted_intermediates(*chain).succeeds()
 
 
