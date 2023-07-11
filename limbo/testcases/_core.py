@@ -182,7 +182,7 @@ class Builder:
             ),
             critical=False,
         ),
-        aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = None,
+        aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
         extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
     ) -> CertificatePair:

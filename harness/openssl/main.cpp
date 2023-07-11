@@ -6,6 +6,7 @@
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/x509_vfy.h>
+#include <openssl/x509v3.h>
 #include "date.hpp"
 #include "json.hpp"
 
@@ -104,11 +105,6 @@ json evaluate_testcase(const json &testcase)
         return skip(id, "extended_key_usage not supported yet");
     }
 
-    if (!testcase["expected_peer_name"].is_null())
-    {
-        return skip(id, "expected_peer_name not supported yet");
-    }
-
     if (!testcase["expected_peer_names"].is_null())
     {
         return skip(id, "expected_peer_names not supported yet");
@@ -144,6 +140,32 @@ json evaluate_testcase(const json &testcase)
 
         auto tm = std::chrono::system_clock::to_time_t(tp);
         X509_STORE_CTX_set_time(ctx.get(), 0, tm);
+    }
+
+    if (testcase["expected_peer_name"].is_object())
+    {
+        auto peer_name = testcase["expected_peer_name"]["value"].template get<std::string>();
+        auto peer_kind = testcase["expected_peer_name"]["kind"].template get<std::string>();
+
+        auto param = X509_STORE_CTX_get0_param(ctx.get());
+
+        if (peer_kind == "RFC822")
+        {
+            X509_VERIFY_PARAM_set1_email(param, peer_name.data(), peer_name.length());
+        }
+        else if (peer_kind == "DNS")
+        {
+            X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+            X509_VERIFY_PARAM_set1_host(param, peer_name.data(), peer_name.length());
+        }
+        else if (peer_kind == "IP")
+        {
+            X509_VERIFY_PARAM_set1_ip_asc(param, peer_name.c_str());
+        }
+        else
+        {
+            barf("unexpected peer kind: " + peer_kind);
+        }
     }
 
     auto should_pass = testcase["expected_result"] == "SUCCESS";
