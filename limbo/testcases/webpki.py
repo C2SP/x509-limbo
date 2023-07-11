@@ -264,7 +264,7 @@ def malformed_aia(builder: Builder) -> None:
     leaf = ee_cert(
         root,
         ext(
-            x509.SubjectAlternativeName([x509.DNSName._init_without_validation("example.com")]),
+            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
             critical=False,
         ),
         extra_extension=ext(
