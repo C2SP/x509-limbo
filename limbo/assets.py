@@ -8,8 +8,8 @@ import datetime
 import logging
 from dataclasses import dataclass
 from functools import cache, cached_property
-from typing import Generic, TypeVar
 from importlib import resources
+from typing import Generic, TypeVar
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
