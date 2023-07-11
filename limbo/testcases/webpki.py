@@ -74,6 +74,25 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
 
 
 @testcase
+def chain_untrusted_root(builder: Builder) -> None:
+    """
+    Produces the following chain:
+
+    root (untrusted) -> intermediate -> EE
+
+    The root is not in the trusted set, thus no chain should be built.
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(root, 0)
+    leaf = ee_cert(intermediate)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().untrusted_intermediates(root, intermediate).peer_certificate(
+        leaf
+    ).fails()
+
+
+@testcase
 def exact_san(builder: Builder) -> None:
     """
     Produces a chain with an EE cert.
