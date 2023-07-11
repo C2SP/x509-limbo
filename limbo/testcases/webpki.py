@@ -57,13 +57,14 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
     """
     root = builder.root_ca()
     root_two = builder.root_ca(issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-root-2"))
+    ski = x509.SubjectKeyIdentifier.from_public_key(root.key.public_key())  # type: ignore[arg-type]
     expired_intermediate = builder.intermediate_ca(
         root_two,
         1,
         subject=root.cert.subject,
         not_after=datetime.fromisoformat("1988-11-25T00:00:00Z"),
         key=root.key,
-        ski=x509.SubjectKeyIdentifier.from_public_key(root.key.public_key()),  # type: ignore[arg-type]
+        ski=ski,
     )
     leaf = ee_cert(root)
 
