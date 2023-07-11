@@ -52,7 +52,7 @@ def exact_san(builder: Builder) -> None:
     This should verify successfully against the domain "example.com", per the
     [RFC 6125 profile].
 
-    [RFC 6125 profile]: https://www.rfc-editor.org/rfc/rfc6125.html#section-6.4.1
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.1
     """
 
     root = builder.root_ca()
@@ -77,7 +77,7 @@ def leftmost_wildcard_san(builder: Builder) -> None:
     This should verify successfully against the domain "foo.example.com", per the
     [RFC 6125 profile].
 
-    [RFC 6125 profile]: https://www.rfc-editor.org/rfc/rfc6125.html#section-6.4.3
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.3
     """
 
     root = builder.root_ca()
@@ -134,7 +134,7 @@ def wildcard_not_in_leftmost_san(builder: Builder) -> None:
     > which the wildcard character comprises a label other than the
     > left-most label (e.g., do not match bar.*.example.net).
 
-    [RFC 6125 profile]: https://www.rfc-editor.org/rfc/rfc6125.html#section-6.4.3
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.3
     """
     root = builder.root_ca()
     leaf = ee_cert(
@@ -165,7 +165,7 @@ def wildcard_match_across_labels_san(builder: Builder) -> None:
     > identifier (e.g., *.example.com would match foo.example.com but
     > not bar.foo.example.com or example.com).
 
-    [RFC 6125 profile]: https://www.rfc-editor.org/rfc/rfc6125.html#section-6.4.3
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.3
     """
     root = builder.root_ca()
     leaf = ee_cert(
@@ -194,7 +194,7 @@ def wildcard_embedded_ulabel_san(builder: Builder) -> None:
     > where the wildcard character is embedded within an A-label or
     > U-label [IDNA-DEFS] of an internationalized domain name [IDNA-PROTO].
 
-    [RFC 6125 profile]: https://www.rfc-editor.org/rfc/rfc6125.html#section-6.4.1
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.1
     """
     root = builder.root_ca()
     leaf = ee_cert(
@@ -228,7 +228,7 @@ def unicode_emoji_san(builder: Builder) -> None:
     > ASCII Compatible Encoding (ACE) format as specified in Section 4 of
     > RFC 3490 before storage in the dNSName field.
 
-    [RFC 5280 profile]: https://www.rfc-editor.org/rfc/rfc5280#section-7.2
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-7.2
     """
 
     root = builder.root_ca()
