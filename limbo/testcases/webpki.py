@@ -28,7 +28,7 @@ def cryptographydotio_chain(builder: Builder) -> None:
 
 
 @testcase
-def cryptographydotio_chain_mising_intermediate(builder: Builder) -> None:
+def cryptographydotio_chain_missing_intermediate(builder: Builder) -> None:
     """
     Verifies against a saved copy of `cryptography.io`'s chain, but without its
     intermediates. This should trivially fail.
@@ -41,6 +41,36 @@ def cryptographydotio_chain_mising_intermediate(builder: Builder) -> None:
         datetime.fromisoformat("2023-07-10T00:00:00Z")
     )
     builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def multiple_chains_expired_intermediate(builder: Builder) -> None:
+    """
+    Produces the following chain:
+
+    root 2 -> intermediate (expired) -> root -> EE
+
+    Both roots are trusted. A chain should be built successfully, disregarding
+    the expired intermediate certificate and the second root. This scenario is
+    known as the "chain of pain"; for further reference, see
+    https://www.agwa.name/blog/post/fixing_the_addtrust_root_expiration.
+    """
+    root = builder.root_ca()
+    root_two = builder.root_ca(issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-root-2"))
+    expired_intermediate = builder.intermediate_ca(
+        root_two,
+        1,
+        subject=root.cert.subject,
+        not_after=datetime.fromisoformat("1988-11-25T00:00:00Z"),
+        key=root.key,
+        ski=x509.SubjectKeyIdentifier.from_public_key(root.key.public_key()),  # type: ignore[arg-type]
+    )
+    leaf = ee_cert(root)
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root, root_two).untrusted_intermediates(
+        expired_intermediate
+    ).peer_certificate(leaf).succeeds()
 
 
 @testcase
