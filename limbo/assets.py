@@ -8,8 +8,8 @@ import datetime
 import logging
 from dataclasses import dataclass
 from functools import cache, cached_property
-from pathlib import Path
 from typing import Generic, TypeVar
+from importlib import resources
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -19,7 +19,7 @@ from cryptography.x509 import ExtensionType, NameOID, SubjectAlternativeName
 
 _EPOCH = datetime.datetime.fromtimestamp(0)
 _ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
-_ASSETS_PATH = Path(__file__).parent.parent / "assets"
+_ASSETS_PATH = resources.files("limbo._assets")
 _ExtensionType = TypeVar("_ExtensionType", bound=ExtensionType)
 
 
