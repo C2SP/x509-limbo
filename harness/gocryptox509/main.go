@@ -128,11 +128,12 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		ts, err = time.Parse(time.RFC3339, *testcase.ValidationTime)
 
 		if err != nil {
+			fmt.Printf("%s\n", err)
 			return testcaseSkipped, errors.Wrap(err, "unable to parse testcase time as RFC3339")
 		}
 	}
 
-	expectSuccess := testcase.ExpectedResult == testcasePassed
+	expectSuccess := testcaseResult(testcase.ExpectedResult.(string)) == testcasePassed
 
 	// TODO: Support testcases that constrain signature algorthms.
 	if len(testcase.SignatureAlgorithms) != 0 {
