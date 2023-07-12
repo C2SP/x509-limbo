@@ -138,7 +138,7 @@ def critical_aki(builder: Builder) -> None:
 
     > Conforming CAs MUST mark this extension as non-critical.
 
-    [RFC 5280 profile]: https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.1
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.1
     """
     key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
     root = builder.root_ca(
@@ -272,7 +272,7 @@ def critical_ski(builder: Builder) -> None:
 
     > Conforming CAs MUST mark this extension as non-critical.
 
-    [RFC 5280 profile]: https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.2
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
     """
     key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
     root = builder.root_ca(
@@ -305,7 +305,7 @@ def missing_ski(builder: Builder) -> None:
     Note: for roots, the SKI should be the same value as the AKI, therefore,
     this extension isn't strictly necessary, although required by the RFC.
 
-    [RFC 5280 profile]: https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.2
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
     """
     root = builder.root_ca(ski=None)
     leaf = ee_cert(root)
