@@ -69,6 +69,116 @@ def exact_san(builder: Builder) -> None:
 
 
 @testcase
+def mismatch_subdomain_san(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains a Subject Alternative Name with the dNSName "abc.example.com".
+    This should **fail to verify** against the domain "def.example.com", per the
+    [RFC 6125 profile].
+
+    > Each label MUST match in order for the names to be considered to match,
+    > except as supplemented by the rule about checking of wildcard labels.
+
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.1
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("abc.example.com")]), critical=False),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="def.example.com")
+    ).fails()
+
+
+@testcase
+def mismatch_subdomain_apex_san(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains a Subject Alternative Name with the dNSName "example.com".
+    This should **fail to verify** against the domain "abc.example.com", per the
+    [RFC 6125 profile].
+
+    > Each label MUST match in order for the names to be considered to match,
+    > except as supplemented by the rule about checking of wildcard labels.
+
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.1
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="abc.example.com")
+    ).fails()
+
+
+@testcase
+def mismatch_apex_subdomain_san(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains a Subject Alternative Name with the dNSName "abc.example.com".
+    This should **fail to verify** against the domain "example.com", per the
+    [RFC 6125 profile].
+
+    > Each label MUST match in order for the names to be considered to match,
+    > except as supplemented by the rule about checking of wildcard labels.
+
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.1
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("abc.example.com")]), critical=False),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def public_suffix_wildcard_san(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains a Subject Alternative name with the dNSName "*.com".
+    Conformant CAs should not issue such a certificate, according to the
+    [CA/B BR profile]:
+
+    > If the FQDN portion of any Wildcard Domain Name is “registry‐controlled”
+    > or is a “public suffix”, CAs MUST refuse issuance unless the Applicant
+    > proves its rightful control of the entire Domain Namespace.
+
+    While the Baseline Requirements do not specify how clients should behave
+    when given such a certificate, it is generally safe to assume that wildcard
+    certificates spanning a gTLD are malicious, and clients should reject them.
+
+    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("*.com")]), critical=False),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
 def leftmost_wildcard_san(builder: Builder) -> None:
     """
     Produces a chain with an EE cert.
