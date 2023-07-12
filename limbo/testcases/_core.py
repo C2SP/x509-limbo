@@ -223,6 +223,95 @@ class Builder:
             parent,
         )
 
+    def leaf_cert(
+        self,
+        parent: CertificatePair,
+        *,
+        issuer: x509.Name | None = None,
+        subject: x509.Name = x509.Name.from_rfc4514_string("CN=x509-limbo-ee"),
+        serial: int | None = None,
+        not_before: datetime = _EPOCH,
+        not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
+        key: PrivateKeyTypes | None = None,
+        key_usage: _Extension[x509.KeyUsage]
+        | None = ext(
+            x509.KeyUsage(
+                digital_signature=True,
+                key_cert_sign=False,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        ),
+        san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = None,
+        aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
+        extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
+    ) -> CertificatePair:
+        """
+        Produces an end-entity (EE) certificate, signed by the given `parent`'s
+        key.
+        """
+        if issuer is None:
+            issuer = parent.cert.subject
+
+        if serial is None:
+            serial = x509.random_serial_number()
+
+        if key is None:
+            key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+        builder = x509.CertificateBuilder()
+        builder = builder.subject_name(subject)
+        builder = builder.issuer_name(issuer)
+        builder = builder.not_valid_before(not_before)
+        builder = builder.not_valid_after(not_after)
+        builder = builder.serial_number(serial)
+        builder = builder.public_key(key.public_key())  # type: ignore[arg-type]
+        builder = builder.add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key.public_key()),  # type: ignore[arg-type]
+            critical=False,
+        )
+
+        if isinstance(aki, _Extension):
+            builder = builder.add_extension(aki.ext, critical=aki.critical)
+        elif aki:
+            builder = builder.add_extension(
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(
+                    parent.key.public_key()  # type: ignore[arg-type]
+                ),
+                critical=False,
+            )
+
+        builder = builder.add_extension(
+            x509.BasicConstraints(ca=False, path_length=None),
+            critical=False,
+        )
+
+        if key_usage:
+            builder = builder.add_extension(key_usage.ext, critical=key_usage.critical)
+
+        if isinstance(san, _Extension):
+            builder = builder.add_extension(san.ext, san.critical)
+        elif san:
+            builder = builder.add_extension(
+                x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False
+            )
+
+        if extra_extension is not None:
+            builder = builder.add_extension(extra_extension.ext, extra_extension.critical)
+
+        certificate = builder.sign(
+            private_key=parent.key,  # type: ignore[arg-type]
+            algorithm=hashes.SHA256(),
+        )
+
+        return CertificatePair(certificate, key)
+
     def __init__(self, id: str, description: str):
         self._id = id
         self._features: list[Feature] | None = None
