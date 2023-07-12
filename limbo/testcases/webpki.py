@@ -69,6 +69,32 @@ def exact_san(builder: Builder) -> None:
 
 
 @testcase
+def mismatch_domain_san(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains a Subject Alternative Name with the dNSName "example.com".
+    This should **fail to verify** against the domain "example2.com", per the
+    [RFC 6125 profile].
+
+    > Each label MUST match in order for the names to be considered to match,
+    > except as supplemented by the rule about checking of wildcard labels.
+
+    [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.1
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example2.com")
+    ).fails()
+
+
+@testcase
 def mismatch_subdomain_san(builder: Builder) -> None:
     """
     Produces a chain with an EE cert.
