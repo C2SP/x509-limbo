@@ -1,4 +1,5 @@
 from limbo.assets import ee_cert
+from limbo.models import Feature
 from limbo.testcases._core import Builder, testcase
 
 
@@ -79,10 +80,39 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     )
 
 
-# TODO: Distinct success testcase for `root -> inter (path:0) -> inter (path:0)`
-# See the note in RFC 5280 4.2.1.9; when an intermediate is in the leaf
-# position, it is not treated as an intermediate and its pathlen constraint
-# has no effect.
+@testcase
+def validation_ignores_pathlen_in_leaf(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> intermediate (pathlen:0) -> intermediate (pathlen:0)
+    ```
+
+    This is, unintuitively, a valid chain construction: [RFC 5280 4.2.1.9]
+    notes that the leaf certificate in a validation path is definitionally
+    not an intermediate, meaning that it is not included in the maximum
+    number of intermediate certificates that may follow a path length
+    constrained CA certificate:
+
+    > Note: The last certificate in the certification path is not an intermediate
+    > certificate, and is not included in this limit.  Usually, the last certificate
+    > is an end entity certificate, but it can be a CA certificate.
+
+    [RFC 5280 4.2.1.9]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+
+    root = builder.root_ca()
+    first_intermediate = builder.intermediate_ca(root, 0)
+    second_intermediate = builder.intermediate_ca(root, 0)
+
+    builder = builder.client_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(first_intermediate)
+        .peer_certificate(second_intermediate)
+        .succeeds()
+    )
 
 
 @testcase
@@ -113,12 +143,10 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     )
 
 
-# TODO: Evaluate the correctness of this testcase: RFC 5280 doesn't technically
-# forbid broadening pathlen constraints; they're just nonsense.
 @testcase
 def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     """
-    Produces the following **invalid** chain:
+    Produces the following **ambiguous** chain:
 
     ```
     root -> intermediate (pathlen:1) -> intermediate (pathlen:2) -> EE
@@ -127,6 +155,9 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     This violates the first intermediate's `pathlen:1` constraint,
     which allows a subsequent intermediate but not one that widens
     the `pathlen` (as `pathlen:2` does).
+
+    RFC 5280 doesn't specify what clients should do about widened path
+    length constraints, which is why this testcase is marked as "pedantic."
     """
 
     root = builder.root_ca()
@@ -134,7 +165,7 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     second_intermediate = builder.intermediate_ca(first_intermediate, 2)
     leaf = ee_cert(second_intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.client_validation().features([Feature.pedantic_pathlen])
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate, second_intermediate)
