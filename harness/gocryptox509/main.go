@@ -153,11 +153,11 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	switch testcase.ValidationKind {
 	case validationKindClient:
 		var dnsName string
-		if peerName, ok := testcase.ExpectedPeerName.(PeerName); ok {
-			if peerName.Kind.(string) != "DNS" {
+		if peerName, ok := testcase.ExpectedPeerName.(map[string]interface{}); ok {
+			if peerName["kind"] != "DNS" {
 				return testcaseSkipped, fmt.Errorf("non-DNS peer name checks not supported yet")
 			}
-			dnsName = peerName.Value
+			dnsName = peerName["value"].(string)
 		}
 		roots, intermediates := x509.NewCertPool(), x509.NewCertPool()
 		roots.AppendCertsFromPEM(concatPEMCerts(testcase.TrustedCerts))
