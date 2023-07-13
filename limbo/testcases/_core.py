@@ -22,7 +22,6 @@ from limbo.models import OID, Feature, KeyUsage, KnownEKUs, PeerName, SignatureA
 
 
 class Builder:
-    @cache
     def _ca(
         self,
         issuer: x509.Name,
@@ -224,7 +223,6 @@ class Builder:
             parent,
         )
 
-    @cache
     def leaf_cert(
         self,
         parent: CertificatePair,
