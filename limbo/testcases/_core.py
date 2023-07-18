@@ -154,8 +154,8 @@ class Builder:
     def intermediate_ca(
         self,
         parent: CertificatePair,
-        pathlen: int,
         *,
+        pathlen: int | None = None,
         issuer: x509.Name | None = None,
         subject: x509.Name | None = None,
         serial: int | None = None,
