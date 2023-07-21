@@ -162,6 +162,7 @@ class Builder:
         not_before: datetime = _EPOCH,
         not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
+        basic_constraints: _Extension[x509.BasicConstraints] | None = None,
         key_usage: _Extension[x509.KeyUsage]
         | None = ext(
             x509.KeyUsage(
@@ -192,6 +193,9 @@ class Builder:
         * That certificates are correctly uniqued by both their key **and** their
           subject (as each intermediate generated here shares the same key)
         """
+        if pathlen is not None and basic_constraints is not None:
+            raise ValueError("supply only one of pathlen and basic_constraints")
+
         if not issuer:
             issuer = parent.cert.subject
 
@@ -202,7 +206,8 @@ class Builder:
                 f"CN=x509-limbo-intermediate-pathlen-{pathlen},OU={parent.cert.serial_number}"
             )
 
-        basic_constraints = ext(x509.BasicConstraints(True, path_length=pathlen), critical=True)
+        if not basic_constraints:
+            basic_constraints = ext(x509.BasicConstraints(True, path_length=pathlen), critical=True)
 
         return self._ca(
             issuer,
