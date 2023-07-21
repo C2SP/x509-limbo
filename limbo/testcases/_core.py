@@ -162,11 +162,6 @@ class Builder:
         not_before: datetime = _EPOCH,
         not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
-        basic_constraints: _Extension[x509.BasicConstraints]
-        | None = ext(
-            x509.BasicConstraints(ca=True, path_length=None),
-            critical=True,
-        ),
         key_usage: _Extension[x509.KeyUsage]
         | None = ext(
             x509.KeyUsage(
@@ -201,12 +196,13 @@ class Builder:
             issuer = parent.cert.subject
 
         if not subject:
-            subject = x509.Name.from_rfc4514_string(f"CN=x509-limbo-intermediate-pathlen-{pathlen}")
-
-        if not basic_constraints:
-            basic_constraints = ext(
-                x509.BasicConstraints(True, path_length=pathlen), critical=False
+            # NOTE: Stuff the parent cert's SN into the subject here to break accidental
+            # self-issuing chains.
+            subject = x509.Name.from_rfc4514_string(
+                f"CN=x509-limbo-intermediate-pathlen-{pathlen},OU={parent.cert.serial_number}"
             )
+
+        basic_constraints = ext(x509.BasicConstraints(True, path_length=pathlen), critical=True)
 
         return self._ca(
             issuer,
