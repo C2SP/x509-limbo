@@ -104,7 +104,7 @@ def unknown_critical_extension_intermediate(builder: Builder) -> None:
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(
         root,
-        0,
+        pathlen=0,
         extra_extension=ext(
             x509.UnrecognizedExtension(x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.1"), b""),
             critical=True,
@@ -200,7 +200,7 @@ def cross_signed_root_missing_aki(builder: Builder) -> None:
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.1
     """
     xsigner_root = builder.root_ca()
-    root = builder.intermediate_ca(xsigner_root, 0, aki=None)
+    root = builder.intermediate_ca(xsigner_root, pathlen=0, aki=None)
     leaf = builder.leaf_cert(root)
 
     builder = builder.client_validation()
@@ -226,7 +226,7 @@ def intermediate_missing_aki(builder: Builder) -> None:
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.1
     """
     root = builder.root_ca()
-    intermediate = builder.intermediate_ca(root, 0, aki=None)
+    intermediate = builder.intermediate_ca(root, pathlen=0, aki=None)
     leaf = builder.leaf_cert(intermediate)
 
     builder = builder.client_validation()
@@ -331,7 +331,7 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
     ski = x509.SubjectKeyIdentifier.from_public_key(root.key.public_key())  # type: ignore[arg-type]
     expired_intermediate = builder.intermediate_ca(
         root_two,
-        1,
+        pathlen=1,
         subject=root.cert.subject,
         not_after=datetime.fromisoformat("1988-11-25T00:00:00Z"),
         key=root.key,
@@ -355,7 +355,7 @@ def chain_untrusted_root(builder: Builder) -> None:
     The root is not in the trusted set, thus no chain should be built.
     """
     root = builder.root_ca()
-    intermediate = builder.intermediate_ca(root, 0)
+    intermediate = builder.intermediate_ca(root, pathlen=0)
     leaf = ee_cert(intermediate)
 
     builder = builder.client_validation()

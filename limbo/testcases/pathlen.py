@@ -16,7 +16,7 @@ def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
     constraint, but the leaf is an end entity and is therefore allowed.
     """
     root = builder.root_ca()
-    intermediate = builder.intermediate_ca(root, 0)
+    intermediate = builder.intermediate_ca(root, pathlen=0)
     leaf = ee_cert(intermediate)
 
     builder = builder.client_validation()
@@ -42,7 +42,7 @@ def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    intermediate = builder.intermediate_ca(root, 1)
+    intermediate = builder.intermediate_ca(root, pathlen=1)
     leaf = ee_cert(intermediate)
 
     builder = builder.client_validation()
@@ -68,7 +68,7 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    intermediate = builder.intermediate_ca(root, 2)
+    intermediate = builder.intermediate_ca(root, pathlen=2)
     leaf = ee_cert(intermediate)
 
     builder = builder.client_validation()
@@ -103,8 +103,8 @@ def validation_ignores_pathlen_in_leaf(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    first_intermediate = builder.intermediate_ca(root, 0)
-    second_intermediate = builder.intermediate_ca(root, 0)
+    first_intermediate = builder.intermediate_ca(root, pathlen=0)
+    second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=0)
 
     builder = builder.client_validation()
     builder = (
@@ -130,8 +130,8 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    first_intermediate = builder.intermediate_ca(root, 0)
-    second_intermediate = builder.intermediate_ca(root, 0)
+    first_intermediate = builder.intermediate_ca(root, pathlen=0)
+    second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=0)
     leaf = ee_cert(second_intermediate)
 
     builder = builder.client_validation()
@@ -161,8 +161,8 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    first_intermediate = builder.intermediate_ca(root, 1)
-    second_intermediate = builder.intermediate_ca(first_intermediate, 2)
+    first_intermediate = builder.intermediate_ca(root, pathlen=1)
+    second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=2)
     leaf = ee_cert(second_intermediate)
 
     builder = builder.client_validation().features([Feature.pedantic_pathlen])
@@ -189,9 +189,9 @@ def intermediate_pathlen_too_long(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    first_intermediate = builder.intermediate_ca(root, 1)
-    second_intermediate = builder.intermediate_ca(first_intermediate, 0)
-    third_intermediate = builder.intermediate_ca(second_intermediate, 0)
+    first_intermediate = builder.intermediate_ca(root, pathlen=1)
+    second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=0)
+    third_intermediate = builder.intermediate_ca(second_intermediate, pathlen=0)
     leaf = ee_cert(third_intermediate)
 
     builder = builder.client_validation()
