@@ -319,7 +319,9 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
     """
     Produces the following chain:
 
+    ```
     root 2 -> intermediate (expired) -> root -> EE
+    ```
 
     Both roots are trusted. A chain should be built successfully, disregarding
     the expired intermediate certificate and the second root. This scenario is
@@ -350,7 +352,9 @@ def chain_untrusted_root(builder: Builder) -> None:
     """
     Produces the following chain:
 
+    ```
     root (untrusted) -> intermediate -> EE
+    ```
 
     The root is not in the trusted set, thus no chain should be built.
     """
@@ -362,3 +366,248 @@ def chain_untrusted_root(builder: Builder) -> None:
     builder.trusted_certs().untrusted_intermediates(root, intermediate).peer_certificate(
         leaf
     ).fails()
+
+
+@testcase
+def intermediate_ca_without_ca_bit(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate -> EE
+    ```
+
+    The intermediate CA does not have the cA bit set in BasicConstraints, thus
+    no valid chain to the leaf exists per the [RFC 5280 profile]:
+
+    > If the basic constraints extension is not present in a version 3
+    > certificate, or the extension is present but the cA boolean
+    > is not asserted, then the certified public key MUST NOT be used to
+    > verify certificate signatures.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        basic_constraints=ext(x509.BasicConstraints(False, path_length=None), critical=True),
+    )
+    leaf = ee_cert(intermediate)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
+
+
+@testcase
+def intermediate_ca_missing_basic_constraints(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> EE
+    ```
+
+    The intermediate CA is missing the BasicConstraints extension, which is disallowed
+    under the [RFC 5280 profile]:
+
+    > Conforming CAs MUST include this extension in all CA certificates
+    > that contain public keys used to validate digital signatures on
+    > certificates and MUST mark the extension as critical in such
+    > certificates.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(root, basic_constraints=None)
+    leaf = ee_cert(intermediate)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().peer_certificate(leaf).fails()
+
+
+@testcase
+def root_missing_basic_constraints(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root CA is missing the BasicConstraints extension, which is disallowed
+    under the [RFC 5280 profile]:
+
+    > Conforming CAs MUST include this extension in all CA certificates
+    > that contain public keys used to validate digital signatures on
+    > certificates and MUST mark the extension as critical in such
+    > certificates.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+    root = builder.root_ca(basic_constraints=None)
+    leaf = ee_cert(root)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().peer_certificate(leaf).fails()
+
+
+@testcase
+def root_non_critical_basic_constraints(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root CA has a non-critical BasicConstraints extension, which is disallowed
+    under the [RFC 5280 profile]:
+
+    > Conforming CAs MUST include this extension in all CA certificates
+    > that contain public keys used to validate digital signatures on
+    > certificates and MUST mark the extension as critical in such
+    > certificates.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+    root = builder.root_ca(basic_constraints=ext(x509.BasicConstraints(True, None), critical=False))
+    leaf = ee_cert(root)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().peer_certificate(leaf).fails()
+
+
+@testcase
+def root_inconsistent_ca_extensions(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root CA has BasicConstraints.cA=TRUE and KeyUsage.keyCertSign=FALSE.
+    According to the [RFC 5280 profile], these two fields are related in the
+    following ways:
+
+    > If the keyCertSign bit is asserted, then the cA bit in the basic
+    > constraints extension MUST also be asserted. (Section 4.2.1.3)
+
+    and
+
+    > If the cA boolean is not asserted, then the keyCertSign bit in the
+    > key usage extension MUST NOT be asserted. (Section 4.2.1.9)
+
+    Although the profile does not directly state that keyCertSign must be asserted
+    when cA is asserted, this configuration is inconsistent and clients should
+    reject it.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280
+    """
+    root = builder.root_ca(
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=False,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        ),
+    )
+    leaf = ee_cert(root)
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ica_ku_keycertsign(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> EE
+    ```
+
+    The intermediate CA includes BasicConstraints with pathLenConstraint=0 and
+    KeyUsage.keyCertSign=FALSE, which is disallowed under the [RFC 5280 profile]:
+
+    > CAs MUST NOT include the pathLenConstraint field unless the cA
+    > boolean is asserted and the key usage extension asserts the
+    > keyCertSign bit.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        pathlen=0,
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=False,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        ),
+    )
+    leaf = ee_cert(intermediate)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().peer_certificate(leaf).fails()
+
+
+@testcase
+def leaf_ku_keycertsign(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The leaf has a BasicConstraints extension with cA=FALSE and a KeyUsage
+    extension with keyCertSign=TRUE. This is disallowed under the
+    [RFC 5280 profile]:
+
+    > The cA boolean indicates whether the certified public key may be used
+    > to verify certificate signatures.  If the cA boolean is not asserted,
+    > then the keyCertSign bit in the key usage extension MUST NOT be
+    > asserted.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        basic_constraints=ext(x509.BasicConstraints(False, None), critical=False),
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=True,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs().peer_certificate(leaf).fails()
