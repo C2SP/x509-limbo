@@ -478,7 +478,99 @@ def root_non_critical_bc(builder: Builder) -> None:
 
 
 @testcase
-def leaf_bc_ca_keycertsign(builder: Builder) -> None:
+def root_ku_keycertsign(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root CA has BasicConstraints.cA=TRUE and KeyUsage.keyCertSign=FALSE.
+    According to the [RFC 5280 profile], these two fields are related in the
+    following ways:
+
+    > If the keyCertSign bit is asserted, then the cA bit in the basic
+    > constraints extension MUST also be asserted. (Section 4.2.1.3)
+
+    and
+
+    > If the cA boolean is not asserted, then the keyCertSign bit in the
+    > key usage extension MUST NOT be asserted. (Section 4.2.1.9)
+
+    Although the profile does not directly state that keyCertSign must be asserted
+    when cA is asserted, this configuration is inconsistent and clients should
+    reject it.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280
+    """
+    root = builder.root_ca(
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=False,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        ),
+    )
+    leaf = ee_cert(root)
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ica_ku_keycertsign(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> EE
+    ```
+
+    The intermediate CA includes BasicConstraints with pathLenConstraint=0 and
+    KeyUsage.keyCertSign=FALSE, which is disallowed under the [RFC 5280 profile]:
+
+    > CAs MUST NOT include the pathLenConstraint field unless the cA
+    > boolean is asserted and the key usage extension asserts the
+    > keyCertSign bit.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        pathlen=0,
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=False,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=False,
+        ),
+    )
+    leaf = ee_cert(intermediate)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().peer_certificate(leaf).fails()
+
+
+@testcase
+def leaf_ku_keycertsign(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
