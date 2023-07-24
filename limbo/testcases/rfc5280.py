@@ -369,7 +369,7 @@ def chain_untrusted_root(builder: Builder) -> None:
 
 
 @testcase
-def chain_ica_no_ca_bit(builder: Builder) -> None:
+def intermediate_ca_without_ca_bit(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -399,7 +399,7 @@ def chain_ica_no_ca_bit(builder: Builder) -> None:
 
 
 @testcase
-def ica_missing_bc(builder: Builder) -> None:
+def intermediate_ca_missing_basic_constraints(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -426,7 +426,7 @@ def ica_missing_bc(builder: Builder) -> None:
 
 
 @testcase
-def root_missing_bc(builder: Builder) -> None:
+def root_missing_basic_constraints(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -452,7 +452,7 @@ def root_missing_bc(builder: Builder) -> None:
 
 
 @testcase
-def root_non_critical_bc(builder: Builder) -> None:
+def root_non_critical_basic_constraints(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -478,7 +478,7 @@ def root_non_critical_bc(builder: Builder) -> None:
 
 
 @testcase
-def root_ku_keycertsign(builder: Builder) -> None:
+def root_inconsistent_ca_extensions(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
