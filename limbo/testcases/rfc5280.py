@@ -319,7 +319,9 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
     """
     Produces the following chain:
 
+    ```
     root 2 -> intermediate (expired) -> root -> EE
+    ```
 
     Both roots are trusted. A chain should be built successfully, disregarding
     the expired intermediate certificate and the second root. This scenario is
@@ -350,7 +352,9 @@ def chain_untrusted_root(builder: Builder) -> None:
     """
     Produces the following chain:
 
+    ```
     root (untrusted) -> intermediate -> EE
+    ```
 
     The root is not in the trusted set, thus no chain should be built.
     """
@@ -362,3 +366,26 @@ def chain_untrusted_root(builder: Builder) -> None:
     builder.trusted_certs().untrusted_intermediates(root, intermediate).peer_certificate(
         leaf
     ).fails()
+
+
+@testcase
+def chain_ica_no_ca_bit(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate -> EE
+    ```
+
+    The intermediate CA does not have the cA bit set in BasicConstraints, thus
+    no valid chain to the leaf exists.
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        basic_constraints=ext(x509.BasicConstraints(False, path_length=None), critical=True),
+    )
+    leaf = ee_cert(intermediate)
+
+    builder = builder.client_validation()
+    builder.trusted_certs().untrusted_intermediates(intermediate).peer_certificate(leaf).fails()

@@ -201,3 +201,34 @@ def intermediate_pathlen_too_long(builder: Builder) -> None:
         .peer_certificate(leaf)
         .fails()
     )
+
+
+@testcase
+def self_issued_certs_pathlen(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> ICA' (pathlen:1) -> ICA' (pathlen:1) -> ICA'' (pathlen:0) -> EE
+    ```
+
+    The second ICA' intermediate is a self-issued certificate. Self-issued certificates
+    are certificates with identical issuers and subjects. While this chain trivially
+    seems to violate the assigned path length constraints, the [RFC 5280 profile]
+    states that self issued certificates should not be counted.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    """
+
+    root = builder.root_ca()
+    first_intermediate = builder.intermediate_ca(root, pathlen=1)
+    second_intermediate = builder.intermediate_ca(
+        first_intermediate, pathlen=1, subject=first_intermediate.cert.subject
+    )
+    third_intermediate = builder.intermediate_ca(second_intermediate, pathlen=0)
+    leaf = ee_cert(third_intermediate)
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).untrusted_intermediates(
+        first_intermediate, second_intermediate, third_intermediate
+    ).peer_certificate(leaf).succeeds()
