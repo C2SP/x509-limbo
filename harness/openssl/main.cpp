@@ -112,6 +112,13 @@ json evaluate_testcase(const json &testcase)
 
     X509_STORE_ptr store(X509_STORE_new(), X509_STORE_free);
     X509_STORE_set_flags(store.get(), X509_V_FLAG_X509_STRICT);
+    // NOTE(ww): This flag is terribly named; it tells OpenSSL to
+    // treat intermediate certificates in the root store as trust anchors,
+    // which they already are (by virtue of being in the trust store).
+    // This isn't the default for backwards compatibility reasons,
+    // but it's consistent with how just about every other path building
+    // implementation works.
+    X509_STORE_set_flags(store.get(), X509_V_FLAG_PARTIAL_CHAIN);
     for (auto &cert : testcase["trusted_certs"])
     {
         auto cert_pem = cert.template get<std::string>();
@@ -140,6 +147,10 @@ json evaluate_testcase(const json &testcase)
 
         auto tm = std::chrono::system_clock::to_time_t(tp);
         X509_STORE_CTX_set_time(ctx.get(), 0, tm);
+    }
+    else
+    {
+        X509_STORE_set_flags(store.get(), X509_V_FLAG_NO_CHECK_TIME);
     }
 
     if (testcase["expected_peer_name"].is_object())
