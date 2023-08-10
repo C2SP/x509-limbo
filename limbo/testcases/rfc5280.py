@@ -918,7 +918,7 @@ def ca_nameconstraints_excluded_dn_match(builder: Builder) -> None:
 @testcase
 def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
     """
-    Produces the following **invalid** chain:
+    Produces the following **valid** chain:
 
     ```
     root -> leaf
@@ -948,3 +948,89 @@ def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
 
     builder = builder.client_validation()
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+
+
+@testcase
+def ca_nameconstraints_permitted_dn_match_sub_mismatch(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted DirectoryName
+    of "CN=foo", matching the leaf's SubjectAlternativeName but not its subject.
+    The leaf must be rejected per the [RFC5280 profile] due to this mismatch:
+
+    > Restrictions of the form directoryName MUST be applied to the subject
+    > field in the certificate (when the certificate includes a non-empty
+    > subject field) and to any names of type directoryName in the
+    > subjectAltName extension.
+
+    [RFC5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))], None
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        subject=x509.Name.from_rfc4514_string("CN=not-foo"),
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_excluded_dn_match_sub_mismatch(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded DirectoryName
+    of "CN=foo", matching the leaf's subject but not its SubjectAlternativeName.
+    The leaf must be rejected per the [RFC5280 profile] due to this match:
+
+    > Restrictions of the form directoryName MUST be applied to the subject
+    > field in the certificate (when the certificate includes a non-empty
+    > subject field) and to any names of type directoryName in the
+    > subjectAltName extension.
+
+    [RFC5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                None, [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        subject=x509.Name.from_rfc4514_string("CN=foo"),
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=not-foo"))]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
