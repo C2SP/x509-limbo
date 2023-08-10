@@ -866,6 +866,7 @@ def ca_nameconstraints_permitted_dn_mismatch(builder: Builder) -> None:
     )
     leaf = builder.leaf_cert(
         root,
+        subject=x509.Name.from_rfc4514_string("CN=not-foo"),
         san=ext(
             x509.SubjectAlternativeName(
                 [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=not-foo"))]
@@ -901,6 +902,7 @@ def ca_nameconstraints_excluded_dn_match(builder: Builder) -> None:
     )
     leaf = builder.leaf_cert(
         root,
+        subject=x509.Name.from_rfc4514_string("CN=foo"),
         san=ext(
             x509.SubjectAlternativeName(
                 [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
@@ -935,6 +937,7 @@ def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
     )
     leaf = builder.leaf_cert(
         root,
+        subject=x509.Name.from_rfc4514_string("CN=foo"),
         san=ext(
             x509.SubjectAlternativeName(
                 [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
