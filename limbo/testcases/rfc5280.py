@@ -3,6 +3,7 @@ RFC5280 profile tests.
 """
 
 from datetime import datetime
+from ipaddress import IPv4Address, IPv4Network
 
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -611,3 +612,326 @@ def leaf_ku_keycertsign(builder: Builder) -> None:
 
     builder = builder.client_validation()
     builder.trusted_certs().peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_permitted_dns_mismatch(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted dNSName
+    "example.com", whereas the leaf certificate has a SubjectAlternativeName with a
+    dNSName of "not-example.com".
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints([x509.DNSName("example.com")], None), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=True)
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_excluded_dns_match(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded dNSName of
+    "example.com", whereas the leaf certificate has a SubjectAlternativeName
+    with a dNSName of "not-example.com".
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(None, [x509.DNSName("example.com")]), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=True)
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_permitted_ip_mismatch(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted iPAddress of
+    192.0.2.0/24, which does not match the iPAddress in the SubjectAlternativeName
+    of the leaf.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints([x509.IPAddress(IPv4Network("192.0.2.0/24"))], None), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.3.1"))]), critical=True
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_excluded_ip_match(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded iPAddress of
+    192.0.2.0/24, matching the iPAddress in the SubjectAlternativeName of the leaf.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(None, [x509.IPAddress(IPv4Network("192.0.2.0/24"))]), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.2.1"))]), critical=True
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted iPAddress of
+    192.0.2.0/24, which matches the iPAddress in the SubjectAlternativeName
+    of the leaf.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints([x509.IPAddress(IPv4Network("192.0.2.0/24"))], None), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.2.1"))]), critical=True
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+
+
+@testcase
+def ca_nameconstraints_permitted_uri_match(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted
+    uniformResourceIdentifier of ".example.com". According to [RFC 5280], this
+    should match the child's SubjectAlternativeName "foo.bar.example.com":
+
+    > When the constraint begins with a period, it MAY be expanded
+    > with one or more labels.  That is, the constraint ".example.com"
+    > is satisfied by both host.example.com and my.host.example.com.
+    > However, the constraint ".example.com" is not satisfied by
+    > "example.com".
+
+    [RFC 5280]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                [x509.UniformResourceIdentifier("https://.example.com/foo")], None
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.UniformResourceIdentifier("https://foo.bar.example.com")]
+            ),
+            critical=True,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+
+
+@testcase
+def ca_nameconstraints_permitted_uri_mismatch(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted
+    uniformResourceIdentifier of ".example.com". According to [RFC 5280], this
+    should NOT match the child's SubjectAlternativeName "example.com":
+
+    > When the constraint begins with a period, it MAY be expanded
+    > with one or more labels.  That is, the constraint ".example.com"
+    > is satisfied by both host.example.com and my.host.example.com.
+    > However, the constraint ".example.com" is not satisfied by
+    > "example.com".
+
+    [RFC 5280]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints([x509.UniformResourceIdentifier("https://.example.com")], None),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.UniformResourceIdentifier("https://example.com")]),
+            critical=True,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_permitted_dn_mismatch(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted DirectoryName
+    of "CN=foo". This should not match the child's DirectoryName of "CN=not-foo".
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))], None
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=not-foo"))]
+            ),
+            critical=True,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_excluded_dn_match(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded DirectoryName
+    of "CN=foo", matching the leaf's SubjectAlternativeName.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                None,
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))],
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
+            ),
+            critical=True,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted DirectoryName
+    of "CN=foo", matching the leaf's SubjectAlternativeName.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))], None
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
+            ),
+            critical=True,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
