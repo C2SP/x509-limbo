@@ -633,7 +633,8 @@ def ca_nameconstraints_permitted_dns_mismatch(builder: Builder) -> None:
         )
     )
     leaf = builder.leaf_cert(
-        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=True)
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
     )
 
     builder = builder.client_validation()
@@ -658,7 +659,7 @@ def ca_nameconstraints_excluded_dns_match(builder: Builder) -> None:
         )
     )
     leaf = builder.leaf_cert(
-        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=True)
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
     builder = builder.client_validation()
@@ -683,7 +684,7 @@ def ca_nameconstraints_permitted_dns_match(builder: Builder) -> None:
         )
     )
     leaf = builder.leaf_cert(
-        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=True)
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
     builder = builder.client_validation()
@@ -718,11 +719,43 @@ def ca_nameconstraints_permitted_dns_match_more(builder: Builder) -> None:
     )
     leaf = builder.leaf_cert(
         root,
-        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.bar.example.com")]), critical=True),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.bar.example.com")]), critical=False),
     )
 
     builder = builder.client_validation()
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+
+
+@testcase
+def ca_nameconstraints_excluded_dns_match_second(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded dNSName of
+    "not-allowed.example.com". This should match the leaf's second
+    SubjectAlternativeName entry.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(None, [x509.DNSName("not-allowed.example.com")]), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DNSName("example.com"), x509.DNSName("not-allowed.example.com")]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -746,7 +779,7 @@ def ca_nameconstraints_permitted_ip_mismatch(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         root,
         san=ext(
-            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.3.1"))]), critical=True
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.3.1"))]), critical=False
         ),
     )
 
@@ -774,7 +807,7 @@ def ca_nameconstraints_excluded_ip_match(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         root,
         san=ext(
-            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.2.1"))]), critical=True
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.2.1"))]), critical=False
         ),
     )
 
@@ -803,7 +836,7 @@ def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         root,
         san=ext(
-            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.2.1"))]), critical=True
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("192.0.2.1"))]), critical=False
         ),
     )
 
@@ -837,7 +870,7 @@ def ca_nameconstraints_permitted_dn_mismatch(builder: Builder) -> None:
             x509.SubjectAlternativeName(
                 [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=not-foo"))]
             ),
-            critical=True,
+            critical=False,
         ),
     )
 
@@ -872,7 +905,7 @@ def ca_nameconstraints_excluded_dn_match(builder: Builder) -> None:
             x509.SubjectAlternativeName(
                 [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
             ),
-            critical=True,
+            critical=False,
         ),
     )
 
@@ -906,7 +939,7 @@ def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
             x509.SubjectAlternativeName(
                 [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
             ),
-            critical=True,
+            critical=False,
         ),
     )
 
