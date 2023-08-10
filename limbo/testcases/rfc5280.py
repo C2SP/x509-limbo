@@ -650,8 +650,7 @@ def ca_nameconstraints_excluded_dns_match(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with an excluded dNSName of
-    "example.com", whereas the leaf certificate has a SubjectAlternativeName
-    with a dNSName of "not-example.com".
+    "example.com", matching the leaf's SubjectAlternativeName.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -664,6 +663,66 @@ def ca_nameconstraints_excluded_dns_match(builder: Builder) -> None:
 
     builder = builder.client_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_nameconstraints_permitted_dns_match(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted dNSName of
+    "example.com", matching the leaf's SubjectAlternativeName.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints([x509.DNSName("example.com")], None), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=True)
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+
+
+@testcase
+def ca_nameconstraints_permitted_dns_match_more(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted dNSName of
+    "example.com". The leaf's "foo.bar.example.com" satisfies this constraint
+    per the [RFC 5280 profile]:
+
+    > DNS name restrictions are expressed as host.example.com.  Any DNS
+    > name that can be constructed by simply adding zero or more labels to
+    > the left-hand side of the name satisfies the name constraint.  For
+    > example, www.host.example.com would satisfy the constraint but
+    > host1.example.com would not.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints([x509.DNSName("example.com")], None), critical=True
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.bar.example.com")]), critical=True),
+    )
+
+    builder = builder.client_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
 
 
 @testcase
@@ -750,88 +809,6 @@ def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
 
     builder = builder.client_validation()
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
-
-
-@testcase
-def ca_nameconstraints_permitted_uri_match(builder: Builder) -> None:
-    """
-    Produces the following **valid** chain:
-
-    ```
-    root -> leaf
-    ```
-
-    The root contains a NameConstraints extension with a permitted
-    uniformResourceIdentifier of ".example.com". According to [RFC 5280], this
-    should match the child's SubjectAlternativeName "foo.bar.example.com":
-
-    > When the constraint begins with a period, it MAY be expanded
-    > with one or more labels.  That is, the constraint ".example.com"
-    > is satisfied by both host.example.com and my.host.example.com.
-    > However, the constraint ".example.com" is not satisfied by
-    > "example.com".
-
-    [RFC 5280]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
-    """
-    root = builder.root_ca(
-        name_constraints=ext(
-            x509.NameConstraints(
-                [x509.UniformResourceIdentifier("https://.example.com/foo")], None
-            ),
-            critical=True,
-        )
-    )
-    leaf = builder.leaf_cert(
-        root,
-        san=ext(
-            x509.SubjectAlternativeName(
-                [x509.UniformResourceIdentifier("https://foo.bar.example.com")]
-            ),
-            critical=True,
-        ),
-    )
-
-    builder = builder.client_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
-
-
-@testcase
-def ca_nameconstraints_permitted_uri_mismatch(builder: Builder) -> None:
-    """
-    Produces the following **invalid** chain:
-
-    ```
-    root -> leaf
-    ```
-
-    The root contains a NameConstraints extension with a permitted
-    uniformResourceIdentifier of ".example.com". According to [RFC 5280], this
-    should NOT match the child's SubjectAlternativeName "example.com":
-
-    > When the constraint begins with a period, it MAY be expanded
-    > with one or more labels.  That is, the constraint ".example.com"
-    > is satisfied by both host.example.com and my.host.example.com.
-    > However, the constraint ".example.com" is not satisfied by
-    > "example.com".
-
-    [RFC 5280]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
-    """
-    root = builder.root_ca(
-        name_constraints=ext(
-            x509.NameConstraints([x509.UniformResourceIdentifier("https://.example.com")], None),
-            critical=True,
-        )
-    )
-    leaf = builder.leaf_cert(
-        root,
-        san=ext(
-            x509.SubjectAlternativeName([x509.UniformResourceIdentifier("https://example.com")]),
-            critical=True,
-        ),
-    )
-
-    builder = builder.client_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
 @testcase
