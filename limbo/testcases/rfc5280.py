@@ -951,7 +951,7 @@ def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
 
 
 @testcase
-def ca_nameconstraints_permitted_dn_match_sub_mismatch(builder: Builder) -> None:
+def ca_nameconstraints_permitted_dn_match_subject_san_mismatch(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
