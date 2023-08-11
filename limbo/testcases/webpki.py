@@ -21,7 +21,7 @@ def cryptographydotio_chain(builder: Builder) -> None:
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
 
     leaf, root = chain.pop(0), chain.pop(-1)
-    builder = builder.client_validation().validation_time(
+    builder = builder.server_validation().validation_time(
         datetime.fromisoformat("2023-07-10T00:00:00Z")
     )
     builder.trusted_certs(root).peer_certificate(leaf).untrusted_intermediates(*chain).succeeds()
@@ -37,7 +37,7 @@ def cryptographydotio_chain_missing_intermediate(builder: Builder) -> None:
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
 
     leaf, root = chain.pop(0), chain.pop(-1)
-    builder = builder.client_validation().validation_time(
+    builder = builder.server_validation().validation_time(
         datetime.fromisoformat("2023-07-10T00:00:00Z")
     )
     builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -60,7 +60,7 @@ def exact_san(builder: Builder) -> None:
         root, ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .peer_certificate(leaf)
@@ -88,7 +88,7 @@ def mismatch_domain_san(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example2.com")
     ).fails()
@@ -115,7 +115,7 @@ def mismatch_subdomain_san(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("abc.example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="def.example.com")
     ).fails()
@@ -141,7 +141,7 @@ def mismatch_subdomain_apex_san(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="abc.example.com")
     ).fails()
@@ -167,7 +167,7 @@ def mismatch_apex_subdomain_san(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("abc.example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
@@ -198,7 +198,7 @@ def public_suffix_wildcard_san(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("*.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
@@ -221,7 +221,7 @@ def leftmost_wildcard_san(builder: Builder) -> None:
         root, ext(x509.SubjectAlternativeName([x509.DNSName("*.example.com")]), critical=False)
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .peer_certificate(leaf)
@@ -249,7 +249,7 @@ def wildcard_embedded_leftmost_san(builder: Builder) -> None:
         root, ext(x509.SubjectAlternativeName([x509.DNSName("ba*.example.com")]), critical=False)
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .peer_certificate(leaf)
@@ -278,7 +278,7 @@ def wildcard_not_in_leftmost_san(builder: Builder) -> None:
         ext(x509.SubjectAlternativeName([x509.DNSName("foo.*.example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .peer_certificate(leaf)
@@ -309,7 +309,7 @@ def wildcard_match_across_labels_san(builder: Builder) -> None:
         ext(x509.SubjectAlternativeName([x509.DNSName("*.example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .peer_certificate(leaf)
@@ -341,7 +341,7 @@ def wildcard_embedded_ulabel_san(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .peer_certificate(leaf)
@@ -376,7 +376,7 @@ def unicode_emoji_san(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .peer_certificate(leaf)
@@ -409,5 +409,5 @@ def malformed_aia(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()

@@ -32,7 +32,7 @@ def empty_issuer(builder: Builder) -> None:
     root = builder.root_ca(issuer=issuer, subject=subject)
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -58,7 +58,7 @@ def unknown_critical_extension_ee(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -84,7 +84,7 @@ def unknown_critical_extension_root(builder: Builder) -> None:
     )
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -113,7 +113,7 @@ def unknown_critical_extension_intermediate(builder: Builder) -> None:
     )
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(intermediate)
@@ -150,7 +150,7 @@ def critical_aki(builder: Builder) -> None:
     )
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -178,7 +178,7 @@ def self_signed_root_missing_aki(builder: Builder) -> None:
     root = builder.root_ca(aki=None)
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).succeeds()
 
 
@@ -204,7 +204,7 @@ def cross_signed_root_missing_aki(builder: Builder) -> None:
     root = builder.intermediate_ca(xsigner_root, pathlen=0, aki=None)
     leaf = builder.leaf_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -230,7 +230,7 @@ def intermediate_missing_aki(builder: Builder) -> None:
     intermediate = builder.intermediate_ca(root, pathlen=0, aki=None)
     leaf = builder.leaf_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
 
 
@@ -255,7 +255,7 @@ def leaf_missing_aki(builder: Builder) -> None:
     root = builder.root_ca()
     leaf = builder.leaf_cert(root, aki=None)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -282,7 +282,7 @@ def critical_ski(builder: Builder) -> None:
     )
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -311,7 +311,7 @@ def missing_ski(builder: Builder) -> None:
     root = builder.root_ca(ski=None)
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -342,7 +342,7 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
     )
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root, root_two).untrusted_intermediates(
         expired_intermediate
     ).peer_certificate(leaf).succeeds()
@@ -363,7 +363,7 @@ def chain_untrusted_root(builder: Builder) -> None:
     intermediate = builder.intermediate_ca(root, pathlen=0)
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs().untrusted_intermediates(root, intermediate).peer_certificate(
         leaf
     ).fails()
@@ -395,7 +395,7 @@ def intermediate_ca_without_ca_bit(builder: Builder) -> None:
     )
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs().untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
 
 
@@ -422,7 +422,7 @@ def intermediate_ca_missing_basic_constraints(builder: Builder) -> None:
     intermediate = builder.intermediate_ca(root, basic_constraints=None)
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs().peer_certificate(leaf).fails()
 
 
@@ -448,7 +448,7 @@ def root_missing_basic_constraints(builder: Builder) -> None:
     root = builder.root_ca(basic_constraints=None)
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs().peer_certificate(leaf).fails()
 
 
@@ -474,7 +474,7 @@ def root_non_critical_basic_constraints(builder: Builder) -> None:
     root = builder.root_ca(basic_constraints=ext(x509.BasicConstraints(True, None), critical=False))
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs().peer_certificate(leaf).fails()
 
 
@@ -523,7 +523,7 @@ def root_inconsistent_ca_extensions(builder: Builder) -> None:
     )
     leaf = ee_cert(root)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -566,7 +566,7 @@ def ica_ku_keycertsign(builder: Builder) -> None:
     )
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs().peer_certificate(leaf).fails()
 
 
@@ -610,7 +610,7 @@ def leaf_ku_keycertsign(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs().peer_certificate(leaf).fails()
 
 
@@ -629,7 +629,10 @@ def ca_nameconstraints_permitted_dns_mismatch(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints([x509.DNSName("example.com")], None), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
@@ -637,7 +640,7 @@ def ca_nameconstraints_permitted_dns_mismatch(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -655,14 +658,17 @@ def ca_nameconstraints_excluded_dns_match(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints(None, [x509.DNSName("example.com")]), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=None, excluded_subtrees=[x509.DNSName("example.com")]
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
         root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -680,14 +686,17 @@ def ca_nameconstraints_permitted_dns_match(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints([x509.DNSName("example.com")], None), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
         root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
 
 
@@ -714,7 +723,10 @@ def ca_nameconstraints_permitted_dns_match_more(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints([x509.DNSName("example.com")], None), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
@@ -722,7 +734,7 @@ def ca_nameconstraints_permitted_dns_match_more(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.bar.example.com")]), critical=False),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
 
 
@@ -741,7 +753,10 @@ def ca_nameconstraints_excluded_dns_match_second(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints(None, [x509.DNSName("not-allowed.example.com")]), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=None, excluded_subtrees=[x509.DNSName("not-allowed.example.com")]
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
@@ -754,7 +769,7 @@ def ca_nameconstraints_excluded_dns_match_second(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -773,7 +788,11 @@ def ca_nameconstraints_permitted_ip_mismatch(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints([x509.IPAddress(IPv4Network("192.0.2.0/24"))], None), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
+                excluded_subtrees=None,
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
@@ -783,7 +802,7 @@ def ca_nameconstraints_permitted_ip_mismatch(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -801,7 +820,11 @@ def ca_nameconstraints_excluded_ip_match(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints(None, [x509.IPAddress(IPv4Network("192.0.2.0/24"))]), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=None,
+                excluded_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
@@ -811,7 +834,7 @@ def ca_nameconstraints_excluded_ip_match(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -830,7 +853,11 @@ def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
     """
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints([x509.IPAddress(IPv4Network("192.0.2.0/24"))], None), critical=True
+            x509.NameConstraints(
+                permitted_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
+                excluded_subtrees=None,
+            ),
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
@@ -840,7 +867,7 @@ def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
 
 
@@ -859,7 +886,8 @@ def ca_nameconstraints_permitted_dn_mismatch(builder: Builder) -> None:
     root = builder.root_ca(
         name_constraints=ext(
             x509.NameConstraints(
-                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))], None
+                permitted_subtrees=[x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))],
+                excluded_subtrees=None,
             ),
             critical=True,
         )
@@ -875,7 +903,7 @@ def ca_nameconstraints_permitted_dn_mismatch(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -894,8 +922,8 @@ def ca_nameconstraints_excluded_dn_match(builder: Builder) -> None:
     root = builder.root_ca(
         name_constraints=ext(
             x509.NameConstraints(
-                None,
-                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))],
+                permitted_subtrees=None,
+                excluded_subtrees=[x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))],
             ),
             critical=True,
         )
@@ -911,7 +939,7 @@ def ca_nameconstraints_excluded_dn_match(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -930,7 +958,8 @@ def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
     root = builder.root_ca(
         name_constraints=ext(
             x509.NameConstraints(
-                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))], None
+                permitted_subtrees=[x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))],
+                excluded_subtrees=None,
             ),
             critical=True,
         )
@@ -946,7 +975,7 @@ def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
 
 
@@ -973,7 +1002,8 @@ def ca_nameconstraints_permitted_dn_match_subject_san_mismatch(builder: Builder)
     root = builder.root_ca(
         name_constraints=ext(
             x509.NameConstraints(
-                [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))], None
+                permitted_subtrees=[x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))],
+                excluded_subtrees=None,
             ),
             critical=True,
         )
@@ -989,7 +1019,7 @@ def ca_nameconstraints_permitted_dn_match_subject_san_mismatch(builder: Builder)
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -1016,7 +1046,8 @@ def ca_nameconstraints_excluded_dn_match_sub_mismatch(builder: Builder) -> None:
     root = builder.root_ca(
         name_constraints=ext(
             x509.NameConstraints(
-                None, [x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))]
+                permitted_subtrees=None,
+                excluded_subtrees=[x509.DirectoryName(x509.Name.from_rfc4514_string("CN=foo"))],
             ),
             critical=True,
         )
@@ -1032,5 +1063,5 @@ def ca_nameconstraints_excluded_dn_match_sub_mismatch(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()

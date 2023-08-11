@@ -85,9 +85,9 @@ json evaluate_testcase(const json &testcase)
     auto id = testcase["id"].template get<std::string>();
     std::cerr << "Evaluating case: " << id << std::endl;
 
-    if (testcase["validation_kind"] != "CLIENT")
+    if (testcase["validation_kind"] != "SERVER")
     {
-        return skip(id, "non-CLIENT testcases not supported yet");
+        return skip(id, "non-SERVER testcases not supported yet");
     }
 
     if (!testcase["signature_algorithms"].is_null())

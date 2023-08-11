@@ -152,6 +152,8 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 
 	switch testcase.ValidationKind {
 	case validationKindClient:
+		return testcaseSkipped, fmt.Errorf("unimplemented validationKindClient")
+	case validationKindServer:
 		var dnsName string
 		if peerName, ok := testcase.ExpectedPeerName.(map[string]interface{}); ok {
 			if peerName["kind"] != "DNS" {
@@ -195,8 +197,6 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		} else if err == nil && !expectSuccess {
 			return testcaseFailed, fmt.Errorf("validation succeeded when failure was expected")
 		}
-	case validationKindServer:
-		return testcaseSkipped, fmt.Errorf("unimplemented validationKindServer")
 	}
 
 	return testcasePassed, nil
