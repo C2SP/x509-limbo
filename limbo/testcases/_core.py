@@ -34,6 +34,7 @@ class Builder:
         key_usage: _Extension[x509.KeyUsage] | None,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None,
+        name_constraints: _Extension[x509.NameConstraints] | None,
         extra_extension: _Extension[x509.UnrecognizedExtension] | None,
         parent: CertificatePair | None,
     ) -> CertificatePair:
@@ -91,6 +92,11 @@ class Builder:
                 critical=False,
             )
 
+        if name_constraints:
+            builder = builder.add_extension(
+                name_constraints.ext, critical=name_constraints.critical
+            )
+
         if extra_extension:
             builder = builder.add_extension(extra_extension.ext, critical=extra_extension.critical)
 
@@ -133,6 +139,7 @@ class Builder:
         ),
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = None,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
+        name_constraints: _Extension[x509.NameConstraints] | None = None,
         extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
     ) -> CertificatePair:
         return self._ca(
@@ -146,6 +153,7 @@ class Builder:
             key_usage,
             aki,
             ski,
+            name_constraints,
             extra_extension,
             None,
         )
@@ -220,6 +228,7 @@ class Builder:
             key_usage,
             aki,
             ski,
+            None,
             extra_extension,
             parent,
         )

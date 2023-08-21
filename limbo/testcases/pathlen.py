@@ -19,7 +19,7 @@ def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
     intermediate = builder.intermediate_ca(root, pathlen=0)
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(intermediate)
@@ -45,7 +45,7 @@ def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
     intermediate = builder.intermediate_ca(root, pathlen=1)
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(intermediate)
@@ -71,7 +71,7 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
     intermediate = builder.intermediate_ca(root, pathlen=2)
     leaf = ee_cert(intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(intermediate)
@@ -106,7 +106,7 @@ def validation_ignores_pathlen_in_leaf(builder: Builder) -> None:
     first_intermediate = builder.intermediate_ca(root, pathlen=0)
     second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=0)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate)
@@ -134,7 +134,7 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=0)
     leaf = ee_cert(second_intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate, second_intermediate)
@@ -165,7 +165,7 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=2)
     leaf = ee_cert(second_intermediate)
 
-    builder = builder.client_validation().features([Feature.pedantic_pathlen])
+    builder = builder.server_validation().features([Feature.pedantic_pathlen])
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate, second_intermediate)
@@ -194,7 +194,7 @@ def intermediate_pathlen_too_long(builder: Builder) -> None:
     third_intermediate = builder.intermediate_ca(second_intermediate, pathlen=0)
     leaf = ee_cert(third_intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate, second_intermediate, third_intermediate)
@@ -228,7 +228,7 @@ def self_issued_certs_pathlen(builder: Builder) -> None:
     third_intermediate = builder.intermediate_ca(second_intermediate, pathlen=0)
     leaf = ee_cert(third_intermediate)
 
-    builder = builder.client_validation()
+    builder = builder.server_validation()
     builder.trusted_certs(root).untrusted_intermediates(
         first_intermediate, second_intermediate, third_intermediate
     ).peer_certificate(leaf).succeeds()
