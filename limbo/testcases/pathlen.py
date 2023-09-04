@@ -1,5 +1,4 @@
 from limbo.assets import ee_cert
-from limbo.models import Feature
 from limbo.testcases._core import Builder, testcase
 
 
