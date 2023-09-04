@@ -132,13 +132,6 @@ class Feature(str, Enum):
     For implementations that explicitly do not support X.509 certificate policy extensions.
     """
 
-    pedantic_pathlen = "pedantic-pathlen"
-    """
-    "Pedantic" path length constraint tests (i.e. not required by RFC 5280,
-    but should be rejected as inconsistent/incoherent/etc.)
-    """
-
-
 class Testcase(BaseModel):
     """
     Represents an individual Limbo testcase.
