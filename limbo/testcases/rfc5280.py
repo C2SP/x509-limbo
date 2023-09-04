@@ -364,7 +364,9 @@ def chain_untrusted_root(builder: Builder) -> None:
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, pathlen=0)
     leaf = ee_cert(intermediate)
-    unrelated_root = builder.root_ca()
+    unrelated_root = builder.root_ca(
+        issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-unrelated-root")
+    )
 
     builder = builder.server_validation()
     builder.trusted_certs(unrelated_root).untrusted_intermediates(
