@@ -7,7 +7,7 @@ from datetime import datetime
 from cryptography import x509
 
 from limbo.assets import _ASSETS_PATH, Certificate, ee_cert, ext
-from limbo.models import PeerName
+from limbo.models import KeyUsage, PeerName
 from limbo.testcases._core import Builder, testcase
 
 
@@ -24,7 +24,13 @@ def cryptographydotio_chain(builder: Builder) -> None:
     builder = builder.server_validation().validation_time(
         datetime.fromisoformat("2023-07-10T00:00:00Z")
     )
-    builder.trusted_certs(root).peer_certificate(leaf).untrusted_intermediates(*chain).succeeds()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .untrusted_intermediates(*chain)
+        .expected_peer_name(PeerName(kind="DNS", value="cryptography.io"))
+        .key_usage([KeyUsage.digital_signature])
+    ).succeeds()
 
 
 @testcase
@@ -40,7 +46,12 @@ def cryptographydotio_chain_missing_intermediate(builder: Builder) -> None:
     builder = builder.server_validation().validation_time(
         datetime.fromisoformat("2023-07-10T00:00:00Z")
     )
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="cryptography.io"))
+        .key_usage([KeyUsage.digital_signature])
+    ).fails()
 
 
 @testcase
