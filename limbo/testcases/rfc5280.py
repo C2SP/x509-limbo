@@ -358,15 +358,18 @@ def chain_untrusted_root(builder: Builder) -> None:
     ```
 
     The root is not in the trusted set, thus no chain should be built.
+    Verification can't be achieved without trusted certificates so we add an
+    unrelated root CA to create a more realistic scenario.
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, pathlen=0)
     leaf = ee_cert(intermediate)
+    unrelated_root = builder.root_ca()
 
     builder = builder.server_validation()
-    builder.trusted_certs().untrusted_intermediates(root, intermediate).peer_certificate(
-        leaf
-    ).fails()
+    builder.trusted_certs(unrelated_root).untrusted_intermediates(
+        root, intermediate
+    ).peer_certificate(leaf).fails()
 
 
 @testcase
