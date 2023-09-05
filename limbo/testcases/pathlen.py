@@ -1,5 +1,4 @@
 from limbo.assets import ee_cert
-from limbo.models import Feature
 from limbo.testcases._core import Builder, testcase
 
 
@@ -144,20 +143,19 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
 
 
 @testcase
-def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
+def intermediate_pathlen_may_increase(builder: Builder) -> None:
     """
-    Produces the following **ambiguous** chain:
+    Produces the following **valid** chain:
 
     ```
     root -> intermediate (pathlen:1) -> intermediate (pathlen:2) -> EE
     ```
 
-    This violates the first intermediate's `pathlen:1` constraint,
-    which allows a subsequent intermediate but not one that widens
-    the `pathlen` (as `pathlen:2` does).
+    This is a less straightforward case as the second intermediate's `pathlen:2`
+    constraint seems to contradict the first intermediate's `pathlen:1`
+    constraint.
 
-    RFC 5280 doesn't specify what clients should do about widened path
-    length constraints, which is why this testcase is marked as "pedantic."
+    RFC 5280 permits this as part of supporting multiple validation paths.
     """
 
     root = builder.root_ca()
@@ -165,12 +163,12 @@ def intermediate_pathlen_must_not_increase(builder: Builder) -> None:
     second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=2)
     leaf = ee_cert(second_intermediate)
 
-    builder = builder.server_validation().features([Feature.pedantic_pathlen])
+    builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
         .untrusted_intermediates(first_intermediate, second_intermediate)
         .peer_certificate(leaf)
-        .fails()
+        .succeeds()
     )
 
 
