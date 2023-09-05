@@ -6,8 +6,7 @@
       "description": "Feature tags for testcases.",
       "enum": [
         "has-cert-policies",
-        "no-cert-policies",
-        "pedantic-pathlen"
+        "no-cert-policies"
       ],
       "type": "string"
     },

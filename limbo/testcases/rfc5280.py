@@ -358,15 +358,20 @@ def chain_untrusted_root(builder: Builder) -> None:
     ```
 
     The root is not in the trusted set, thus no chain should be built.
+    Verification can't be achieved without trusted certificates so we add an
+    unrelated root CA to create a more realistic scenario.
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, pathlen=0)
     leaf = ee_cert(intermediate)
+    unrelated_root = builder.root_ca(
+        issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-unrelated-root")
+    )
 
     builder = builder.server_validation()
-    builder.trusted_certs().untrusted_intermediates(root, intermediate).peer_certificate(
-        leaf
-    ).fails()
+    builder.trusted_certs(unrelated_root).untrusted_intermediates(
+        root, intermediate
+    ).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -396,7 +401,7 @@ def intermediate_ca_without_ca_bit(builder: Builder) -> None:
     leaf = ee_cert(intermediate)
 
     builder = builder.server_validation()
-    builder.trusted_certs().untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -423,7 +428,7 @@ def intermediate_ca_missing_basic_constraints(builder: Builder) -> None:
     leaf = ee_cert(intermediate)
 
     builder = builder.server_validation()
-    builder.trusted_certs().peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -449,7 +454,7 @@ def root_missing_basic_constraints(builder: Builder) -> None:
     leaf = ee_cert(root)
 
     builder = builder.server_validation()
-    builder.trusted_certs().peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -475,7 +480,7 @@ def root_non_critical_basic_constraints(builder: Builder) -> None:
     leaf = ee_cert(root)
 
     builder = builder.server_validation()
-    builder.trusted_certs().peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -567,7 +572,7 @@ def ica_ku_keycertsign(builder: Builder) -> None:
     leaf = ee_cert(intermediate)
 
     builder = builder.server_validation()
-    builder.trusted_certs().peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -611,7 +616,7 @@ def leaf_ku_keycertsign(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs().peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
 @testcase
