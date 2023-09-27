@@ -598,7 +598,7 @@ def leaf_ku_keycertsign(builder: Builder) -> None:
     root = builder.root_ca()
     leaf = builder.leaf_cert(
         root,
-        basic_constraints=ext(x509.BasicConstraints(False, None), critical=False),
+        basic_constraints=ext(x509.BasicConstraints(False, None), critical=True),
         key_usage=ext(
             x509.KeyUsage(
                 digital_signature=True,
