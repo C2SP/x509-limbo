@@ -923,7 +923,7 @@ def ca_nameconstraints_permitted_dn_mismatch(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.name_constraint_dn])
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -959,7 +959,7 @@ def ca_nameconstraints_excluded_dn_match(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.name_constraint_dn])
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -995,7 +995,7 @@ def ca_nameconstraints_permitted_dn_match(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.name_constraint_dn])
     builder.trusted_certs(root).peer_certificate(leaf).succeeds()
 
 
@@ -1039,7 +1039,7 @@ def ca_nameconstraints_permitted_dn_match_subject_san_mismatch(builder: Builder)
         ),
     )
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.name_constraint_dn])
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -1083,5 +1083,5 @@ def ca_nameconstraints_excluded_dn_match_sub_mismatch(builder: Builder) -> None:
         ),
     )
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.name_constraint_dn])
     builder.trusted_certs(root).peer_certificate(leaf).fails()

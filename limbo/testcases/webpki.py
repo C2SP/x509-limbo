@@ -7,7 +7,7 @@ from datetime import datetime
 from cryptography import x509
 
 from limbo.assets import _ASSETS_PATH, Certificate, ee_cert, ext
-from limbo.models import KeyUsage, PeerName
+from limbo.models import Feature, KeyUsage, PeerName
 from limbo.testcases._core import Builder, testcase
 
 
@@ -209,7 +209,7 @@ def public_suffix_wildcard_san(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("*.com")]), critical=False),
     )
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.pedantic_public_suffix_wildcard])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
