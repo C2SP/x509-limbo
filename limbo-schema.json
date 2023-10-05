@@ -6,7 +6,9 @@
       "description": "Feature tags for testcases.",
       "enum": [
         "has-cert-policies",
-        "no-cert-policies"
+        "no-cert-policies",
+        "pedantic-public-suffix-wildcard",
+        "name-constraint-dn"
       ],
       "type": "string"
     },
