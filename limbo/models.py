@@ -132,6 +132,18 @@ class Feature(str, Enum):
     For implementations that explicitly do not support X.509 certificate policy extensions.
     """
 
+    pedantic_public_suffix_wildcard = "pedantic-public-suffix-wildcard"
+    """
+    "Pedantic" public suffix wildcard SAN tests. Path validation is required to reject wildcards on
+    public suffixes, however this isn't practical and most implementations make no attempt to
+    comply with this.
+    """
+
+    name_constraint_dn = "name-constraint-dn"
+    """
+    For implementations that do not support name constraints for Distinguished Names (temporary).
+    """
+
 
 class Testcase(BaseModel):
     """
