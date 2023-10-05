@@ -9,6 +9,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from limbo.assets import ee_cert, ext
+from limbo.models import Feature, PeerName
 from limbo.testcases._core import Builder, testcase
 
 # TODO: Intentionally mis-matching algorithm fields.
@@ -674,7 +675,9 @@ def ca_nameconstraints_excluded_dns_match(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
 
 
 @testcase
@@ -702,7 +705,9 @@ def ca_nameconstraints_permitted_dns_match(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).succeeds()
 
 
 @testcase
@@ -740,7 +745,9 @@ def ca_nameconstraints_permitted_dns_match_more(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="foo.bar.example.com")
+    ).succeeds()
 
 
 @testcase
@@ -775,7 +782,9 @@ def ca_nameconstraints_excluded_dns_match_second(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
 
 
 @testcase
@@ -808,7 +817,9 @@ def ca_nameconstraints_permitted_ip_mismatch(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="192.0.3.1")
+    ).fails()
 
 
 @testcase
@@ -840,7 +851,9 @@ def ca_nameconstraints_excluded_ip_match(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="192.0.2.1")
+    ).fails()
 
 
 @testcase
@@ -873,7 +886,9 @@ def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="192.0.2.1")
+    ).succeeds()
 
 
 @testcase
