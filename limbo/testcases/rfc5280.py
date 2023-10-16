@@ -1085,3 +1085,64 @@ def ca_nameconstraints_excluded_dn_match_sub_mismatch(builder: Builder) -> None:
 
     builder = builder.server_validation().features([Feature.name_constraint_dn])
     builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ee_aia(builder: Builder) -> None:
+    """
+    Produces a **valid** chain with an EE cert.
+
+    This EE cert contains an Authority Information Access extension with a CA Issuer Access
+    Description.
+    """
+    root = builder.root_ca()
+    leaf = ee_cert(
+        root,
+        ext(
+            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
+            critical=False,
+        ),
+        extra_extension=ext(
+            x509.AuthorityInformationAccess(
+                [x509.AccessDescription(x509.OID_CA_ISSUERS, x509.DNSName("example.com"))]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).succeeds()
+
+
+@testcase
+def ee_critical_aia_invalid(builder: Builder) -> None:
+    """
+    Produces a **invalid** chain with an EE cert.
+
+    This EE cert contains an Authority Information Access extension with a CA Issuer Access
+    Description. The AIA extension is marked as critical, which is disallowed
+    under RFC 5280:
+
+    > Conforming CAs MUST mark this extension as non-critical.
+    """
+    root = builder.root_ca()
+    leaf = ee_cert(
+        root,
+        ext(
+            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
+            critical=False,
+        ),
+        extra_extension=ext(
+            x509.AuthorityInformationAccess(
+                [x509.AccessDescription(x509.OID_CA_ISSUERS, x509.DNSName("example.com"))]
+            ),
+            critical=True,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
