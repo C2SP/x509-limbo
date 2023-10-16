@@ -396,6 +396,35 @@ def unicode_emoji_san(builder: Builder) -> None:
 
 
 @testcase
+def aia(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains an Authority Information Access extension with a CA Issuer Access
+    Description.
+    """
+    root = builder.root_ca()
+    leaf = ee_cert(
+        root,
+        ext(
+            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
+            critical=False,
+        ),
+        extra_extension=ext(
+            x509.AuthorityInformationAccess(
+                [x509.AccessDescription(x509.OID_CA_ISSUERS, x509.DNSName("example.com"))]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).succeeds()
+
+
+@testcase
 def malformed_aia(builder: Builder) -> None:
     """
     Produces a chain with an EE cert.
