@@ -421,4 +421,6 @@ def malformed_aia(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
