@@ -6,7 +6,7 @@ from datetime import datetime
 
 from cryptography import x509
 
-from limbo.assets import _ASSETS_PATH, Certificate, ee_cert, ext
+from limbo.assets import _ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KeyUsage, PeerName
 from limbo.testcases._core import Builder, testcase
 
@@ -67,8 +67,8 @@ def exact_san(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    leaf = ee_cert(
-        root, ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
+    leaf = builder.leaf_cert(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
     builder = builder.server_validation()
@@ -228,8 +228,8 @@ def leftmost_wildcard_san(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    leaf = ee_cert(
-        root, ext(x509.SubjectAlternativeName([x509.DNSName("*.example.com")]), critical=False)
+    leaf = builder.leaf_cert(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("*.example.com")]), critical=False)
     )
 
     builder = builder.server_validation()
@@ -256,8 +256,9 @@ def wildcard_embedded_leftmost_san(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    leaf = ee_cert(
-        root, ext(x509.SubjectAlternativeName([x509.DNSName("ba*.example.com")]), critical=False)
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("ba*.example.com")]), critical=False),
     )
 
     builder = builder.server_validation()
@@ -284,9 +285,9 @@ def wildcard_not_in_leftmost_san(builder: Builder) -> None:
     [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.3
     """
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
-        ext(x509.SubjectAlternativeName([x509.DNSName("foo.*.example.com")]), critical=False),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.*.example.com")]), critical=False),
     )
 
     builder = builder.server_validation()
@@ -315,9 +316,9 @@ def wildcard_match_across_labels_san(builder: Builder) -> None:
     [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.3
     """
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
-        ext(x509.SubjectAlternativeName([x509.DNSName("*.example.com")]), critical=False),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("*.example.com")]), critical=False),
     )
 
     builder = builder.server_validation()
@@ -344,9 +345,9 @@ def wildcard_embedded_ulabel_san(builder: Builder) -> None:
     [RFC 6125 profile]: https://datatracker.ietf.org/doc/html/rfc6125#section-6.4.1
     """
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
-        ext(
+        san=ext(
             x509.SubjectAlternativeName([x509.DNSName("xn--*-1b3c148a.example.com")]),
             critical=False,
         ),
@@ -379,9 +380,9 @@ def unicode_emoji_san(builder: Builder) -> None:
     """
 
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
-        ext(
+        san=ext(
             x509.SubjectAlternativeName([x509.DNSName._init_without_validation("😜.example.com")]),
             critical=False,
         ),
@@ -408,9 +409,9 @@ def malformed_aia(builder: Builder) -> None:
     [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
-        ext(
+        san=ext(
             x509.SubjectAlternativeName([x509.DNSName("example.com")]),
             critical=False,
         ),

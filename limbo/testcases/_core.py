@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 from limbo.assets import (
     _EPOCH,
-    _ONE_THOUSAND_YEARS_OF_TORMENT,
+    ONE_THOUSAND_YEARS_OF_TORMENT,
     Certificate,
     CertificatePair,
     _Extension,
@@ -115,7 +115,7 @@ class Builder:
         subject: x509.Name | None = None,
         serial: int | None = None,
         not_before: datetime = _EPOCH,
-        not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
+        not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints]
         | None = ext(
@@ -168,7 +168,7 @@ class Builder:
         subject: x509.Name | None = None,
         serial: int | None = None,
         not_before: datetime = _EPOCH,
-        not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
+        not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = True,
         key_usage: _Extension[x509.KeyUsage]
@@ -241,7 +241,7 @@ class Builder:
         subject: x509.Name = x509.Name.from_rfc4514_string("CN=x509-limbo-ee"),
         serial: int | None = None,
         not_before: datetime = _EPOCH,
-        not_after: datetime = _ONE_THOUSAND_YEARS_OF_TORMENT,
+        not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | None = None,
         key_usage: _Extension[x509.KeyUsage]
@@ -259,9 +259,9 @@ class Builder:
             ),
             critical=False,
         ),
-        san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = None,
+        san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
-        extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
+        extra_extension: _Extension | None = None,
     ) -> CertificatePair:
         """
         Produces an end-entity (EE) certificate, signed by the given `parent`'s
