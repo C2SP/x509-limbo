@@ -8,7 +8,7 @@ from ipaddress import IPv4Address, IPv4Network
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from limbo.assets import ee_cert, ext
+from limbo.assets import ext
 from limbo.models import Feature, PeerName
 from limbo.testcases._core import Builder, testcase
 
@@ -31,7 +31,7 @@ def empty_issuer(builder: Builder) -> None:
     issuer = x509.Name([])
     subject = x509.Name.from_rfc4514_string("CN=empty-issuer")
     root = builder.root_ca(issuer=issuer, subject=subject)
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -51,7 +51,7 @@ def unknown_critical_extension_ee(builder: Builder) -> None:
     chain should not be built with this EE.
     """
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
         extra_extension=ext(
             x509.UnrecognizedExtension(x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.1"), b""),
@@ -83,7 +83,7 @@ def unknown_critical_extension_root(builder: Builder) -> None:
             critical=True,
         )
     )
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -112,7 +112,7 @@ def unknown_critical_extension_intermediate(builder: Builder) -> None:
             critical=True,
         ),
     )
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
     builder = (
@@ -149,7 +149,7 @@ def critical_aki(builder: Builder) -> None:
             x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=True
         ),
     )
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -177,7 +177,7 @@ def self_signed_root_missing_aki(builder: Builder) -> None:
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.1
     """
     root = builder.root_ca(aki=None)
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).succeeds()
@@ -281,7 +281,7 @@ def critical_ski(builder: Builder) -> None:
         key=key,
         ski=ext(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=True),
     )
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -310,7 +310,7 @@ def missing_ski(builder: Builder) -> None:
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
     """
     root = builder.root_ca(ski=None)
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -341,7 +341,7 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
         key=root.key,
         ski=ski,
     )
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder.trusted_certs(root, root_two).untrusted_intermediates(
@@ -364,7 +364,7 @@ def chain_untrusted_root(builder: Builder) -> None:
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, pathlen=0)
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
     unrelated_root = builder.root_ca(
         issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-unrelated-root")
     )
@@ -399,7 +399,7 @@ def intermediate_ca_without_ca_bit(builder: Builder) -> None:
         root,
         basic_constraints=ext(x509.BasicConstraints(False, path_length=None), critical=True),
     )
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
     builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
@@ -426,7 +426,7 @@ def intermediate_ca_missing_basic_constraints(builder: Builder) -> None:
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, basic_constraints=None)
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -452,7 +452,7 @@ def root_missing_basic_constraints(builder: Builder) -> None:
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca(basic_constraints=None)
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -478,7 +478,7 @@ def root_non_critical_basic_constraints(builder: Builder) -> None:
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca(basic_constraints=ext(x509.BasicConstraints(True, None), critical=False))
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -527,7 +527,7 @@ def root_inconsistent_ca_extensions(builder: Builder) -> None:
             critical=False,
         ),
     )
-    leaf = ee_cert(root)
+    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -570,7 +570,7 @@ def ica_ku_keycertsign(builder: Builder) -> None:
             critical=False,
         ),
     )
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).fails()
@@ -1096,12 +1096,8 @@ def ee_aia(builder: Builder) -> None:
     Description.
     """
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
-        ext(
-            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
-            critical=False,
-        ),
         extra_extension=ext(
             x509.AuthorityInformationAccess(
                 [x509.AccessDescription(x509.OID_CA_ISSUERS, x509.DNSName("example.com"))]
@@ -1128,12 +1124,8 @@ def ee_critical_aia_invalid(builder: Builder) -> None:
     > Conforming CAs MUST mark this extension as non-critical.
     """
     root = builder.root_ca()
-    leaf = ee_cert(
+    leaf = builder.leaf_cert(
         root,
-        ext(
-            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
-            critical=False,
-        ),
         extra_extension=ext(
             x509.AuthorityInformationAccess(
                 [x509.AccessDescription(x509.OID_CA_ISSUERS, x509.DNSName("example.com"))]
