@@ -337,7 +337,7 @@ class Builder:
         self._extended_key_usage: list[KnownEKUs | OID] | None = None
 
         self._expected_result: str | None = None
-        self._expected_peer_name: PeerName | None = None
+        self._expected_peer_name: PeerName | None = PeerName(kind="DNS", value="example.com")
         self._expected_peer_names: list[PeerName] | None = None
 
     def features(self, feats: list[Feature]) -> Self:
