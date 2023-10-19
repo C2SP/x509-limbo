@@ -1087,6 +1087,8 @@ def ca_nameconstraints_excluded_dn_match_sub_mismatch(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
+# NOTE: The following tests aren't specific to any name constraint type.
+# We could potentially parametrize this for different constraint types.
 @testcase
 def ca_nameconstraints_permitted_self_issued(builder: Builder) -> None:
     """
