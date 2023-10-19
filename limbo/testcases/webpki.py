@@ -7,7 +7,7 @@ from datetime import datetime
 from cryptography import x509
 
 from limbo.assets import _ASSETS_PATH, Certificate, ext
-from limbo.models import Feature, KeyUsage, PeerName
+from limbo.models import Feature, KeyUsage, KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
 
 
@@ -425,3 +425,37 @@ def malformed_aia(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def root_with_extkeyusage(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root cert includes the extKeyUsage extension, which is forbidden
+    under the [CA/B BR profile]:
+
+    > 7.1.2.1.2 Root CA Extensions
+    > Extension     Presence        Critical
+    > ...
+    > extKeyUsage   MUST NOT        N
+
+    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
+    """
+
+    root = builder.root_ca(
+        extra_extension=ext(x509.ExtendedKeyUsage([x509.OID_SERVER_AUTH]), critical=False)
+    )
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .extended_key_usage([KnownEKUs.server_auth])
+        .peer_certificate(leaf)
+        .fails()
+    )

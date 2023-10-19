@@ -145,9 +145,22 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		return testcaseSkipped, fmt.Errorf("key usage checks not supported yet")
 	}
 
-	// TODO: Support testcases that constrain extended key usages.
+	var ekus []x509.ExtKeyUsage
 	if len(testcase.ExtendedKeyUsage) != 0 {
-		return testcaseSkipped, fmt.Errorf("extended key usage checks not supported yet")
+		extKeyUsagesMap := map[KnownEKUs]x509.ExtKeyUsage{
+			KnownEKUsAnyExtendedKeyUsage: x509.ExtKeyUsageAny,
+			KnownEKUsClientAuth:          x509.ExtKeyUsageClientAuth,
+			KnownEKUsCodeSigning:         x509.ExtKeyUsageCodeSigning,
+			KnownEKUsEmailProtection:     x509.ExtKeyUsageEmailProtection,
+			KnownEKUsOCSPSigning:         x509.ExtKeyUsageOCSPSigning,
+			KnownEKUsServerAuth:          x509.ExtKeyUsageServerAuth,
+			KnownEKUsTimeStamping:        x509.ExtKeyUsageTimeStamping,
+		}
+
+		for _, elem := range testcase.ExtendedKeyUsage {
+		    expected_eku := KnownEKUs(elem.(string))
+			ekus = append(ekus, extKeyUsagesMap[expected_eku])
+		}
 	}
 
 	switch testcase.ValidationKind {
@@ -187,7 +200,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 			Intermediates: intermediates,
 			Roots:         roots,
 			CurrentTime:   ts,
-			KeyUsages:     nil,
+			KeyUsages:     ekus,
 		}
 		chain, err := peer.Verify(opts)
 		_ = chain
