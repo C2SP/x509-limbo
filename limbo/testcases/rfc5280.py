@@ -1111,13 +1111,14 @@ def ca_nameconstraints_permitted_self_issued(builder: Builder) -> None:
     > certificates to implement key rollover.)
     """
     root = builder.root_ca(
+        subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
         name_constraints=ext(
             x509.NameConstraints(
                 permitted_subtrees=[x509.DNSName("example.com")],
                 excluded_subtrees=None,
             ),
             critical=False,
-        )
+        ),
     )
     intermediate = builder.intermediate_ca(
         root,
@@ -1162,7 +1163,9 @@ def ca_nameconstraints_excluded_self_issued_leaf(builder: Builder) -> None:
             critical=False,
         )
     )
-    intermediate = builder.intermediate_ca(root)
+    intermediate = builder.intermediate_ca(
+        root, subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")])
+    )
     leaf = builder.leaf_cert(
         intermediate,
         issuer=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
