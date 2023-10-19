@@ -33,6 +33,14 @@ using X509_STORE_CTX_ptr = std::unique_ptr<X509_STORE_CTX, decltype(&X509_STORE_
     std::exit(1);
 }
 
+std::map<std::string, int> create_eku_map() {
+    std::map<std::string, int> m;
+    m["anyExtendedKeyUsage"] = X509_PURPOSE_ANY;
+    m["serverAuth"] = X509_PURPOSE_SSL_SERVER;
+    m["clientAuth"] = X509_PURPOSE_SSL_CLIENT;
+    return m;
+}
+
 X509_ptr pem_to_x509(const std::string &pem)
 {
     X509 *cert = nullptr;
@@ -98,11 +106,6 @@ json evaluate_testcase(const json &testcase)
     if (!testcase["key_usage"].is_null())
     {
         return skip(id, "key_usage not supported yet");
-    }
-
-    if (!testcase["extended_key_usage"].is_null())
-    {
-        return skip(id, "extended_key_usage not supported yet");
     }
 
     if (!testcase["expected_peer_names"].is_null())
@@ -176,6 +179,23 @@ json evaluate_testcase(const json &testcase)
         else
         {
             barf("unexpected peer kind: " + peer_kind);
+        }
+    }
+
+    if (testcase["extended_key_usage"].is_array())
+    {
+        if (testcase["extended_key_usage"].size() > 1) {
+            return skip(id, "multiple extended key usage values not yet supported");
+        }
+        const auto eku_name_to_id = create_eku_map();
+        for (auto &eku : testcase["extended_key_usage"])
+        {
+            const auto expected_eku_name = eku.template get<std::string>();
+            if (eku_name_to_id.count(expected_eku_name) == 0) {
+                return skip(id, "extended key usage value not yet supported: " + expected_eku_name);
+            }
+            const auto expected_eku_id = eku_name_to_id.at(expected_eku_name);
+            X509_STORE_CTX_set_purpose(ctx.get(), expected_eku_id);
         }
     }
 
