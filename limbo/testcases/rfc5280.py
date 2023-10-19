@@ -338,7 +338,7 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
         subject=root.cert.subject,
         not_after=datetime.fromisoformat("1988-11-25T00:00:00Z"),
         key=root.key,
-        ski=ski,
+        ski=ext(ski, critical=False),
     )
     leaf = builder.leaf_cert(root)
 

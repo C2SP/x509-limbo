@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from functools import cache
 from textwrap import dedent
 from typing import Callable, Literal, Self
 
@@ -139,7 +138,7 @@ class Builder:
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = None,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
         name_constraints: _Extension[x509.NameConstraints] | None = None,
-        extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
+        extra_extension: _Extension | None = None,
     ) -> CertificatePair:
         return self._ca(
             issuer,
