@@ -6,7 +6,7 @@ from datetime import datetime
 from ipaddress import IPv4Address, IPv4Network
 
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import ext
 from limbo.models import Feature, PeerName
@@ -142,7 +142,7 @@ def critical_aki(builder: Builder) -> None:
 
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.1
     """
-    key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+    key = ec.generate_private_key(ec.SECP256R1())
     root = builder.root_ca(
         key=key,
         aki=ext(
@@ -276,9 +276,8 @@ def critical_ski(builder: Builder) -> None:
 
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
     """
-    key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+    key = ec.generate_private_key(ec.SECP256R1())
     root = builder.root_ca(
-        key=key,
         ski=ext(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=True),
     )
     leaf = builder.leaf_cert(root)

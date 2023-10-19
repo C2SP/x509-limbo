@@ -7,7 +7,7 @@ from typing import Callable, Literal, Self
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 from limbo.assets import (
@@ -45,7 +45,7 @@ class Builder:
             serial = x509.random_serial_number()
 
         if key is None:
-            key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+            key = ec.generate_private_key(ec.SECP256R1())
 
         builder = x509.CertificateBuilder(
             issuer_name=issuer,
@@ -107,7 +107,6 @@ class Builder:
 
         return CertificatePair(cert, key)
 
-    @cache
     def root_ca(
         self,
         *,
@@ -158,7 +157,6 @@ class Builder:
             None,
         )
 
-    @cache
     def intermediate_ca(
         self,
         parent: CertificatePair,
@@ -274,7 +272,7 @@ class Builder:
             serial = x509.random_serial_number()
 
         if key is None:
-            key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+            key = ec.generate_private_key(ec.SECP256R1())
 
         builder = x509.CertificateBuilder()
         builder = builder.subject_name(subject)
