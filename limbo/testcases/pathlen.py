@@ -1,4 +1,3 @@
-from limbo.assets import ee_cert
 from limbo.testcases._core import Builder, testcase
 
 
@@ -16,7 +15,7 @@ def ee_with_intermediate_pathlen_0(builder: Builder) -> None:
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, pathlen=0)
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
     builder = (
@@ -42,7 +41,7 @@ def ee_with_intermediate_pathlen_1(builder: Builder) -> None:
 
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, pathlen=1)
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
     builder = (
@@ -68,7 +67,7 @@ def ee_with_intermediate_pathlen_2(builder: Builder) -> None:
 
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, pathlen=2)
-    leaf = ee_cert(intermediate)
+    leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
     builder = (
@@ -131,7 +130,7 @@ def intermediate_violates_pathlen_0(builder: Builder) -> None:
     root = builder.root_ca()
     first_intermediate = builder.intermediate_ca(root, pathlen=0)
     second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=0)
-    leaf = ee_cert(second_intermediate)
+    leaf = builder.leaf_cert(second_intermediate)
 
     builder = builder.server_validation()
     builder = (
@@ -161,7 +160,7 @@ def intermediate_pathlen_may_increase(builder: Builder) -> None:
     root = builder.root_ca()
     first_intermediate = builder.intermediate_ca(root, pathlen=1)
     second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=2)
-    leaf = ee_cert(second_intermediate)
+    leaf = builder.leaf_cert(second_intermediate)
 
     builder = builder.server_validation()
     builder = (
@@ -190,7 +189,7 @@ def intermediate_pathlen_too_long(builder: Builder) -> None:
     first_intermediate = builder.intermediate_ca(root, pathlen=1)
     second_intermediate = builder.intermediate_ca(first_intermediate, pathlen=0)
     third_intermediate = builder.intermediate_ca(second_intermediate, pathlen=0)
-    leaf = ee_cert(third_intermediate)
+    leaf = builder.leaf_cert(third_intermediate)
 
     builder = builder.server_validation()
     builder = (
@@ -224,7 +223,7 @@ def self_issued_certs_pathlen(builder: Builder) -> None:
         first_intermediate, pathlen=1, subject=first_intermediate.cert.subject
     )
     third_intermediate = builder.intermediate_ca(second_intermediate, pathlen=0)
-    leaf = ee_cert(third_intermediate)
+    leaf = builder.leaf_cert(third_intermediate)
 
     builder = builder.server_validation()
     builder.trusted_certs(root).untrusted_intermediates(
