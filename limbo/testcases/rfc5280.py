@@ -1122,6 +1122,7 @@ def ca_nameconstraints_permitted_self_issued(builder: Builder) -> None:
     intermediate = builder.intermediate_ca(
         root,
         issuer=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
         san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
     )
     leaf = builder.leaf_cert(intermediate)
@@ -1165,6 +1166,7 @@ def ca_nameconstraints_excluded_self_issued_leaf(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         intermediate,
         issuer=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
         san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
     )
     builder = builder.server_validation()
