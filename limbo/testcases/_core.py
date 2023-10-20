@@ -31,6 +31,7 @@ class Builder:
         key: PrivateKeyTypes | None,
         basic_constraints: _Extension[x509.BasicConstraints] | None,
         key_usage: _Extension[x509.KeyUsage] | None,
+        san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None,
         name_constraints: _Extension[x509.NameConstraints] | None,
@@ -63,6 +64,13 @@ class Builder:
 
         if key_usage:
             builder = builder.add_extension(key_usage.ext, critical=key_usage.critical)
+
+        if isinstance(san, _Extension):
+            builder = builder.add_extension(san.ext, san.critical)
+        elif san:
+            builder = builder.add_extension(
+                x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False
+            )
 
         if isinstance(aki, _Extension):
             builder = builder.add_extension(aki.ext, critical=aki.critical)
@@ -135,6 +143,7 @@ class Builder:
             ),
             critical=False,
         ),
+        san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = None,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
         name_constraints: _Extension[x509.NameConstraints] | None = None,
@@ -149,6 +158,7 @@ class Builder:
             key,
             basic_constraints,
             key_usage,
+            san,
             aki,
             ski,
             name_constraints,
@@ -183,6 +193,7 @@ class Builder:
             ),
             critical=False,
         ),
+        san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
         extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
@@ -223,6 +234,7 @@ class Builder:
             key,
             basic_constraints,
             key_usage,
+            san,
             aki,
             ski,
             None,

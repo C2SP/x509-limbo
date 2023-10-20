@@ -1086,6 +1086,163 @@ def ca_nameconstraints_excluded_dn_match_sub_mismatch(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
+# NOTE: The following tests aren't specific to any name constraint type.
+# We could potentially parametrize this for different constraint types.
+@testcase
+def ca_nameconstraints_permitted_self_issued(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> intermediate -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted dNSName of
+    "example.com", whereas the intermediate certificate has a
+    SubjectAlternativeName with a dNSName of "not-example.com".
+
+    Normally, this would mean that the chain would be rejected, however the
+    intermediate is self-issued so name constraints don't apply to it.
+
+    > Name constraints are not applied to self-issued certificates (unless
+    > the certificate is the final certificate in the path).  (This could
+    > prevent CAs that use name constraints from employing self-issued
+    > certificates to implement key rollover.)
+    """
+    root = builder.root_ca(
+        subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=False,
+        ),
+    )
+    intermediate = builder.intermediate_ca(
+        root,
+        issuer=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
+    )
+    leaf = builder.leaf_cert(intermediate)
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="not-example.com")
+    ).succeeds()
+
+
+@testcase
+def ca_nameconstraints_excluded_self_issued_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted dNSName of
+    "example.com", whereas the leaf certificate has a SubjectAlternativeName
+    with a dNSName of "not-example.com".
+
+    In this case, the chain would still be rejected as name constraints do apply
+    to self-issued certificates if they are in the leaf position.
+
+    > Name constraints are not applied to self-issued certificates (unless
+    > the certificate is the final certificate in the path).  (This could
+    > prevent CAs that use name constraints from employing self-issued
+    > certificates to implement key rollover.)
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=False,
+        )
+    )
+    intermediate = builder.intermediate_ca(
+        root, subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")])
+    )
+    leaf = builder.leaf_cert(
+        intermediate,
+        issuer=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
+    )
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="not-example.com")
+    ).fails()
+
+
+@testcase
+def ca_nameconstraints_excluded_match_permitted_and_excluded(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted and excluded
+    dNSName of "example.com", both of which match the leaf's
+    SubjectAlternativeName.
+
+    The excluded constraint takes precedence over the the permitted so this
+    chain should be marked as invalid.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.DNSName("example.com")],
+            ),
+            critical=False,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+    )
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def ca_nameconstraints_permitted_different_constraint_type(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted iPAddress of
+    192.0.2.0/24, while the leaf's SubjectAlternativeName is a dNSName.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
+                excluded_subtrees=None,
+            ),
+            critical=False,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+    )
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).succeeds()
+
+
 @testcase
 def ee_aia(builder: Builder) -> None:
     """
