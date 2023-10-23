@@ -452,7 +452,7 @@ def root_with_extkeyusage(builder: Builder) -> None:
     )
     leaf = builder.leaf_cert(root)
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.eku])
     builder = (
         builder.trusted_certs(root)
         .extended_key_usage([KnownEKUs.server_auth])
