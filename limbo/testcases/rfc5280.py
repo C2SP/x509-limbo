@@ -1110,13 +1110,15 @@ def ca_nameconstraints_permitted_self_issued(builder: Builder) -> None:
     > certificates to implement key rollover.)
     """
     root = builder.root_ca(
+        issuer=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
         subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
         name_constraints=ext(
             x509.NameConstraints(
                 permitted_subtrees=[x509.DNSName("example.com")],
                 excluded_subtrees=None,
             ),
-            critical=False,
+            critical=True,
         ),
     )
     intermediate = builder.intermediate_ca(
@@ -1127,8 +1129,8 @@ def ca_nameconstraints_permitted_self_issued(builder: Builder) -> None:
     )
     leaf = builder.leaf_cert(intermediate)
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="not-example.com")
+    builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(
+        leaf
     ).succeeds()
 
 
@@ -1159,11 +1161,13 @@ def ca_nameconstraints_excluded_self_issued_leaf(builder: Builder) -> None:
                 permitted_subtrees=[x509.DNSName("example.com")],
                 excluded_subtrees=None,
             ),
-            critical=False,
+            critical=True,
         )
     )
     intermediate = builder.intermediate_ca(
-        root, subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")])
+        root,
+        subject=x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "not-example.com")]),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
     )
     leaf = builder.leaf_cert(
         intermediate,
@@ -1172,9 +1176,9 @@ def ca_nameconstraints_excluded_self_issued_leaf(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("not-example.com")]), critical=False),
     )
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="not-example.com")
-    ).fails()
+    builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind="DNS", value="not-example.com")).fails()
 
 
 @testcase
@@ -1199,7 +1203,7 @@ def ca_nameconstraints_excluded_match_permitted_and_excluded(builder: Builder) -
                 permitted_subtrees=[x509.DNSName("example.com")],
                 excluded_subtrees=[x509.DNSName("example.com")],
             ),
-            critical=False,
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
@@ -1230,7 +1234,7 @@ def ca_nameconstraints_permitted_different_constraint_type(builder: Builder) -> 
                 permitted_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
                 excluded_subtrees=None,
             ),
-            critical=False,
+            critical=True,
         )
     )
     leaf = builder.leaf_cert(
