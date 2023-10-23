@@ -144,6 +144,11 @@ class Feature(str, Enum):
     For implementations that do not support name constraints for Distinguished Names (temporary).
     """
 
+    eku = "eku"
+    """
+    For implementations that do not support Extended Key Usage (temporary).
+    """
+
 
 class Testcase(BaseModel):
     """

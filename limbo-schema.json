@@ -8,7 +8,8 @@
         "has-cert-policies",
         "no-cert-policies",
         "pedantic-public-suffix-wildcard",
-        "name-constraint-dn"
+        "name-constraint-dn",
+        "eku"
       ],
       "type": "string"
     },
