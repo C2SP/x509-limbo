@@ -42,11 +42,15 @@ for result in results["results"]:
     testcase_id = result["id"]
     actual_result = result["actual_result"]
     context = result["context"]
+    if not context:
+        # Normalize missing context into an empty string.
+        context = ""
 
     testcase = next(t for t in limbo["testcases"] if t["id"] == testcase_id)
     expected_result = testcase["expected_result"]
     description = testcase["description"]
 
+    # TODO: Render success cases as well?
     if actual_result == expected_result:
         continue
 
