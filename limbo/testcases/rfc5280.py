@@ -1320,6 +1320,7 @@ def san_noncritical_with_empty_subject(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
     )
 
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
