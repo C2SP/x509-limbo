@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConstrainedStr, Field, StrictStr, validator
+from pydantic import BaseModel, Field, StrictStr, StringConstraints, validator
 
 PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"]
 
@@ -92,29 +92,25 @@ class KnownEKUs(str, Enum):
     ocsp_signing = "OCSPSigning"
 
 
-class OID(ConstrainedStr):
-    """
-    A "bare" OID, in dotted form.
-    """
-
-    regex = r"^([0-2])((\.0)|(\.[1-9][0-9]*))*$"
-    strict = True
+OID = Annotated[str, StringConstraints(pattern=r"^([0-2])((\.0)|(\.[1-9][0-9]*))*$", strict=True)]
+"""
+A "bare" OID, in dotted form.
+"""
 
 
 _ID_COMPONENT = r"[A-Za-z][A-Za-z0-9-.]+"
 _NAMESPACE = rf"{_ID_COMPONENT}::"
 
 
-class TestCaseID(ConstrainedStr):
-    """
-    Acceptable testcase IDs.
+TestCaseID = Annotated[
+    str, StringConstraints(pattern=rf"^({_NAMESPACE})*({_ID_COMPONENT})$", strict=True)
+]
+"""
+Acceptable testcase IDs.
 
-    Testcase IDs look like `namespace::id`, where `namespace::` is optional
-    and only explicitly added when merging multiple testcase suites.
-    """
-
-    regex = rf"^({_NAMESPACE})*({_ID_COMPONENT})$"
-    strict = True
+Testcase IDs look like `namespace::id`, where `namespace::` is optional
+and only explicitly added when merging multiple testcase suites.
+"""
 
 
 class Feature(str, Enum):

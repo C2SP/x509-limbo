@@ -5,9 +5,8 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import NoReturn
 
-from pydantic.schema import schema
+from pydantic.json_schema import models_json_schema
 
 from limbo import testcases
 
@@ -21,11 +20,6 @@ logger = logging.getLogger(__name__)
 # to avoid overly verbose logging in third-party code by default.
 package_logger = logging.getLogger("limbo")
 package_logger.setLevel(os.environ.get("LIMBO_LOGLEVEL", "INFO").upper())
-
-
-def _die(msg: str) -> NoReturn:
-    logger.error(msg)
-    sys.exit(1)
 
 
 def main() -> None:
@@ -68,7 +62,7 @@ def _schema(args: argparse.Namespace) -> None:
     io = args.output.open(mode="w") if args.output else sys.stdout
 
     with contextlib.closing(io):
-        top = schema([Limbo], title="x509-limbo schemas")
+        top = models_json_schema([(Limbo, "validation")], title="x509-limbo schemas")[1]
         print(json.dumps(top, indent=2), file=io)
 
 
@@ -78,11 +72,11 @@ def _compile(args: argparse.Namespace) -> None:
 
     io = args.output.open(mode="w") if args.output else sys.stdout
     with contextlib.closing(io):
-        print(combined.json(indent=2), file=io)
+        print(combined.model_dump_json(indent=2), file=io)
 
 
 def _dump_chain(args: argparse.Namespace) -> None:
-    limbo = Limbo.parse_file(args.input)
+    limbo = Limbo.model_validate_json(args.input.read_text())
     testcase = next(tc for tc in limbo.testcases if tc.id == args.id)
 
     # Dump EE first, then intermediates, then trusted certs.
