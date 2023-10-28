@@ -565,3 +565,36 @@ def root_with_aki_all_fields(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def san_critical_with_nonempty_subject(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert includes a critical subjectAlternativeName extension, which
+    is forbidden under the [CA/B BR profile]:
+
+    > If the subject field of the certificate is an empty SEQUENCE, this
+    > extension MUST be marked critical, as specified in RFC 5280,
+    > Section 4.2.1.6. Otherwise, this extension MUST NOT be marked
+    > critical.
+
+    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        subject=x509.Name.from_rfc4514_string("CN=something-else"),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=True),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
