@@ -7,12 +7,10 @@ name = "limbo"
 dynamic = ["version"]
 description = "x509-limbo's command line"
 readme = "README.md"
-
-# TODO: license, authors, etc.
-# license = { file = "LICENSE" }
-# authors = [
-#     { name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.author_email }}" },
-# ]
+license = { text = "Apache-2.0 OR BSD-3-Clause" }
+authors = [
+    { name = "The Python Cryptographic Authority and individual contributors", email = "cryptography-dev@python.org" },
+]
 
 dependencies = ["pydantic ~= 1.0", "cryptography", "pyyaml ~= 6.0"]
 requires-python = ">=3.11"
@@ -33,7 +31,9 @@ dev = ["limbo[doc,test,lint]", "twine", "wheel", "build"]
 "limbo" = "limbo._cli:main"
 
 [project.urls]
-# TODO
+homepage = "https://github.com/trailofbits/x509-limbo"
+source = "https://github.com/trailofbits/x509-limbo/"
+issues = "https://github.com/trailofbits/x509-limbo/issues"
 
 [tool.black]
 line-length = 100
