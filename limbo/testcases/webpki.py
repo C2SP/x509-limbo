@@ -601,7 +601,7 @@ def san_critical_with_nonempty_subject(builder: Builder) -> None:
 
 
 @testcase
-def forbidden_spki(builder: Builder) -> None:
+def forbidden_p192_spki_leaf(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -610,12 +610,36 @@ def forbidden_spki(builder: Builder) -> None:
     ```
 
     The EE cert is signed with a P-192 key, which is not one of the permitted
-    algorithms under the CA/B BR profile.
+    public keys under the CA/B BR profile.
     """
 
     root = builder.root_ca()
 
     leaf_key = ec.generate_private_key(ec.SECP192R1())
+    leaf = builder.leaf_cert(root, key=leaf_key)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_dsa_spki_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert is signed with a DSA key, which is not one of the permitted
+    public keys under the CA/B BR profile.
+    """
+
+    root = builder.root_ca()
+
+    leaf_key = dsa.generate_private_key(3072)
     leaf = builder.leaf_cert(root, key=leaf_key)
 
     builder = builder.server_validation()
