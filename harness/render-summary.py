@@ -14,17 +14,6 @@ if summary := os.getenv("GITHUB_STEP_SUMMARY"):
 else:
     _OUT = sys.stdout
 
-_FAILED_RESULT_TEMPLATE = """
-### ❌ `{testcase_id}`
-
-* Expected result: {expected_result}
-* Actual result: {actual_result}
-
-{description}
-
-Additional context: {context}
-"""
-
 _RESULT_ROW = "| {testcase_id} | {status} | {expected} | {actual} | {context} |"
 
 def _render(s: str) -> None:
