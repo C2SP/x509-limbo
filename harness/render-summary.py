@@ -25,7 +25,7 @@ _FAILED_RESULT_TEMPLATE = """
 Additional context: {context}
 """
 
-_RESULT_ROW = "| {testcase_id} | {status} | {expected} | {actual} | `{context}` |"
+_RESULT_ROW = "| {testcase_id} | {status} | {expected} | {actual} | {context} |"
 
 def _render(s: str) -> None:
     print(f"{s}", file=_OUT)
@@ -52,6 +52,8 @@ for result in results["results"]:
     if not context:
         # Normalize missing context into an empty string.
         context = ""
+    else:
+        context = f"`{context}`"
 
     testcase = next(t for t in limbo["testcases"] if t["id"] == testcase_id)
     expected = testcase["expected_result"]
