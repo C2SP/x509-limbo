@@ -1298,3 +1298,29 @@ def ee_critical_aia_invalid(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def san_noncritical_with_empty_subject(builder: Builder) -> None:
+    """
+    Produces an **invalid** chain with an EE cert.
+
+    This EE cert contains a non-critical Subject Alternative Name extension,
+    which is disallowed when the cert's Subject is empty under
+    RFC 5280:
+
+    > If the subject field contains an empty sequence, then the issuing CA MUST
+    > include a subjectAltName extension that is marked as critical.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        subject=x509.Name([]),
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
