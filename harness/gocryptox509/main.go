@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run github.com/atombender/go-jsonschema/cmd/gojsonschema@latest -v -p main -o schema.go ../../limbo-schema.json
+//go:generate go run github.com/atombender/go-jsonschema@latest -v -p main -o schema.go ../../limbo-schema.json
 
 import (
 	"bytes"
@@ -99,7 +99,7 @@ func main() {
 	fmt.Printf("done! passed/failed/skipped/total %d/%d/%d/%d.\n", pass, fail, skip, len(testcases.Testcases))
 }
 
-func loadTestcases(path string) (testcases LimboSchemaJson, err error) {
+func loadTestcases(path string) (testcases Limbo, err error) {
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
@@ -158,7 +158,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		}
 
 		for _, elem := range testcase.ExtendedKeyUsage {
-		    expected_eku := KnownEKUs(elem.(string))
+			expected_eku := KnownEKUs(elem.(string))
 			ekus = append(ekus, extKeyUsagesMap[expected_eku])
 		}
 	}
