@@ -669,7 +669,11 @@ def forbidden_signature_algorithm_in_leaf(builder: Builder) -> None:
     leaf_key = dsa.generate_private_key(3072)
     leaf = builder.leaf_cert(root, key=leaf_key)
 
-    builder = builder.server_validation()
+    # NOTE: Currently marked as "pedantic" because the correct behavior
+    # here for a path validator is unclear: DSA keys are not allowed
+    # in any certificates under CABF, but path validation logically
+    # does not require checking the EE's key.
+    builder = builder.server_validation().features([Feature.pedantic_webpki])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
