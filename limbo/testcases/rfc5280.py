@@ -16,7 +16,7 @@ from limbo.testcases._core import Builder, testcase
 
 
 @testcase
-def empty_issuer(builder: Builder) -> None:
+def ee_empty_issuer(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -35,6 +35,27 @@ def empty_issuer(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def ca_empty_subject(builder: Builder) -> None:
+    """
+    Produces an **invalid** chain due to an invalid CA cert.
+
+    The CA cert contains an empty Subject `SEQUENCE`, which is disallowed
+    under RFC 5280:
+
+    > If the subject is a CA [...], then the subject field MUST be populated
+    > with a non-empty distinguished name
+    """
+
+    root = builder.root_ca(subject=x509.Name([]))
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
 
 
 @testcase
@@ -1303,9 +1324,9 @@ def ee_critical_aia_invalid(builder: Builder) -> None:
 @testcase
 def san_noncritical_with_empty_subject(builder: Builder) -> None:
     """
-    Produces an **invalid** chain with an EE cert.
+    Produces an **invalid** chain due to an invalid EE cert.
 
-    This EE cert contains a non-critical Subject Alternative Name extension,
+    The EE cert contains a non-critical Subject Alternative Name extension,
     which is disallowed when the cert's Subject is empty under
     RFC 5280:
 
