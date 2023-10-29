@@ -6,7 +6,7 @@ from datetime import datetime
 
 from cryptography import x509
 from cryptography.hazmat._oid import NameOID
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import dsa, ec
 
 from limbo.assets import _ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KeyUsage, KnownEKUs, PeerName
@@ -595,6 +595,109 @@ def san_critical_with_nonempty_subject(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_p192_spki_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert is signed with a P-192 key, which is not one of the permitted
+    public keys under the CA/B BR profile.
+    """
+
+    root = builder.root_ca()
+
+    leaf_key = ec.generate_private_key(ec.SECP192R1())
+    leaf = builder.leaf_cert(root, key=leaf_key)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_dsa_spki_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert is signed with a DSA key, which is not one of the permitted
+    public keys under the CA/B BR profile.
+    """
+
+    root = builder.root_ca()
+
+    leaf_key = dsa.generate_private_key(3072)
+    leaf = builder.leaf_cert(root, key=leaf_key)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_signature_algorithm_in_root(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root cert is signed with a DSA-3072 key, which is not one of the
+    permitted signature algorithms under the CA/B BR profile.
+    """
+
+    root_key = dsa.generate_private_key(3072)
+    root = builder.root_ca(key=root_key)
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_signature_algorithm_in_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert is signed with a DSA-3072 key, which is not one of the
+    permitted signature algorithms under the CA/B BR profile.
+
+    This case is distinct from `forbidden_signature_algorithm_in_root`,
+    as DSA keys are forbidden in both places but not all implementations
+    check both.
+    """
+
+    root = builder.root_ca()
+
+    leaf_key = dsa.generate_private_key(3072)
+    leaf = builder.leaf_cert(root, key=leaf_key)
+
+    # NOTE: Currently marked as "pedantic" because the correct behavior
+    # here for a path validator is unclear: DSA keys are not allowed
+    # in any certificates under CABF, but path validation logically
+    # does not require checking the EE's key.
+    builder = builder.server_validation().features([Feature.pedantic_webpki])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
