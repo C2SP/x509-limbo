@@ -1269,6 +1269,37 @@ def ca_nameconstraints_permitted_different_constraint_type(builder: Builder) -> 
 
 
 @testcase
+def ca_nameconstraints_invalid_dnsname(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a malformed dNSName
+    (uses a wildcard pattern, which is not permitted under RFC 5280).
+    """
+
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("unrelated.cryptography.io")], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.DNSName("*.example.com")]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.example.com")]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="foo.example.com")
+    ).fails()
+
+
+@testcase
 def ee_aia(builder: Builder) -> None:
     """
     Produces a **valid** chain with an EE cert.
