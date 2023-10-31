@@ -1300,6 +1300,39 @@ def ca_nameconstraints_invalid_dnsname(builder: Builder) -> None:
 
 
 @testcase
+def ca_nameconstraints_invalid_ipaddress(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a malformed iPAddress
+    (not in CIDR form).
+    """
+
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.IPAddress(IPv4Network("0.0.0.0/8"))], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.IPAddress(IPv4Address("127.0.0.1"))]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("127.0.0.1"))]), critical=False
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="127.0.0.1")
+    ).fails()
+
+
+@testcase
 def ee_aia(builder: Builder) -> None:
     """
     Produces a **valid** chain with an EE cert.
