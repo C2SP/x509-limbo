@@ -285,12 +285,11 @@ class Builder:
         if key is None:
             key = ec.generate_private_key(ec.SECP256R1())
 
-        builder = x509.CertificateBuilder()
+        builder = x509.CertificateBuilder(serial_number=serial)
         builder = builder.subject_name(subject)
         builder = builder.issuer_name(issuer)
         builder = builder.not_valid_before(not_before)
         builder = builder.not_valid_after(not_after)
-        builder = builder.serial_number(serial)
         builder = builder.public_key(key.public_key())  # type: ignore[arg-type]
         builder = builder.add_extension(
             x509.SubjectKeyIdentifier.from_public_key(key.public_key()),  # type: ignore[arg-type]

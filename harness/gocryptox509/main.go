@@ -75,7 +75,7 @@ func main() {
 		var context string
 		switch r {
 		case testcaseFailed:
-			fmt.Printf("%s\nerr=%+#v\n", tc.Description, err)
+			fmt.Printf("\terr=%+#v\n", err)
 			context = err.Error()
 			fail++
 		case testcasePassed:
@@ -158,7 +158,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		}
 
 		for _, elem := range testcase.ExtendedKeyUsage {
-		    expected_eku := KnownEKUs(elem.(string))
+			expected_eku := KnownEKUs(elem.(string))
 			ekus = append(ekus, extKeyUsagesMap[expected_eku])
 		}
 	}

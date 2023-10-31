@@ -154,6 +154,11 @@ class Feature(str, Enum):
     Tests that exercise "pedantic" corners of the CABF profile.
     """
 
+    pedantic_serial_number = "pedantic-serial-number"
+    """
+    Tests that exercise "pedantic" serial number handling.
+    """
+
 
 class Testcase(BaseModel):
     """
