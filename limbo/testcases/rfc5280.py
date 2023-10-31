@@ -2,9 +2,9 @@
 RFC5280 profile tests.
 """
 
+import random
 from datetime import datetime
 from ipaddress import IPv4Address, IPv4Network
-import random
 
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
