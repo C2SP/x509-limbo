@@ -33,7 +33,8 @@ using X509_STORE_CTX_ptr = std::unique_ptr<X509_STORE_CTX, decltype(&X509_STORE_
     std::exit(1);
 }
 
-std::map<std::string, int> create_eku_map() {
+std::map<std::string, int> create_eku_map()
+{
     std::map<std::string, int> m;
     m["anyExtendedKeyUsage"] = X509_PURPOSE_ANY;
     m["serverAuth"] = X509_PURPOSE_SSL_SERVER;
@@ -156,12 +157,17 @@ json evaluate_testcase(const json &testcase)
         X509_STORE_set_flags(store.get(), X509_V_FLAG_NO_CHECK_TIME);
     }
 
+    auto param = X509_STORE_CTX_get0_param(ctx.get());
+
+    // The default authentication level is 1, which corresponds to 80 bits
+    // of security. Level 2 corresponds to 112 bits and includes RSA 2048,
+    // which brings the validation logic very slightly closer to the Web PKI.
+    X509_VERIFY_PARAM_set_auth_level(param, 2);
+
     if (testcase["expected_peer_name"].is_object())
     {
         auto peer_name = testcase["expected_peer_name"]["value"].template get<std::string>();
         auto peer_kind = testcase["expected_peer_name"]["kind"].template get<std::string>();
-
-        auto param = X509_STORE_CTX_get0_param(ctx.get());
 
         if (peer_kind == "RFC822")
         {
@@ -184,14 +190,16 @@ json evaluate_testcase(const json &testcase)
 
     if (testcase["extended_key_usage"].is_array())
     {
-        if (testcase["extended_key_usage"].size() > 1) {
+        if (testcase["extended_key_usage"].size() > 1)
+        {
             return skip(id, "multiple extended key usage values not yet supported");
         }
         const auto eku_name_to_id = create_eku_map();
         for (auto &eku : testcase["extended_key_usage"])
         {
             const auto expected_eku_name = eku.template get<std::string>();
-            if (eku_name_to_id.count(expected_eku_name) == 0) {
+            if (eku_name_to_id.count(expected_eku_name) == 0)
+            {
                 return skip(id, "extended key usage value not yet supported: " + expected_eku_name);
             }
             const auto expected_eku_id = eku_name_to_id.at(expected_eku_name);
