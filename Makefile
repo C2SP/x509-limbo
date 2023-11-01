@@ -33,7 +33,7 @@ dev: $(NEEDS_VENV)
 .PHONY: lint
 lint: $(NEEDS_VENV)
 	. $(VENV_BIN)/activate && \
-		black --check $(ALL_PY_SRCS) && \
+		ruff format --check $(ALL_PY_SRCS) && \
 		ruff $(ALL_PY_SRCS) && \
 		mypy $(PY_MODULE)
 
@@ -41,7 +41,7 @@ lint: $(NEEDS_VENV)
 reformat: $(NEEDS_VENV)
 	. $(VENV_BIN)/activate && \
 		ruff --fix $(ALL_PY_SRCS) && \
-		black $(ALL_PY_SRCS)
+		ruff format $(ALL_PY_SRCS)
 
 .PHONY: edit
 edit:

@@ -17,7 +17,6 @@ requires-python = ">=3.11"
 
 [project.optional-dependencies]
 lint = [
-    "black>=22.3.0",
     # NOTE: ruff is under active development, so we pin conservatively here
     # and let Dependabot periodically perform this update.
     "ruff < 0.1.4",
@@ -34,9 +33,6 @@ dev = ["limbo[doc,test,lint]", "twine", "wheel", "build"]
 homepage = "https://github.com/trailofbits/x509-limbo"
 source = "https://github.com/trailofbits/x509-limbo/"
 issues = "https://github.com/trailofbits/x509-limbo/issues"
-
-[tool.black]
-line-length = 100
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
