@@ -264,6 +264,9 @@ class Builder:
             ),
             critical=False,
         ),
+        eku: _Extension[x509.ExtendedKeyUsage] | None = ext(
+            x509.ExtendedKeyUsage([x509.OID_SERVER_AUTH]), critical=False
+        ),
         san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         extra_extension: _Extension | None = None,
@@ -300,6 +303,16 @@ class Builder:
             critical=False,
         )
 
+        if basic_constraints is not None:
+            builder = builder.add_extension(
+                basic_constraints.ext, critical=basic_constraints.critical
+            )
+        else:
+            builder = builder.add_extension(
+                x509.BasicConstraints(ca=False, path_length=None),
+                critical=False,
+            )
+
         if isinstance(aki, _Extension):
             builder = builder.add_extension(aki.ext, critical=aki.critical)
         elif aki:
@@ -310,13 +323,11 @@ class Builder:
                 critical=False,
             )
 
-        builder = builder.add_extension(
-            x509.BasicConstraints(ca=False, path_length=None),
-            critical=False,
-        )
-
         if key_usage:
             builder = builder.add_extension(key_usage.ext, critical=key_usage.critical)
+
+        if eku:
+            builder = builder.add_extension(eku.ext, critical=eku.critical)
 
         if isinstance(san, _Extension):
             builder = builder.add_extension(san.ext, san.critical)
