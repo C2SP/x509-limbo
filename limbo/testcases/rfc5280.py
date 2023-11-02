@@ -1469,6 +1469,7 @@ def duplicate_extensions(builder: Builder) -> None:
     root = builder.root_ca()
     leaf = builder.leaf_cert(
         root,
+        san=None,
         extra_unchecked_extensions=[
             ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
             ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
@@ -1476,4 +1477,34 @@ def duplicate_extensions(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
+
+
+@testcase
+def no_keyusage(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE lacks a Key Usage extension, which is not required for
+    end-entity certificates under the RFC 5280 profile.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, key_usage=None)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .succeeds()
+    )
