@@ -323,7 +323,12 @@ class Builder:
             )
 
         if extra_extension is not None:
-            builder = builder.add_extension(extra_extension.ext, extra_extension.critical)
+            # NOTE: Add extension manually to bypass validation.
+            builder._extensions.append(
+                x509.Extension(
+                    extra_extension.ext.oid, extra_extension.critical, extra_extension.ext
+                )
+            )
 
         certificate = builder.sign(
             private_key=parent.key,  # type: ignore[arg-type]
