@@ -751,3 +751,31 @@ def v1_cert(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def eku_contains_anyeku(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    This chain is correctly constructed, but the EE cert contains an
+    Extended Key Usage extension that contains `anyExtendedKeyUsage`,
+    which is explicitly forbidden under CA/B 7.1.2.7.10.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.ExtendedKeyUsageOID.ANY_EXTENDED_KEY_USAGE]), critical=False
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).extended_key_usage([KnownEKUs.server_auth]).fails()
