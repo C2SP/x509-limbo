@@ -144,14 +144,14 @@ class Feature(str, Enum):
     For implementations that do not support name constraints for Distinguished Names (temporary).
     """
 
-    eku = "eku"
-    """
-    For implementations that do not support Extended Key Usage (temporary).
-    """
-
     pedantic_webpki = "pedantic-webpki"
     """
     Tests that exercise "pedantic" corners of the CABF profile.
+    """
+
+    pedantic_webpki_eku = "pedantic-webpki-eku"
+    """
+    Like `pedantic_webpki`, but specifically for "pedantic" EKU handling under CABF.
     """
 
     pedantic_serial_number = "pedantic-serial-number"
