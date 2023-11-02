@@ -268,6 +268,8 @@ class Builder:
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         extra_extension: _Extension | None = None,
         extra_unchecked_extensions: list[_Extension] | None = None,
+        unchecked_version: x509.Version | None = None,
+        no_extensions: bool = False,
     ) -> CertificatePair:
         """
         Produces an end-entity (EE) certificate, signed by the given `parent`'s
@@ -330,6 +332,13 @@ class Builder:
             # NOTE: Add extension manually to bypass validation.
             for e in extra_unchecked_extensions:
                 builder._extensions.append(x509.Extension(e.ext.oid, e.critical, e.ext))
+
+        if unchecked_version is not None:
+            builder._version = unchecked_version
+
+            if unchecked_version == x509.Version.v1 and no_extensions:
+                # Undo everything above if we're explicitly requesting a v1 cert.
+                builder._extensions = []
 
         certificate = builder.sign(
             private_key=parent.key,  # type: ignore[arg-type]

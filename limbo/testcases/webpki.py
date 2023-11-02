@@ -726,3 +726,28 @@ def no_san(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def v1_cert(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    This chain is correctly constructed, but the EE cert is marked with
+    version 2 (ordinal 1) rather than version 3 (ordinal 2). This is invalid,
+    per CA/B 7.1.1:
+
+    > Certificates MUST be of type X.509 v3.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, unchecked_version=x509.Version.v1, no_extensions=True)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
