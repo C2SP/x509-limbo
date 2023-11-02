@@ -1458,16 +1458,21 @@ def duplicate_extensions(builder: Builder) -> None:
 
     This chain is invalid solely because of the EE cert's construction:
     it contains multiple X.509v3 extensions with the same OID, which
-    is prohibited
+    is prohibited under the [RFC 5280 profile].
+
+    > A certificate MUST NOT include more than one instance of a particular
+    > extension.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
     """
 
     root = builder.root_ca()
     leaf = builder.leaf_cert(
         root,
-        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
-        extra_extension=ext(
-            x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False
-        ),
+        extra_unchecked_extensions=[
+            ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+            ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+        ],
     )
 
     builder = builder.server_validation()
