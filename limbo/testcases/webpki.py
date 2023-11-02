@@ -771,11 +771,15 @@ def eku_contains_anyeku(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         root,
         eku=ext(
-            x509.ExtendedKeyUsage([x509.ExtendedKeyUsageOID.ANY_EXTENDED_KEY_USAGE]), critical=False
+            x509.ExtendedKeyUsage(
+                [x509.OID_SERVER_AUTH, x509.ExtendedKeyUsageOID.ANY_EXTENDED_KEY_USAGE]
+            ),
+            critical=False,
         ),
     )
 
-    builder = builder.server_validation()
+    # NOTE: Marked as pedantic since most implementations don't seem to care.
+    builder = builder.server_validation().features([Feature.pedantic_webpki])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).extended_key_usage([KnownEKUs.server_auth]).fails()

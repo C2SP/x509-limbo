@@ -10,7 +10,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import ext
-from limbo.models import Feature, PeerName
+from limbo.models import Feature, KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
 
 # TODO: Intentionally mis-matching algorithm fields.
@@ -1507,4 +1507,37 @@ def no_keyusage(builder: Builder) -> None:
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="example.com"))
         .succeeds()
+    )
+
+
+@testcase
+def wrong_eku(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The chain is correctly constructed, but the EE cert contains
+    an Extended Key Usage extension that contains just `id-kp-clientAuth`
+    while the validator expects `id-kp-serverAuth`.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .extended_key_usage([KnownEKUs.server_auth])
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
     )
