@@ -701,3 +701,28 @@ def forbidden_signature_algorithm_in_leaf(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def no_san(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The chain is correctly constructed, but the EE cert does not have a
+    Subject Alternative Name, which is required. This is invalid even when
+    the Subject contains a valid domain name in its Common Name component.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root, subject=x509.Name.from_rfc4514_string("CN=example.com"), san=None
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()

@@ -123,13 +123,11 @@ class Builder:
         not_before: datetime = _EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
-        basic_constraints: _Extension[x509.BasicConstraints]
-        | None = ext(
+        basic_constraints: _Extension[x509.BasicConstraints] | None = ext(
             x509.BasicConstraints(ca=True, path_length=None),
             critical=True,
         ),
-        key_usage: _Extension[x509.KeyUsage]
-        | None = ext(
+        key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
                 digital_signature=False,
                 key_cert_sign=True,
@@ -178,8 +176,7 @@ class Builder:
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = True,
-        key_usage: _Extension[x509.KeyUsage]
-        | None = ext(
+        key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
                 digital_signature=False,
                 key_cert_sign=True,
@@ -247,14 +244,13 @@ class Builder:
         parent: CertificatePair,
         *,
         issuer: x509.Name | None = None,
-        subject: x509.Name = x509.Name.from_rfc4514_string("CN=x509-limbo-ee"),
+        subject: x509.Name | Literal[True] | None = True,
         serial: int | None = None,
         not_before: datetime = _EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | None = None,
-        key_usage: _Extension[x509.KeyUsage]
-        | None = ext(
+        key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
                 digital_signature=True,
                 key_cert_sign=False,
@@ -276,6 +272,11 @@ class Builder:
         Produces an end-entity (EE) certificate, signed by the given `parent`'s
         key.
         """
+        if subject is None:
+            subject = x509.Name([])
+        elif subject is True:
+            subject = x509.Name.from_rfc4514_string("CN=example.com")
+
         if issuer is None:
             issuer = parent.cert.subject
 
