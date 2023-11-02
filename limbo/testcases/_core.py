@@ -267,6 +267,7 @@ class Builder:
         san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         extra_extension: _Extension | None = None,
+        extra_unchecked_extensions: list[_Extension] | None = None,
     ) -> CertificatePair:
         """
         Produces an end-entity (EE) certificate, signed by the given `parent`'s
@@ -324,6 +325,11 @@ class Builder:
 
         if extra_extension is not None:
             builder = builder.add_extension(extra_extension.ext, extra_extension.critical)
+
+        if extra_unchecked_extensions is not None:
+            # NOTE: Add extension manually to bypass validation.
+            for e in extra_unchecked_extensions:
+                builder._extensions.append(x509.Extension(e.ext.oid, e.critical, e.ext))
 
         certificate = builder.sign(
             private_key=parent.key,  # type: ignore[arg-type]
