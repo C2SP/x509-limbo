@@ -24,15 +24,10 @@ const (
 	validationKindClient = "CLIENT"
 	validationKindServer = "SERVER"
 
-	testcaseFailed  testcaseResult = "FAILURE"
-	testcasePassed  testcaseResult = "SUCCESS"
-	testcaseSkipped testcaseResult = "SKIPPED"
+	resultFailure testcaseResult = "FAILURE"
+	resultSuccess testcaseResult = "SUCCESS"
+	resultSkipped testcaseResult = "SKIPPED"
 )
-
-func (r testcaseResult) String() string {
-	s := map[testcaseResult]string{testcaseFailed: "FAIL", testcasePassed: "PASS", testcaseSkipped: "SKIP"}
-	return s[r]
-}
 
 type result struct {
 	ID      string         `json:"id"`
@@ -64,25 +59,29 @@ func main() {
 	resultsEncoder := json.NewEncoder(resultsFile)
 
 	var (
-		pass, fail, skip int
-		outputResults    results
+		conform, nonconform, skip int
+		outputResults             results
 	)
 	for _, tc := range testcases.Testcases {
 		fmt.Printf("Running test %s ... ", tc.Id)
 		r, err := evaluateTestcase(tc)
-		fmt.Printf("%s\n", r)
 
 		var context string
-		switch r {
-		case testcaseFailed:
-			fmt.Printf("\terr=%+#v\n", err)
-			context = err.Error()
-			fail++
-		case testcasePassed:
-			pass++
-		case testcaseSkipped:
-			skip++
-			continue
+		if r != testcaseResult(tc.ExpectedResult.(string)) {
+			if r != resultSkipped {
+				fmt.Printf("NON-CONFORMANT\n\terr=%s\n", err)
+				nonconform++
+			} else {
+				fmt.Println("SKIPPED")
+				skip++
+			}
+
+			if err != nil {
+				context = err.Error()
+			}
+		} else {
+			fmt.Println("CONFORMANT")
+			conform++
 		}
 
 		outputResults.Results = append(outputResults.Results, result{
@@ -96,7 +95,7 @@ func main() {
 	outputResults.Harness = fmt.Sprintf("gocryptox509-%s", runtime.Version())
 	resultsEncoder.Encode(outputResults)
 
-	fmt.Printf("done! passed/failed/skipped/total %d/%d/%d/%d.\n", pass, fail, skip, len(testcases.Testcases))
+	fmt.Printf("done! conformant/nonconformant/skipped/total %d/%d/%d/%d.\n", conform, nonconform, skip, len(testcases.Testcases))
 }
 
 func loadTestcases(path string) (testcases LimboSchemaJson, err error) {
@@ -129,20 +128,18 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 
 		if err != nil {
 			fmt.Printf("%s\n", err)
-			return testcaseSkipped, errors.Wrap(err, "unable to parse testcase time as RFC3339")
+			return resultSkipped, errors.Wrap(err, "unable to parse testcase time as RFC3339")
 		}
 	}
 
-	expectSuccess := testcaseResult(testcase.ExpectedResult.(string)) == testcasePassed
-
 	// TODO: Support testcases that constrain signature algorthms.
 	if len(testcase.SignatureAlgorithms) != 0 {
-		return testcaseSkipped, fmt.Errorf("signature algorithm checks not supported yet")
+		return resultSkipped, fmt.Errorf("signature algorithm checks not supported yet")
 	}
 
 	// TODO: Support testcases that constrain key usages.
 	if len(testcase.KeyUsage) != 0 {
-		return testcaseSkipped, fmt.Errorf("key usage checks not supported yet")
+		return resultSkipped, fmt.Errorf("key usage checks not supported yet")
 	}
 
 	var ekus []x509.ExtKeyUsage
@@ -165,12 +162,12 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 
 	switch testcase.ValidationKind {
 	case validationKindClient:
-		return testcaseSkipped, fmt.Errorf("unimplemented validationKindClient")
+		return resultSkipped, fmt.Errorf("unimplemented validationKindClient")
 	case validationKindServer:
 		var dnsName string
 		if peerName, ok := testcase.ExpectedPeerName.(map[string]interface{}); ok {
 			if peerName["kind"] != "DNS" {
-				return testcaseSkipped, fmt.Errorf("non-DNS peer name checks not supported yet")
+				return resultSkipped, fmt.Errorf("non-DNS peer name checks not supported yet")
 			}
 			dnsName = peerName["value"].(string)
 		}
@@ -180,19 +177,15 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 
 		peerAsPEM, rest := pem.Decode([]byte(testcase.PeerCertificate))
 		if peerAsPEM == nil || peerAsPEM.Type != "CERTIFICATE" {
-			return testcaseFailed, fmt.Errorf("unexpected data, expected cert: %+#v", *peerAsPEM)
+			return resultFailure, fmt.Errorf("unexpected data, expected cert: %+#v", *peerAsPEM)
 		} else if len(rest) > 0 {
-			return testcaseFailed, fmt.Errorf("peer certificate has %d trailing bytes", len(rest))
+			return resultFailure, fmt.Errorf("peer certificate has %d trailing bytes", len(rest))
 		}
 
 		peer, err := x509.ParseCertificate(peerAsPEM.Bytes)
 		if err != nil {
 			err = errors.Wrap(err, "unable to parse ASN1 certificate from PEM")
-			if expectSuccess {
-				return testcaseFailed, err
-			} else {
-				return testcasePassed, err
-			}
+			return resultFailure, err
 		}
 
 		opts := x509.VerifyOptions{
@@ -205,12 +198,24 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		chain, err := peer.Verify(opts)
 		_ = chain
 
-		if err != nil && expectSuccess {
-			return testcaseFailed, errors.Wrap(err, "validation failed when success was expected")
-		} else if err == nil && !expectSuccess {
-			return testcaseFailed, fmt.Errorf("validation succeeded when failure was expected")
+		var (
+			expected = testcaseResult(testcase.ExpectedResult.(string))
+			actual   testcaseResult
+		)
+		if err != nil {
+			actual = resultFailure
+		} else {
+			actual = resultSuccess
 		}
+
+		if expected != actual {
+			if err == nil {
+				err = errors.New("chain built")
+			}
+			err = errors.Wrap(err, "validation")
+		}
+		return actual, err
 	}
 
-	return testcasePassed, nil
+	return resultSkipped, errors.New("no result returned from evaulation")
 }
