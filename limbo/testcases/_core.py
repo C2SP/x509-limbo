@@ -303,7 +303,7 @@ class Builder:
             critical=False,
         )
 
-        if basic_constraints is not None:
+        if isinstance(basic_constraints, _Extension):
             builder = builder.add_extension(
                 basic_constraints.ext, critical=basic_constraints.critical
             )
