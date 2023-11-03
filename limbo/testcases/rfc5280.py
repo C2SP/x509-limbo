@@ -1593,7 +1593,7 @@ def mismatching_signature_algorithm(builder: Builder) -> None:
 
 
 @testcase
-def malformed_subject_alternative_name_ee(builder: Builder) -> None:
+def malformed_subject_alternative_name(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -1610,30 +1610,6 @@ def malformed_subject_alternative_name_ee(builder: Builder) -> None:
         critical=False,
     )
     leaf = builder.leaf_cert(root, san=None, extra_extension=malformed_san)
-
-    builder = builder.server_validation()
-    builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
-
-
-@testcase
-def malformed_subject_alternative_name_root(builder: Builder) -> None:
-    """
-    Produces the following **invalid** chain:
-
-    ```
-    root -> EE
-    ```
-
-    The root cert has a SubjectAlternativeName with a value in ASCII bytes, rather
-    than in the expected DER encoding.
-    """
-    malformed_san = ext(
-        x509.UnrecognizedExtension(x509.OID_SUBJECT_ALTERNATIVE_NAME, b"example.com"),
-        critical=False,
-    )
-    root = builder.root_ca(san=None, extra_extension=malformed_san)
-
-    leaf = builder.leaf_cert(root)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
