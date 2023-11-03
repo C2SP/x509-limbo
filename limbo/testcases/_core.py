@@ -249,7 +249,7 @@ class Builder:
         not_before: datetime = _EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
-        basic_constraints: _Extension[x509.BasicConstraints] | None = None,
+        basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = None,
         key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
                 digital_signature=True,
@@ -303,11 +303,11 @@ class Builder:
             critical=False,
         )
 
-        if basic_constraints is not None:
+        if isinstance(basic_constraints, _Extension):
             builder = builder.add_extension(
                 basic_constraints.ext, critical=basic_constraints.critical
             )
-        else:
+        elif basic_constraints:
             builder = builder.add_extension(
                 x509.BasicConstraints(ca=False, path_length=None),
                 critical=False,
