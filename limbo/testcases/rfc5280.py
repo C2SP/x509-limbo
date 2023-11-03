@@ -9,11 +9,9 @@ from ipaddress import IPv4Address, IPv4Network
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from limbo.assets import ext
+from limbo.assets import _ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
-
-# TODO: Intentionally mis-matching algorithm fields.
 
 
 @testcase
@@ -1565,3 +1563,30 @@ def wrong_eku(builder: Builder) -> None:
         .expected_peer_name(PeerName(kind="DNS", value="example.com"))
         .fails()
     )
+
+
+@testcase
+def mismatching_signature_algorithm(builder: Builder) -> None:
+    """
+    Verifies against a saved copy of `cryptography.io`'s chain with
+    the root certificate modified to have mismatched `signatureAlgorithm`
+    fields, which is prohibited under the [RFC 5280 profile].
+
+    > A certificate MUST NOT include more than one instance of a particular
+    > extension.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
+    """
+    chain_path = _ASSETS_PATH / "cryptography.io_mismatched.pem"
+    chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
+
+    leaf, root = chain.pop(0), chain.pop(-1)
+    builder = builder.server_validation().validation_time(
+        datetime.fromisoformat("2023-07-10T00:00:00Z")
+    )
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .untrusted_intermediates(*chain)
+        .expected_peer_name(PeerName(kind="DNS", value="cryptography.io"))
+    ).fails()
