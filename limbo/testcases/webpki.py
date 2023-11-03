@@ -783,3 +783,33 @@ def eku_contains_anyeku(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).extended_key_usage([KnownEKUs.server_auth]).fails()
+
+
+@testcase
+def ee_basicconstraints_ca(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE certificate has `keyUsage.keyCertSign=FALSE` but
+    `basicConstraints.cA=TRUE`, which is explicitly forbidden under
+    CA/B 7.1.2.7.8:
+
+    > cA MUST be FALSE
+    """
+
+    # NOTE: This behavior is implied by RFC 5280, but is only made explicit
+    # in the CA/B BRs. In 5280, the only requirement is that `keyUsage.keyCertSign`
+    # implies `basicConstraints.cA`, not the other way around.
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root, basic_constraints=ext(x509.BasicConstraints(True, None), critical=True)
+    )
+
+    builder.server_validation().trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
