@@ -9,8 +9,8 @@
         "no-cert-policies",
         "pedantic-public-suffix-wildcard",
         "name-constraint-dn",
-        "eku",
         "pedantic-webpki",
+        "pedantic-webpki-eku",
         "pedantic-serial-number"
       ],
       "type": "string"

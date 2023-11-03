@@ -454,7 +454,7 @@ def root_with_extkeyusage(builder: Builder) -> None:
     )
     leaf = builder.leaf_cert(root)
 
-    builder = builder.server_validation().features([Feature.eku])
+    builder = builder.server_validation().features([Feature.pedantic_webpki_eku])
     builder = (
         builder.trusted_certs(root)
         .extended_key_usage([KnownEKUs.server_auth])
@@ -751,3 +751,35 @@ def v1_cert(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def eku_contains_anyeku(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    This chain is correctly constructed, but the EE cert contains an
+    Extended Key Usage extension that contains `anyExtendedKeyUsage`,
+    which is explicitly forbidden under CA/B 7.1.2.7.10.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        eku=ext(
+            x509.ExtendedKeyUsage(
+                [x509.OID_SERVER_AUTH, x509.ExtendedKeyUsageOID.ANY_EXTENDED_KEY_USAGE]
+            ),
+            critical=False,
+        ),
+    )
+
+    # NOTE: Marked as pedantic since most implementations don't seem to care.
+    builder = builder.server_validation().features([Feature.pedantic_webpki_eku])
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).extended_key_usage([KnownEKUs.server_auth]).fails()
