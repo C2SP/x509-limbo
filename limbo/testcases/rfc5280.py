@@ -1590,3 +1590,26 @@ def mismatching_signature_algorithm(builder: Builder) -> None:
         .untrusted_intermediates(*chain)
         .expected_peer_name(PeerName(kind="DNS", value="cryptography.io"))
     ).fails()
+
+
+@testcase
+def malformed_subject_alternative_name(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert has a SubjectAlternativeName with a value in ASCII bytes, rather
+    than in the expected DER encoding.
+    """
+    root = builder.root_ca()
+    malformed_san = ext(
+        x509.UnrecognizedExtension(x509.OID_SUBJECT_ALTERNATIVE_NAME, b"example.com"),
+        critical=False,
+    )
+    leaf = builder.leaf_cert(root, san=None, extra_extension=malformed_san)
+
+    builder = builder.server_validation()
+    builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
