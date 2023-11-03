@@ -1511,6 +1511,30 @@ def no_keyusage(builder: Builder) -> None:
 
 
 @testcase
+def no_basicconstraints(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE lacks a Basic Constraints extension, which is not required for
+    end-entity certificates under the RFC 5280 profile.
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, basic_constraints=None)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .succeeds()
+    )
+
+
+@testcase
 def wrong_eku(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
