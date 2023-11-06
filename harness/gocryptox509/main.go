@@ -119,6 +119,14 @@ func concatPEMCerts(certs []string) []byte {
 func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	_ = spew.Dump
 
+	if testcase.Features != nil {
+		for _, feature := range testcase.Features {
+			if feature == "max-chain-depth" {
+				return resultSkipped, fmt.Errorf("max chain depth not supported")
+			}
+		}
+	}
+
 	var ts time.Time
 	if testcase.ValidationTime == nil {
 		ts = time.Now()
@@ -140,6 +148,10 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	// TODO: Support testcases that constrain key usages.
 	if len(testcase.KeyUsage) != 0 {
 		return resultSkipped, fmt.Errorf("key usage checks not supported yet")
+	}
+
+	if testcase.MaxChainDepth != nil {
+		return resultSkipped, fmt.Errorf("max chain depth not supported")
 	}
 
 	var ekus []x509.ExtKeyUsage
