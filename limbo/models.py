@@ -223,6 +223,8 @@ class Testcase(BaseModel):
         None, description="For server-side validation: the expected peer names, if any"
     )
 
+    max_chain_depth: int = Field(None, description="The maximum chain-building depth")
+
 
 class Limbo(BaseModel):
     """

@@ -254,6 +254,11 @@
           "items": {
             "$ref": "#/definitions/PeerName"
           }
+        },
+        "max_chain_depth": {
+          "title": "Max Chain Depth",
+          "description": "The maximum chain-building depth",
+          "type": "integer"
         }
       },
       "required": [

@@ -374,6 +374,7 @@ class Builder:
         self._expected_result: str | None = None
         self._expected_peer_name: PeerName | None = PeerName(kind="DNS", value="example.com")
         self._expected_peer_names: list[PeerName] | None = None
+        self._max_chain_depth: int | None = None
 
     def features(self, feats: list[Feature]) -> Self:
         self._features = feats
@@ -431,6 +432,10 @@ class Builder:
         self._expected_peer_names = names
         return self
 
+    def max_chain_depth(self, max_chain_depth: int) -> Self:
+        self._max_chain_depth = max_chain_depth
+        return self
+
     def build(self) -> Testcase:
         return Testcase(
             id=self._id,
@@ -446,6 +451,7 @@ class Builder:
             extended_key_usage=self._extended_key_usage,
             expected_result=self._expected_result,
             expected_peer_name=self._expected_peer_name,
+            max_chain_depth=self._max_chain_depth,
         )
 
 
