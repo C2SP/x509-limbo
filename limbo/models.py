@@ -159,6 +159,12 @@ class Feature(str, Enum):
     Tests that exercise "pedantic" serial number handling.
     """
 
+    max_chain_depth = "max-chain-depth"
+    """
+    Tests that restrict the chain-building depth. Not all implementations expose
+    a configurable path length.
+    """
+
 
 class Testcase(BaseModel):
     """
