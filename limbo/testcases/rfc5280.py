@@ -1265,6 +1265,37 @@ def ca_nameconstraints_permitted_different_constraint_type(builder: Builder) -> 
 
 
 @testcase
+def ca_nameconstraints_excluded_different_constraint_type(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded iPAddress of
+    192.0.2.0/24, while the leaf's SubjectAlternativeName is a dNSName.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=None,
+                excluded_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+    )
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).succeeds()
+
+
+@testcase
 def ca_nameconstraints_invalid_dnsname(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
