@@ -26,7 +26,11 @@ fn main() {
         results,
     };
 
-    std::fs::write(LIMBO_RESULTS_OUT, serde_json::to_string(&result).unwrap()).unwrap()
+    std::fs::write(
+        LIMBO_RESULTS_OUT,
+        serde_json::to_string_pretty(&result).unwrap(),
+    )
+    .unwrap()
 }
 
 #[derive(Serialize)]
