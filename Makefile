@@ -69,3 +69,7 @@ test-go:
 .PHONY: test-openssl
 test-openssl:
 	$(MAKE) -C harness/openssl run
+
+.PHONY: test-rust-webpki
+test-rust-webpki:
+	@cargo run --bin rust-webpki-harness

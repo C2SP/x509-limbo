@@ -20,7 +20,13 @@ fn main() {
         results.push(evaluate_testcase(&testcase));
     }
 
-    std::fs::write(LIMBO_RESULTS_OUT, serde_json::to_string(&results).unwrap()).unwrap()
+    let result = LimboResult {
+        version: 1,
+        harness: "rust-webpki".into(),
+        results,
+    };
+
+    std::fs::write(LIMBO_RESULTS_OUT, serde_json::to_string(&result).unwrap()).unwrap()
 }
 
 #[derive(Serialize)]
@@ -62,6 +68,13 @@ impl TestcaseResult {
             context: Some(reason.into()),
         }
     }
+}
+
+#[derive(Serialize)]
+struct LimboResult {
+    version: u8,
+    harness: String,
+    results: Vec<TestcaseResult>,
 }
 
 fn render_err(e: &webpki::ErrorExt) -> String {
