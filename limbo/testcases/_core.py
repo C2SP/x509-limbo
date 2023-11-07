@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 from limbo.assets import (
-    _EPOCH,
+    EPOCH,
     ONE_THOUSAND_YEARS_OF_TORMENT,
     Certificate,
     CertificatePair,
@@ -120,7 +120,7 @@ class Builder:
         issuer: x509.Name = x509.Name.from_rfc4514_string("CN=x509-limbo-root"),
         subject: x509.Name | None = None,
         serial: int | None = None,
-        not_before: datetime = _EPOCH,
+        not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | None = ext(
@@ -172,7 +172,7 @@ class Builder:
         issuer: x509.Name | None = None,
         subject: x509.Name | None = None,
         serial: int | None = None,
-        not_before: datetime = _EPOCH,
+        not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = True,
@@ -246,7 +246,7 @@ class Builder:
         issuer: x509.Name | None = None,
         subject: x509.Name | Literal[True] | None = True,
         serial: int | None = None,
-        not_before: datetime = _EPOCH,
+        not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = None,

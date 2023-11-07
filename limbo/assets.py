@@ -16,8 +16,11 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 from cryptography.x509 import ExtensionType
 
-_EPOCH = datetime.datetime.fromtimestamp(0)
-ONE_THOUSAND_YEARS_OF_TORMENT = _EPOCH + datetime.timedelta(days=365 * 1000)
+# NOTE: We judiciously start on the second *after* the Unix epoch, since
+# some path validation libraries intentionally reject anything on or
+# before the epoch.
+EPOCH = datetime.datetime.utcfromtimestamp(1)
+ONE_THOUSAND_YEARS_OF_TORMENT = EPOCH + datetime.timedelta(days=365 * 1000)
 _ASSETS_PATH = resources.files("limbo._assets")
 _ExtensionType = TypeVar("_ExtensionType", bound=ExtensionType)
 

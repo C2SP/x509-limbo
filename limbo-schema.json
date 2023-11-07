@@ -15,6 +15,15 @@
       ],
       "type": "string"
     },
+    "ValidationKind": {
+      "title": "ValidationKind",
+      "description": "The kind of validation to perform.",
+      "enum": [
+        "CLIENT",
+        "SERVER"
+      ],
+      "type": "string"
+    },
     "SignatureAlgorithm": {
       "title": "SignatureAlgorithm",
       "description": "Valid X.509 signature algorithms.",
@@ -82,32 +91,35 @@
       ],
       "type": "string"
     },
+    "ExpectedResult": {
+      "title": "ExpectedResult",
+      "description": "Represents an expected testcase evaluation result.",
+      "enum": [
+        "SUCCESS",
+        "FAILURE"
+      ],
+      "type": "string"
+    },
+    "PeerKind": {
+      "title": "PeerKind",
+      "description": "Different types of peer subjects.",
+      "enum": [
+        "RFC822",
+        "DNS",
+        "IP"
+      ],
+      "type": "string"
+    },
     "PeerName": {
       "title": "PeerName",
       "description": "Represents a peer (i.e., end entity) certificate's name (Subject or SAN).",
       "type": "object",
       "properties": {
         "kind": {
-          "title": "Kind",
           "description": "The kind of peer name",
-          "anyOf": [
+          "allOf": [
             {
-              "enum": [
-                "RFC822"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "DNS"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "IP"
-              ],
-              "type": "string"
+              "$ref": "#/definitions/PeerKind"
             }
           ]
         },
@@ -146,20 +158,10 @@
           "type": "string"
         },
         "validation_kind": {
-          "title": "Validation Kind",
           "description": "The kind of validation to perform",
-          "anyOf": [
+          "allOf": [
             {
-              "enum": [
-                "CLIENT"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "SERVER"
-              ],
-              "type": "string"
+              "$ref": "#/definitions/ValidationKind"
             }
           ]
         },
@@ -221,20 +223,10 @@
           }
         },
         "expected_result": {
-          "title": "Expected Result",
           "description": "The expected validation result",
-          "anyOf": [
+          "allOf": [
             {
-              "enum": [
-                "SUCCESS"
-              ],
-              "type": "string"
-            },
-            {
-              "enum": [
-                "FAILURE"
-              ],
-              "type": "string"
+              "$ref": "#/definitions/ExpectedResult"
             }
           ]
         },
