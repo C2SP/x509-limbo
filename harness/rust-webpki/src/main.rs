@@ -105,7 +105,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
 
     let leaf_der = pem::parse(&tc.peer_certificate).expect("leaf cert: PEM parse failed");
     let Ok(leaf) = webpki::EndEntityCert::try_from(leaf_der.contents()) else {
-        return TestcaseResult::skip(tc, "leaf cert: X.509 parse failed");
+        return TestcaseResult::fail(tc, "leaf cert: X.509 parse failed");
     };
 
     let intermediates = tc
@@ -125,7 +125,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         .map(|ta| webpki::TrustAnchor::try_from_cert_der(ta.contents()))
         .collect::<Result<Vec<_>, _>>()
     else {
-        return TestcaseResult::skip(tc, "trusted certs: trust anchor extraction failed");
+        return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
     };
 
     let validation_time = webpki::Time::try_from(SystemTime::from(
