@@ -125,7 +125,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		ts = time.Now()
 	} else {
 		var err error
-		ts, err = time.Parse(time.RFC3339, *testcase.ValidationTime)
+		ts, err = time.Parse(time.RFC3339, testcase.ValidationTime.(string))
 
 		if err != nil {
 			fmt.Printf("%s\n", err)
@@ -136,17 +136,24 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	expectSuccess := testcaseResult(testcase.ExpectedResult.(string)) == testcasePassed
 
 	// TODO: Support testcases that constrain signature algorthms.
-	if len(testcase.SignatureAlgorithms) != 0 {
-		return testcaseSkipped, fmt.Errorf("signature algorithm checks not supported yet")
+	if testcase.SignatureAlgorithms != nil {
+		var signatureAlgorithms []SignatureAlgorithm = testcase.SignatureAlgorithms.([]SignatureAlgorithm)
+		if len(signatureAlgorithms) != 0 {
+			return testcaseSkipped, fmt.Errorf("signature algorithm checks not supported yet")
+		}
 	}
 
 	// TODO: Support testcases that constrain key usages.
-	if len(testcase.KeyUsage) != 0 {
-		return testcaseSkipped, fmt.Errorf("key usage checks not supported yet")
+	if testcase.KeyUsage != nil {
+		var keyUsage []interface{} = testcase.KeyUsage.([]interface{})
+		if len(keyUsage) != 0 {
+			return testcaseSkipped, fmt.Errorf("key usage checks not supported yet")
+		}
 	}
 
 	var ekus []x509.ExtKeyUsage
-	if len(testcase.ExtendedKeyUsage) != 0 {
+	if testcase.ExtendedKeyUsage != nil {
+		var extendedKeyUsage []interface{} = testcase.ExtendedKeyUsage.([]interface{})
 		extKeyUsagesMap := map[KnownEKUs]x509.ExtKeyUsage{
 			KnownEKUsAnyExtendedKeyUsage: x509.ExtKeyUsageAny,
 			KnownEKUsClientAuth:          x509.ExtKeyUsageClientAuth,
@@ -157,8 +164,9 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 			KnownEKUsTimeStamping:        x509.ExtKeyUsageTimeStamping,
 		}
 
-		for _, elem := range testcase.ExtendedKeyUsage {
-			expected_eku := KnownEKUs(elem.(string))
+		for _, elem := range extendedKeyUsage {
+			var ekuString = elem.(string)
+			expected_eku := KnownEKUs(ekuString)
 			ekus = append(ekus, extKeyUsagesMap[expected_eku])
 		}
 	}
