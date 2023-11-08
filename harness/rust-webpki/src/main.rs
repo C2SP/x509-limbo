@@ -1,7 +1,7 @@
 use std::time::SystemTime;
 
 use chrono::{DateTime, Utc};
-use models::{Limbo, PeerKind, Testcase, ValidationKind};
+use models::{Feature, Limbo, PeerKind, Testcase, ValidationKind};
 use serde::Serialize;
 
 pub(crate) mod models;
@@ -95,6 +95,17 @@ fn render_err(e: &webpki::ErrorExt) -> String {
 }
 
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
+    if tc
+        .features
+        .as_ref()
+        .map_or(false, |features| features.contains(&Feature::MaxChainDepth))
+    {
+        return TestcaseResult::skip(
+            tc,
+            "max-chain-depth testcases are not supported by this API",
+        );
+    }
+
     if !matches!(tc.validation_kind, ValidationKind::Server) {
         return TestcaseResult::skip(tc, "non-SERVER testcases not supported yet");
     }
