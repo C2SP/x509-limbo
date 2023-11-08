@@ -142,7 +142,7 @@ json evaluate_testcase(const json &testcase)
     {
         std::istringstream ss(testcase["validation_time"].template get<std::string>());
         date::sys_seconds tp;
-        ss >> date::parse("%FT%T%Ez", tp);
+        ss >> date::parse("%FT%T%Z", tp);
 
         if (ss.fail())
         {
