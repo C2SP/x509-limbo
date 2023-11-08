@@ -11,7 +11,8 @@
         "name-constraint-dn",
         "pedantic-webpki",
         "pedantic-webpki-eku",
-        "pedantic-serial-number"
+        "pedantic-serial-number",
+        "max-chain-depth"
       ],
       "type": "string"
     },
@@ -246,6 +247,11 @@
           "items": {
             "$ref": "#/definitions/PeerName"
           }
+        },
+        "max_chain_depth": {
+          "title": "Max Chain Depth",
+          "description": "The maximum chain-building depth",
+          "type": "integer"
         }
       },
       "required": [

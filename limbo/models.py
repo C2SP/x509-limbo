@@ -186,6 +186,12 @@ class Feature(str, Enum):
     Tests that exercise "pedantic" serial number handling.
     """
 
+    max_chain_depth = "max-chain-depth"
+    """
+    Tests that restrict the chain-building depth. Not all implementations expose
+    a configurable path length.
+    """
+
 
 class ValidationKind(str, Enum):
     """
@@ -254,6 +260,8 @@ class Testcase(BaseModel):
     expected_peer_names: list[PeerName] | None = Field(
         None, description="For server-side validation: the expected peer names, if any"
     )
+
+    max_chain_depth: int | None = Field(None, description="The maximum chain-building depth")
 
 
 class Limbo(BaseModel):
