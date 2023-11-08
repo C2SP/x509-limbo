@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run github.com/atombender/go-jsonschema/cmd/gojsonschema@latest -v -p main -o schema.go ../../limbo-schema.json
+//go:generate go run github.com/atombender/go-jsonschema@latest -v -p main -o schema.go ../../limbo-schema.json
 
 import (
 	"bytes"
@@ -98,7 +98,7 @@ func main() {
 	fmt.Printf("done! conformant/nonconformant/skipped/total %d/%d/%d/%d.\n", conform, nonconform, skip, len(testcases.Testcases))
 }
 
-func loadTestcases(path string) (testcases LimboSchemaJson, err error) {
+func loadTestcases(path string) (testcases Limbo, err error) {
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
@@ -119,17 +119,19 @@ func concatPEMCerts(certs []string) []byte {
 func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	_ = spew.Dump
 
+	if testcase.Features != nil {
+		for _, feature := range testcase.Features {
+			if feature == "max-chain-depth" {
+				return resultSkipped, fmt.Errorf("max chain depth not supported")
+			}
+		}
+	}
+
 	var ts time.Time
 	if testcase.ValidationTime == nil {
 		ts = time.Now()
 	} else {
-		var err error
-		ts, err = time.Parse(time.RFC3339, *testcase.ValidationTime)
-
-		if err != nil {
-			fmt.Printf("%s\n", err)
-			return resultSkipped, errors.Wrap(err, "unable to parse testcase time as RFC3339")
-		}
+		ts = *testcase.ValidationTime
 	}
 
 	// TODO: Support testcases that constrain signature algorthms.
@@ -140,6 +142,10 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	// TODO: Support testcases that constrain key usages.
 	if len(testcase.KeyUsage) != 0 {
 		return resultSkipped, fmt.Errorf("key usage checks not supported yet")
+	}
+
+	if testcase.MaxChainDepth != nil {
+		return resultSkipped, fmt.Errorf("max chain depth not supported")
 	}
 
 	var ekus []x509.ExtKeyUsage
