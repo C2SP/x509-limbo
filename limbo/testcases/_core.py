@@ -123,13 +123,11 @@ class Builder:
         not_before: datetime = _EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
-        basic_constraints: _Extension[x509.BasicConstraints]
-        | None = ext(
+        basic_constraints: _Extension[x509.BasicConstraints] | None = ext(
             x509.BasicConstraints(ca=True, path_length=None),
             critical=True,
         ),
-        key_usage: _Extension[x509.KeyUsage]
-        | None = ext(
+        key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
                 digital_signature=False,
                 key_cert_sign=True,
@@ -178,8 +176,7 @@ class Builder:
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = True,
-        key_usage: _Extension[x509.KeyUsage]
-        | None = ext(
+        key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
                 digital_signature=False,
                 key_cert_sign=True,
@@ -247,14 +244,13 @@ class Builder:
         parent: CertificatePair,
         *,
         issuer: x509.Name | None = None,
-        subject: x509.Name = x509.Name.from_rfc4514_string("CN=x509-limbo-ee"),
+        subject: x509.Name | Literal[True] | None = True,
         serial: int | None = None,
         not_before: datetime = _EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
-        basic_constraints: _Extension[x509.BasicConstraints] | None = None,
-        key_usage: _Extension[x509.KeyUsage]
-        | None = ext(
+        basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = None,
+        key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
                 digital_signature=True,
                 key_cert_sign=False,
@@ -268,14 +264,25 @@ class Builder:
             ),
             critical=False,
         ),
+        eku: _Extension[x509.ExtendedKeyUsage] | None = ext(
+            x509.ExtendedKeyUsage([x509.OID_SERVER_AUTH]), critical=False
+        ),
         san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         extra_extension: _Extension | None = None,
+        extra_unchecked_extensions: list[_Extension] | None = None,
+        unchecked_version: x509.Version | None = None,
+        no_extensions: bool = False,
     ) -> CertificatePair:
         """
         Produces an end-entity (EE) certificate, signed by the given `parent`'s
         key.
         """
+        if subject is None:
+            subject = x509.Name([])
+        elif subject is True:
+            subject = x509.Name.from_rfc4514_string("CN=example.com")
+
         if issuer is None:
             issuer = parent.cert.subject
 
@@ -285,17 +292,26 @@ class Builder:
         if key is None:
             key = ec.generate_private_key(ec.SECP256R1())
 
-        builder = x509.CertificateBuilder()
+        builder = x509.CertificateBuilder(serial_number=serial)
         builder = builder.subject_name(subject)
         builder = builder.issuer_name(issuer)
         builder = builder.not_valid_before(not_before)
         builder = builder.not_valid_after(not_after)
-        builder = builder.serial_number(serial)
         builder = builder.public_key(key.public_key())  # type: ignore[arg-type]
         builder = builder.add_extension(
             x509.SubjectKeyIdentifier.from_public_key(key.public_key()),  # type: ignore[arg-type]
             critical=False,
         )
+
+        if isinstance(basic_constraints, _Extension):
+            builder = builder.add_extension(
+                basic_constraints.ext, critical=basic_constraints.critical
+            )
+        elif basic_constraints:
+            builder = builder.add_extension(
+                x509.BasicConstraints(ca=False, path_length=None),
+                critical=False,
+            )
 
         if isinstance(aki, _Extension):
             builder = builder.add_extension(aki.ext, critical=aki.critical)
@@ -307,13 +323,11 @@ class Builder:
                 critical=False,
             )
 
-        builder = builder.add_extension(
-            x509.BasicConstraints(ca=False, path_length=None),
-            critical=False,
-        )
-
         if key_usage:
             builder = builder.add_extension(key_usage.ext, critical=key_usage.critical)
+
+        if eku:
+            builder = builder.add_extension(eku.ext, critical=eku.critical)
 
         if isinstance(san, _Extension):
             builder = builder.add_extension(san.ext, san.critical)
@@ -324,6 +338,18 @@ class Builder:
 
         if extra_extension is not None:
             builder = builder.add_extension(extra_extension.ext, extra_extension.critical)
+
+        if extra_unchecked_extensions is not None:
+            # NOTE: Add extension manually to bypass validation.
+            for e in extra_unchecked_extensions:
+                builder._extensions.append(x509.Extension(e.ext.oid, e.critical, e.ext))
+
+        if unchecked_version is not None:
+            builder._version = unchecked_version
+
+            if unchecked_version == x509.Version.v1 and no_extensions:
+                # Undo everything above if we're explicitly requesting a v1 cert.
+                builder._extensions = []
 
         certificate = builder.sign(
             private_key=parent.key,  # type: ignore[arg-type]

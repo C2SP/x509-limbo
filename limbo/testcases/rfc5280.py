@@ -2,17 +2,16 @@
 RFC5280 profile tests.
 """
 
+import random
 from datetime import datetime
 from ipaddress import IPv4Address, IPv4Network
 
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from limbo.assets import ext
-from limbo.models import Feature, PeerName
+from limbo.assets import _ASSETS_PATH, Certificate, ext
+from limbo.models import Feature, KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
-
-# TODO: Intentionally mis-matching algorithm fields.
 
 
 @testcase
@@ -142,9 +141,6 @@ def unknown_critical_extension_intermediate(builder: Builder) -> None:
         .peer_certificate(leaf)
         .fails()
     )
-
-
-# TODO: Empty serial number, overlength serial number.
 
 
 @testcase
@@ -1269,6 +1265,101 @@ def ca_nameconstraints_permitted_different_constraint_type(builder: Builder) -> 
 
 
 @testcase
+def ca_nameconstraints_excluded_different_constraint_type(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded iPAddress of
+    192.0.2.0/24, while the leaf's SubjectAlternativeName is a dNSName.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=None,
+                excluded_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+    )
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).succeeds()
+
+
+@testcase
+def ca_nameconstraints_invalid_dnsname(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a malformed dNSName
+    (uses a wildcard pattern, which is not permitted under RFC 5280).
+    """
+
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("unrelated.cryptography.io")], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.DNSName("*.example.com")]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.example.com")]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="foo.example.com")
+    ).fails()
+
+
+@testcase
+def ca_nameconstraints_invalid_ipaddress(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a malformed iPAddress
+    (not in CIDR form).
+    """
+
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.IPAddress(IPv4Network("0.0.0.0/8"))], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.IPAddress(IPv4Address("127.0.0.1"))]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.IPAddress(IPv4Address("127.0.0.1"))]), critical=False
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="127.0.0.1")
+    ).fails()
+
+
+@testcase
 def ee_aia(builder: Builder) -> None:
     """
     Produces a **valid** chain with an EE cert.
@@ -1345,3 +1436,211 @@ def san_noncritical_with_empty_subject(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def serial_number_too_long(builder: Builder) -> None:
+    """
+    Produces an **invalid** chain due to an invalid EE cert.
+
+    The EE cert contains a serial number longer than 20 octets, which is
+    disallowed under RFC 5280.
+    """
+
+    root = builder.root_ca()
+    # NOTE: Intentionally generate 22 octets, since many implementations are
+    # permissive of 21-octet encodings due to signedness errors.
+    leaf = builder.leaf_cert(root, serial=int.from_bytes(random.randbytes(22), signed=False))
+
+    builder = builder.server_validation().features([Feature.pedantic_serial_number])
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def serial_number_zero(builder: Builder) -> None:
+    """
+    Produces an **invalid** chain due to an invalid EE cert.
+
+    The EE cert contains a serial number of zero, which is disallowed
+    under RFC 5280.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, serial=0)
+
+    builder = builder.server_validation().features([Feature.pedantic_serial_number])
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def duplicate_extensions(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    This chain is invalid solely because of the EE cert's construction:
+    it contains multiple X.509v3 extensions with the same OID, which
+    is prohibited under the [RFC 5280 profile].
+
+    > A certificate MUST NOT include more than one instance of a particular
+    > extension.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=None,
+        extra_unchecked_extensions=[
+            ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+            ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False),
+        ],
+    )
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
+
+
+@testcase
+def no_keyusage(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE lacks a Key Usage extension, which is not required for
+    end-entity certificates under the RFC 5280 profile.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, key_usage=None)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def no_basicconstraints(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE lacks a Basic Constraints extension, which is not required for
+    end-entity certificates under the RFC 5280 profile.
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, basic_constraints=None)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def wrong_eku(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The chain is correctly constructed, but the EE cert contains
+    an Extended Key Usage extension that contains just `id-kp-clientAuth`
+    while the validator expects `id-kp-serverAuth`.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .extended_key_usage([KnownEKUs.server_auth])
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
+
+
+@testcase
+def mismatching_signature_algorithm(builder: Builder) -> None:
+    """
+    Verifies against a saved copy of `cryptography.io`'s chain with
+    the root certificate modified to have mismatched `signatureAlgorithm`
+    fields, which is prohibited under the [RFC 5280 profile].
+
+    > A certificate MUST NOT include more than one instance of a particular
+    > extension.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
+    """
+    chain_path = _ASSETS_PATH / "cryptography.io_mismatched.pem"
+    chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
+
+    leaf, root = chain.pop(0), chain.pop(-1)
+    builder = builder.server_validation().validation_time(
+        datetime.fromisoformat("2023-07-10T00:00:00Z")
+    )
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .untrusted_intermediates(*chain)
+        .expected_peer_name(PeerName(kind="DNS", value="cryptography.io"))
+    ).fails()
+
+
+@testcase
+def malformed_subject_alternative_name(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert has a SubjectAlternativeName with a value in ASCII bytes, rather
+    than in the expected DER encoding.
+    """
+    root = builder.root_ca()
+    malformed_san = ext(
+        x509.UnrecognizedExtension(x509.OID_SUBJECT_ALTERNATIVE_NAME, b"example.com"),
+        critical=False,
+    )
+    leaf = builder.leaf_cert(root, san=None, extra_extension=malformed_san)
+
+    builder = builder.server_validation()
+    builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
