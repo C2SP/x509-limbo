@@ -98,7 +98,7 @@ func main() {
 	fmt.Printf("done! conformant/nonconformant/skipped/total %d/%d/%d/%d.\n", conform, nonconform, skip, len(testcases.Testcases))
 }
 
-func loadTestcases(path string) (testcases LimboSchemaJson, err error) {
+func loadTestcases(path string) (testcases Limbo, err error) {
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
@@ -131,13 +131,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	if testcase.ValidationTime == nil {
 		ts = time.Now()
 	} else {
-		var err error
-		ts, err = time.Parse(time.RFC3339, *testcase.ValidationTime)
-
-		if err != nil {
-			fmt.Printf("%s\n", err)
-			return resultSkipped, errors.Wrap(err, "unable to parse testcase time as RFC3339")
-		}
+		ts = *testcase.ValidationTime
 	}
 
 	// TODO: Support testcases that constrain signature algorthms.
