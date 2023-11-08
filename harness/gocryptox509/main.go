@@ -134,7 +134,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 
 	// TODO: Support testcases that constrain signature algorthms.
 	if testcase.SignatureAlgorithms != nil {
-		var signatureAlgorithms []SignatureAlgorithm = testcase.SignatureAlgorithms.([]SignatureAlgorithm)
+		var signatureAlgorithms []interface{} = testcase.SignatureAlgorithms.([]interface{})
 		if len(signatureAlgorithms) != 0 {
 			return resultSkipped, fmt.Errorf("signature algorithm checks not supported yet")
 		}
