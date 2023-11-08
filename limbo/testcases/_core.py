@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 
 from limbo.assets import (
-    _EPOCH,
+    EPOCH,
     ONE_THOUSAND_YEARS_OF_TORMENT,
     Certificate,
     CertificatePair,
@@ -120,7 +120,7 @@ class Builder:
         issuer: x509.Name = x509.Name.from_rfc4514_string("CN=x509-limbo-root"),
         subject: x509.Name | None = None,
         serial: int | None = None,
-        not_before: datetime = _EPOCH,
+        not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | None = ext(
@@ -172,7 +172,7 @@ class Builder:
         issuer: x509.Name | None = None,
         subject: x509.Name | None = None,
         serial: int | None = None,
-        not_before: datetime = _EPOCH,
+        not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = True,
@@ -246,7 +246,7 @@ class Builder:
         issuer: x509.Name | None = None,
         subject: x509.Name | Literal[True] | None = True,
         serial: int | None = None,
-        not_before: datetime = _EPOCH,
+        not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
         key: PrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = None,
@@ -374,6 +374,7 @@ class Builder:
         self._expected_result: str | None = None
         self._expected_peer_name: PeerName | None = PeerName(kind="DNS", value="example.com")
         self._expected_peer_names: list[PeerName] | None = None
+        self._max_chain_depth: int | None = None
 
     def features(self, feats: list[Feature]) -> Self:
         self._features = feats
@@ -431,6 +432,10 @@ class Builder:
         self._expected_peer_names = names
         return self
 
+    def max_chain_depth(self, max_chain_depth: int) -> Self:
+        self._max_chain_depth = max_chain_depth
+        return self
+
     def build(self) -> Testcase:
         return Testcase(
             id=self._id,
@@ -446,6 +451,7 @@ class Builder:
             extended_key_usage=self._extended_key_usage,
             expected_result=self._expected_result,
             expected_peer_name=self._expected_peer_name,
+            max_chain_depth=self._max_chain_depth,
         )
 
 

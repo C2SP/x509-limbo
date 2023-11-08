@@ -1,3 +1,4 @@
+from limbo.models import Feature
 from limbo.testcases._core import Builder, testcase
 
 
@@ -229,3 +230,130 @@ def self_issued_certs_pathlen(builder: Builder) -> None:
     builder.trusted_certs(root).untrusted_intermediates(
         first_intermediate, second_intermediate, third_intermediate
     ).peer_certificate(leaf).succeeds()
+
+
+@testcase
+def max_chain_depth_0(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    When validating with a maximum chain depth of 0, there may not be any
+    intermediates.
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation().features([Feature.max_chain_depth])
+    builder = builder.trusted_certs(root).peer_certificate(leaf).max_chain_depth(0).succeeds()
+
+
+@testcase
+def max_chain_depth_0_exhausted(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA' -> leaf
+    ```
+
+    When validating with a maximum chain depth of 0, there may not be any
+    intermediates.
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(root)
+    leaf = builder.leaf_cert(intermediate)
+
+    builder = builder.server_validation().features([Feature.max_chain_depth])
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
+        .max_chain_depth(0)
+        .fails()
+    )
+
+
+@testcase
+def max_chain_depth_1(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> ICA' -> leaf
+    ```
+
+    When validating with a maximum chain depth of 1, there may only be one
+    logical intermediate.
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(root)
+    leaf = builder.leaf_cert(intermediate)
+
+    builder = builder.server_validation().features([Feature.max_chain_depth])
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
+        .max_chain_depth(1)
+        .succeeds()
+    )
+
+
+@testcase
+def max_chain_depth_1_exhausted(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA' -> ICA'' -> leaf
+    ```
+
+    When validating with a maximum chain depth of 1, there may only be one
+    logical intermediate.
+    """
+    root = builder.root_ca()
+    first_intermediate = builder.intermediate_ca(root)
+    second_intermediate = builder.intermediate_ca(first_intermediate)
+    leaf = builder.leaf_cert(second_intermediate)
+
+    builder = builder.server_validation().features([Feature.max_chain_depth])
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(first_intermediate, second_intermediate)
+        .peer_certificate(leaf)
+        .max_chain_depth(1)
+        .fails()
+    )
+
+
+@testcase
+def max_chain_depth_1_self_issued(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> ICA' -> ICA' -> leaf
+    ```
+
+    When validating with a maximum chain depth of 1, there may only be one
+    logical intermediate.
+    """
+    root = builder.root_ca()
+    first_intermediate = builder.intermediate_ca(root)
+    second_intermediate = builder.intermediate_ca(
+        first_intermediate, subject=first_intermediate.cert.subject
+    )
+    leaf = builder.leaf_cert(second_intermediate)
+
+    builder = builder.server_validation().features([Feature.max_chain_depth])
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(first_intermediate, second_intermediate)
+        .peer_certificate(leaf)
+        .max_chain_depth(1)
+        .succeeds()
+    )

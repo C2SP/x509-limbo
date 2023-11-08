@@ -6,86 +6,105 @@ import "encoding/json"
 import "fmt"
 import "reflect"
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PeerKind) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_PeerKind {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_PeerKind, v)
+	}
+	*j = PeerKind(v)
+	return nil
+}
+
+const KeyUsageKeyAgreement KeyUsage = "keyAgreement"
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ExpectedResult) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_ExpectedResult {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_ExpectedResult, v)
+	}
+	*j = ExpectedResult(v)
+	return nil
+}
+
+const ExpectedResultSUCCESS ExpectedResult = "SUCCESS"
+const ExpectedResultFAILURE ExpectedResult = "FAILURE"
+
 type Feature string
 
+type ExpectedResult string
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Feature) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_Feature {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_Feature, v)
+	}
+	*j = Feature(v)
+	return nil
+}
+
 const FeatureHasCertPolicies Feature = "has-cert-policies"
-const FeatureNameConstraintDn Feature = "name-constraint-dn"
 const FeatureNoCertPolicies Feature = "no-cert-policies"
 const FeaturePedanticPublicSuffixWildcard Feature = "pedantic-public-suffix-wildcard"
-const FeaturePedanticSerialNumber Feature = "pedantic-serial-number"
+const FeatureNameConstraintDn Feature = "name-constraint-dn"
 const FeaturePedanticWebpki Feature = "pedantic-webpki"
 const FeaturePedanticWebpkiEku Feature = "pedantic-webpki-eku"
+const FeaturePedanticSerialNumber Feature = "pedantic-serial-number"
+const FeatureMaxChainDepth Feature = "max-chain-depth"
 
 type KeyUsage string
 
-const KeyUsageCRLSign KeyUsage = "cRLSign"
-const KeyUsageContentCommitment KeyUsage = "contentCommitment"
-const KeyUsageDataEncipherment KeyUsage = "dataEncipherment"
-const KeyUsageDecipherOnly KeyUsage = "decipher_only"
-const KeyUsageDigitalSignature KeyUsage = "digitalSignature"
-const KeyUsageEncipherOnly KeyUsage = "encipher_only"
-const KeyUsageKeyAgreement KeyUsage = "keyAgreement"
-const KeyUsageKeyCertSign KeyUsage = "keyCertSign"
-const KeyUsageKeyEncipherment KeyUsage = "keyEncipherment"
-
-type KnownEKUs string
-
-const KnownEKUsAnyExtendedKeyUsage KnownEKUs = "anyExtendedKeyUsage"
-const KnownEKUsClientAuth KnownEKUs = "clientAuth"
-const KnownEKUsCodeSigning KnownEKUs = "codeSigning"
-const KnownEKUsEmailProtection KnownEKUs = "emailProtection"
-const KnownEKUsOCSPSigning KnownEKUs = "OCSPSigning"
-const KnownEKUsServerAuth KnownEKUs = "serverAuth"
-const KnownEKUsTimeStamping KnownEKUs = "timeStamping"
-
-// The top-level testcase container.
-type Limbo struct {
-	// One or more testcases in this testsuite
-	Testcases []Testcase `json:"testcases" yaml:"testcases" mapstructure:"testcases"`
-
-	// The limbo schema version; this must currently always be 1
-	Version interface{} `json:"version" yaml:"version" mapstructure:"version"`
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ValidationKind) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_ValidationKind {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_ValidationKind, v)
+	}
+	*j = ValidationKind(v)
+	return nil
 }
-
-// Represents a peer (i.e., end entity) certificate's name (Subject or SAN).
-type PeerName struct {
-	// The kind of peer name
-	Kind interface{} `json:"kind" yaml:"kind" mapstructure:"kind"`
-
-	// The peer's name
-	Value string `json:"value" yaml:"value" mapstructure:"value"`
-}
-
-type SignatureAlgorithm string
-
-const SignatureAlgorithmDSAWITHSHA1 SignatureAlgorithm = "DSA_WITH_SHA1"
-const SignatureAlgorithmDSAWITHSHA224 SignatureAlgorithm = "DSA_WITH_SHA224"
-const SignatureAlgorithmDSAWITHSHA256 SignatureAlgorithm = "DSA_WITH_SHA256"
-const SignatureAlgorithmDSAWITHSHA384 SignatureAlgorithm = "DSA_WITH_SHA384"
-const SignatureAlgorithmDSAWITHSHA512 SignatureAlgorithm = "DSA_WITH_SHA512"
-const SignatureAlgorithmECDSAWITHSHA1 SignatureAlgorithm = "ECDSA_WITH_SHA1"
-const SignatureAlgorithmECDSAWITHSHA224 SignatureAlgorithm = "ECDSA_WITH_SHA224"
-const SignatureAlgorithmECDSAWITHSHA256 SignatureAlgorithm = "ECDSA_WITH_SHA256"
-const SignatureAlgorithmECDSAWITHSHA3224 SignatureAlgorithm = "ECDSA_WITH_SHA3_224"
-const SignatureAlgorithmECDSAWITHSHA3256 SignatureAlgorithm = "ECDSA_WITH_SHA3_256"
-const SignatureAlgorithmECDSAWITHSHA3384 SignatureAlgorithm = "ECDSA_WITH_SHA3_384"
-const SignatureAlgorithmECDSAWITHSHA3512 SignatureAlgorithm = "ECDSA_WITH_SHA3_512"
-const SignatureAlgorithmECDSAWITHSHA384 SignatureAlgorithm = "ECDSA_WITH_SHA384"
-const SignatureAlgorithmECDSAWITHSHA512 SignatureAlgorithm = "ECDSA_WITH_SHA512"
-const SignatureAlgorithmED25519 SignatureAlgorithm = "ED25519"
-const SignatureAlgorithmED448 SignatureAlgorithm = "ED448"
-const SignatureAlgorithmGOSTR34102012WITH34112012256 SignatureAlgorithm = "GOSTR3410_2012_WITH_3411_2012_256"
-const SignatureAlgorithmGOSTR34102012WITH34112012512 SignatureAlgorithm = "GOSTR3410_2012_WITH_3411_2012_512"
-const SignatureAlgorithmGOSTR341194WITH34102001 SignatureAlgorithm = "GOSTR3411_94_WITH_3410_2001"
-const SignatureAlgorithmRSASSAPSS SignatureAlgorithm = "RSASSA_PSS"
-const SignatureAlgorithmRSAWITHMD5 SignatureAlgorithm = "RSA_WITH_MD5"
-const SignatureAlgorithmRSAWITHSHA1 SignatureAlgorithm = "RSA_WITH_SHA1"
-const SignatureAlgorithmRSAWITHSHA224 SignatureAlgorithm = "RSA_WITH_SHA224"
-const SignatureAlgorithmRSAWITHSHA256 SignatureAlgorithm = "RSA_WITH_SHA256"
-const SignatureAlgorithmRSAWITHSHA3224 SignatureAlgorithm = "RSA_WITH_SHA3_224"
-const SignatureAlgorithmRSAWITHSHA3256 SignatureAlgorithm = "RSA_WITH_SHA3_256"
-const SignatureAlgorithmRSAWITHSHA3384 SignatureAlgorithm = "RSA_WITH_SHA3_384"
-const SignatureAlgorithmRSAWITHSHA3512 SignatureAlgorithm = "RSA_WITH_SHA3_512"
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *KeyUsage) UnmarshalJSON(b []byte) error {
@@ -107,15 +126,76 @@ func (j *KeyUsage) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-var enumValues_Feature = []interface{}{
-	"has-cert-policies",
-	"no-cert-policies",
-	"pedantic-public-suffix-wildcard",
-	"name-constraint-dn",
-	"pedantic-webpki",
-	"pedantic-webpki-eku",
-	"pedantic-serial-number",
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_SignatureAlgorithm {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_SignatureAlgorithm, v)
+	}
+	*j = SignatureAlgorithm(v)
+	return nil
 }
+
+const KeyUsageContentCommitment KeyUsage = "contentCommitment"
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PeerName) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["kind"]; !ok || v == nil {
+		return fmt.Errorf("field kind in PeerName: required")
+	}
+	if v, ok := raw["value"]; !ok || v == nil {
+		return fmt.Errorf("field value in PeerName: required")
+	}
+	type Plain PeerName
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = PeerName(plain)
+	return nil
+}
+
+const KeyUsageDataEncipherment KeyUsage = "dataEncipherment"
+const KeyUsageCRLSign KeyUsage = "cRLSign"
+const KeyUsageDigitalSignature KeyUsage = "digitalSignature"
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Limbo) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["testcases"]; !ok || v == nil {
+		return fmt.Errorf("field testcases in Limbo: required")
+	}
+	if v, ok := raw["version"]; !ok || v == nil {
+		return fmt.Errorf("field version in Limbo: required")
+	}
+	type Plain Limbo
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = Limbo(plain)
+	return nil
+}
+
+const KeyUsageEncipherOnly KeyUsage = "encipher_only"
+const KeyUsageDecipherOnly KeyUsage = "decipher_only"
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *Testcase) UnmarshalJSON(b []byte) error {
@@ -173,6 +253,77 @@ func (j *KnownEKUs) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+const SignatureAlgorithmRSAWITHSHA1 SignatureAlgorithm = "RSA_WITH_SHA1"
+const KnownEKUsAnyExtendedKeyUsage KnownEKUs = "anyExtendedKeyUsage"
+const KnownEKUsServerAuth KnownEKUs = "serverAuth"
+const KnownEKUsClientAuth KnownEKUs = "clientAuth"
+const KnownEKUsCodeSigning KnownEKUs = "codeSigning"
+const SignatureAlgorithmGOSTR34102012WITH34112012512 SignatureAlgorithm = "GOSTR3410_2012_WITH_3411_2012_512"
+const KnownEKUsTimeStamping KnownEKUs = "timeStamping"
+const KnownEKUsOCSPSigning KnownEKUs = "OCSPSigning"
+const SignatureAlgorithmGOSTR34102012WITH34112012256 SignatureAlgorithm = "GOSTR3410_2012_WITH_3411_2012_256"
+
+type KnownEKUs string
+
+// The top-level testcase container.
+type Limbo struct {
+	// One or more testcases in this testsuite
+	Testcases []Testcase `json:"testcases" yaml:"testcases" mapstructure:"testcases"`
+
+	// The limbo schema version; this must currently always be 1
+	Version interface{} `json:"version" yaml:"version" mapstructure:"version"`
+}
+
+const SignatureAlgorithmGOSTR341194WITH34102001 SignatureAlgorithm = "GOSTR3411_94_WITH_3410_2001"
+const KeyUsageKeyCertSign KeyUsage = "keyCertSign"
+const SignatureAlgorithmED448 SignatureAlgorithm = "ED448"
+const SignatureAlgorithmED25519 SignatureAlgorithm = "ED25519"
+const PeerKindRFC822 PeerKind = "RFC822"
+const PeerKindDNS PeerKind = "DNS"
+const PeerKindIP PeerKind = "IP"
+
+// Represents a peer (i.e., end entity) certificate's name (Subject or SAN).
+type PeerName struct {
+	// The kind of peer name
+	Kind interface{} `json:"kind" yaml:"kind" mapstructure:"kind"`
+
+	// The peer's name
+	Value string `json:"value" yaml:"value" mapstructure:"value"`
+}
+
+const KeyUsageKeyEncipherment KeyUsage = "keyEncipherment"
+
+type SignatureAlgorithm string
+
+const SignatureAlgorithmDSAWITHSHA512 SignatureAlgorithm = "DSA_WITH_SHA512"
+
+type PeerKind string
+
+const SignatureAlgorithmRSAWITHMD5 SignatureAlgorithm = "RSA_WITH_MD5"
+const SignatureAlgorithmDSAWITHSHA384 SignatureAlgorithm = "DSA_WITH_SHA384"
+const SignatureAlgorithmDSAWITHSHA256 SignatureAlgorithm = "DSA_WITH_SHA256"
+const SignatureAlgorithmDSAWITHSHA224 SignatureAlgorithm = "DSA_WITH_SHA224"
+const SignatureAlgorithmDSAWITHSHA1 SignatureAlgorithm = "DSA_WITH_SHA1"
+const KnownEKUsEmailProtection KnownEKUs = "emailProtection"
+const SignatureAlgorithmECDSAWITHSHA3512 SignatureAlgorithm = "ECDSA_WITH_SHA3_512"
+const SignatureAlgorithmECDSAWITHSHA3384 SignatureAlgorithm = "ECDSA_WITH_SHA3_384"
+const SignatureAlgorithmECDSAWITHSHA3256 SignatureAlgorithm = "ECDSA_WITH_SHA3_256"
+const SignatureAlgorithmECDSAWITHSHA3224 SignatureAlgorithm = "ECDSA_WITH_SHA3_224"
+const SignatureAlgorithmRSASSAPSS SignatureAlgorithm = "RSASSA_PSS"
+const SignatureAlgorithmECDSAWITHSHA1 SignatureAlgorithm = "ECDSA_WITH_SHA1"
+const SignatureAlgorithmECDSAWITHSHA224 SignatureAlgorithm = "ECDSA_WITH_SHA224"
+const SignatureAlgorithmECDSAWITHSHA256 SignatureAlgorithm = "ECDSA_WITH_SHA256"
+const SignatureAlgorithmECDSAWITHSHA384 SignatureAlgorithm = "ECDSA_WITH_SHA384"
+const SignatureAlgorithmECDSAWITHSHA512 SignatureAlgorithm = "ECDSA_WITH_SHA512"
+const SignatureAlgorithmRSAWITHSHA224 SignatureAlgorithm = "RSA_WITH_SHA224"
+const SignatureAlgorithmRSAWITHSHA256 SignatureAlgorithm = "RSA_WITH_SHA256"
+const SignatureAlgorithmRSAWITHSHA3224 SignatureAlgorithm = "RSA_WITH_SHA3_224"
+const SignatureAlgorithmRSAWITHSHA3256 SignatureAlgorithm = "RSA_WITH_SHA3_256"
+const SignatureAlgorithmRSAWITHSHA3384 SignatureAlgorithm = "RSA_WITH_SHA3_384"
+const SignatureAlgorithmRSAWITHSHA3512 SignatureAlgorithm = "RSA_WITH_SHA3_512"
+const SignatureAlgorithmRSAWITHSHA384 SignatureAlgorithm = "RSA_WITH_SHA384"
+const SignatureAlgorithmRSAWITHSHA512 SignatureAlgorithm = "RSA_WITH_SHA512"
+
 // Represents an individual Limbo testcase.
 type Testcase struct {
 	// A short, Markdown-formatted description
@@ -204,6 +355,9 @@ type Testcase struct {
 	// A constraining list of key usages
 	KeyUsage interface{} `json:"key_usage,omitempty" yaml:"key_usage,omitempty" mapstructure:"key_usage,omitempty"`
 
+	// The maximum chain-building depth
+	MaxChainDepth interface{} `json:"max_chain_depth,omitempty" yaml:"max_chain_depth,omitempty" mapstructure:"max_chain_depth,omitempty"`
+
 	// The PEM-encoded peer (EE) certificate
 	PeerCertificate string `json:"peer_certificate" yaml:"peer_certificate" mapstructure:"peer_certificate"`
 
@@ -223,27 +377,25 @@ type Testcase struct {
 	ValidationTime interface{} `json:"validation_time,omitempty" yaml:"validation_time,omitempty" mapstructure:"validation_time,omitempty"`
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Limbo) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["testcases"]; !ok || v == nil {
-		return fmt.Errorf("field testcases in Limbo: required")
-	}
-	if v, ok := raw["version"]; !ok || v == nil {
-		return fmt.Errorf("field version in Limbo: required")
-	}
-	type Plain Limbo
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = Limbo(plain)
-	return nil
-}
+type ValidationKind string
 
+const ValidationKindCLIENT ValidationKind = "CLIENT"
+const ValidationKindSERVER ValidationKind = "SERVER"
+
+var enumValues_ExpectedResult = []interface{}{
+	"SUCCESS",
+	"FAILURE",
+}
+var enumValues_Feature = []interface{}{
+	"has-cert-policies",
+	"no-cert-policies",
+	"pedantic-public-suffix-wildcard",
+	"name-constraint-dn",
+	"pedantic-webpki",
+	"pedantic-webpki-eku",
+	"pedantic-serial-number",
+	"max-chain-depth",
+}
 var enumValues_KeyUsage = []interface{}{
 	"digitalSignature",
 	"contentCommitment",
@@ -255,27 +407,6 @@ var enumValues_KeyUsage = []interface{}{
 	"encipher_only",
 	"decipher_only",
 }
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Feature) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_Feature {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_Feature, v)
-	}
-	*j = Feature(v)
-	return nil
-}
-
 var enumValues_KnownEKUs = []interface{}{
 	"anyExtendedKeyUsage",
 	"serverAuth",
@@ -285,48 +416,11 @@ var enumValues_KnownEKUs = []interface{}{
 	"timeStamping",
 	"OCSPSigning",
 }
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_SignatureAlgorithm {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_SignatureAlgorithm, v)
-	}
-	*j = SignatureAlgorithm(v)
-	return nil
+var enumValues_PeerKind = []interface{}{
+	"RFC822",
+	"DNS",
+	"IP",
 }
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PeerName) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["kind"]; !ok || v == nil {
-		return fmt.Errorf("field kind in PeerName: required")
-	}
-	if v, ok := raw["value"]; !ok || v == nil {
-		return fmt.Errorf("field value in PeerName: required")
-	}
-	type Plain PeerName
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PeerName(plain)
-	return nil
-}
-
 var enumValues_SignatureAlgorithm = []interface{}{
 	"RSA_WITH_MD5",
 	"RSA_WITH_SHA1",
@@ -359,6 +453,7 @@ var enumValues_SignatureAlgorithm = []interface{}{
 	"GOSTR3410_2012_WITH_3411_2012_256",
 	"GOSTR3410_2012_WITH_3411_2012_512",
 }
-
-const SignatureAlgorithmRSAWITHSHA512 SignatureAlgorithm = "RSA_WITH_SHA512"
-const SignatureAlgorithmRSAWITHSHA384 SignatureAlgorithm = "RSA_WITH_SHA384"
+var enumValues_ValidationKind = []interface{}{
+	"CLIENT",
+	"SERVER",
+}

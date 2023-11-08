@@ -6,7 +6,34 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StrictStr, StringConstraints, validator
 
-PeerKind = Literal["RFC822"] | Literal["DNS"] | Literal["IP"]
+
+class ExpectedResult(str, Enum):
+    """
+    Represents an expected testcase evaluation result.
+    """
+
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+
+
+class ActualResult(str, Enum):
+    """
+    Represents the actual result of a testcase evaluation.
+    """
+
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    SKIPPED = "SKIPPED"
+
+
+class PeerKind(str, Enum):
+    """
+    Different types of peer subjects.
+    """
+
+    RFC822 = "RFC822"
+    DNS = "DNS"
+    IP = "IP"
 
 
 class PeerName(BaseModel):
@@ -155,6 +182,21 @@ class Feature(str, Enum):
     Tests that exercise "pedantic" serial number handling.
     """
 
+    max_chain_depth = "max-chain-depth"
+    """
+    Tests that restrict the chain-building depth. Not all implementations expose
+    a configurable path length.
+    """
+
+
+class ValidationKind(str, Enum):
+    """
+    The kind of validation to perform.
+    """
+
+    CLIENT = "CLIENT"
+    SERVER = "SERVER"
+
 
 class Testcase(BaseModel):
     """
@@ -176,9 +218,7 @@ class Testcase(BaseModel):
 
     description: StrictStr = Field(..., description="A short, Markdown-formatted description")
 
-    validation_kind: Literal["CLIENT"] | Literal["SERVER"] = Field(
-        ..., description="The kind of validation to perform"
-    )
+    validation_kind: ValidationKind = Field(..., description="The kind of validation to perform")
 
     trusted_certs: list[StrictStr] = Field(
         ..., description="A list of PEM-encoded CA certificates to consider trusted"
@@ -207,9 +247,7 @@ class Testcase(BaseModel):
         ),
     )
 
-    expected_result: Literal["SUCCESS"] | Literal["FAILURE"] = Field(
-        ..., description="The expected validation result"
-    )
+    expected_result: ExpectedResult = Field(..., description="The expected validation result")
 
     expected_peer_name: PeerName | None = Field(
         None, description="For client-side validation: the expected peer name, if any"
@@ -218,6 +256,8 @@ class Testcase(BaseModel):
     expected_peer_names: list[PeerName] | None = Field(
         None, description="For server-side validation: the expected peer names, if any"
     )
+
+    max_chain_depth: int | None = Field(None, description="The maximum chain-building depth")
 
 
 class Limbo(BaseModel):
@@ -247,7 +287,7 @@ class TestcaseResult(BaseModel):
 
     id: TestCaseID = Field(..., description="A short, unique identifier for the testcase")
 
-    actual_result: Literal["SUCCESS"] | Literal["FAILURE"] | Literal["SKIPPED"] = Field(
+    actual_result: ActualResult = Field(
         ...,
         description=(
             "The result of evaluating the testcase; this should be compared to "

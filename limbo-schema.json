@@ -1,5 +1,14 @@
 {
   "$defs": {
+    "ExpectedResult": {
+      "description": "Represents an expected testcase evaluation result.",
+      "enum": [
+        "SUCCESS",
+        "FAILURE"
+      ],
+      "title": "ExpectedResult",
+      "type": "string"
+    },
     "Feature": {
       "description": "Feature tags for testcases.",
       "enum": [
@@ -9,7 +18,8 @@
         "name-constraint-dn",
         "pedantic-webpki",
         "pedantic-webpki-eku",
-        "pedantic-serial-number"
+        "pedantic-serial-number",
+        "max-chain-depth"
       ],
       "title": "Feature",
       "type": "string"
@@ -68,23 +78,26 @@
       "title": "Limbo",
       "type": "object"
     },
+    "PeerKind": {
+      "description": "Different types of peer subjects.",
+      "enum": [
+        "RFC822",
+        "DNS",
+        "IP"
+      ],
+      "title": "PeerKind",
+      "type": "string"
+    },
     "PeerName": {
       "description": "Represents a peer (i.e., end entity) certificate's name (Subject or SAN).",
       "properties": {
         "kind": {
-          "anyOf": [
+          "allOf": [
             {
-              "const": "RFC822"
-            },
-            {
-              "const": "DNS"
-            },
-            {
-              "const": "IP"
+              "$ref": "#/$defs/PeerKind"
             }
           ],
-          "description": "The kind of peer name",
-          "title": "Kind"
+          "description": "The kind of peer name"
         },
         "value": {
           "description": "The peer's name",
@@ -167,16 +180,12 @@
           "type": "string"
         },
         "validation_kind": {
-          "anyOf": [
+          "allOf": [
             {
-              "const": "CLIENT"
-            },
-            {
-              "const": "SERVER"
+              "$ref": "#/$defs/ValidationKind"
             }
           ],
-          "description": "The kind of validation to perform",
-          "title": "Validation Kind"
+          "description": "The kind of validation to perform"
         },
         "trusted_certs": {
           "description": "A list of PEM-encoded CA certificates to consider trusted",
@@ -270,16 +279,12 @@
           "title": "Extended Key Usage"
         },
         "expected_result": {
-          "anyOf": [
+          "allOf": [
             {
-              "const": "SUCCESS"
-            },
-            {
-              "const": "FAILURE"
+              "$ref": "#/$defs/ExpectedResult"
             }
           ],
-          "description": "The expected validation result",
-          "title": "Expected Result"
+          "description": "The expected validation result"
         },
         "expected_peer_name": {
           "anyOf": [
@@ -308,6 +313,19 @@
           "default": null,
           "description": "For server-side validation: the expected peer names, if any",
           "title": "Expected Peer Names"
+        },
+        "max_chain_depth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The maximum chain-building depth",
+          "title": "Max Chain Depth"
         }
       },
       "required": [
@@ -321,6 +339,15 @@
       ],
       "title": "Testcase",
       "type": "object"
+    },
+    "ValidationKind": {
+      "description": "The kind of validation to perform.",
+      "enum": [
+        "CLIENT",
+        "SERVER"
+      ],
+      "title": "ValidationKind",
+      "type": "string"
     }
   },
   "title": "x509-limbo schemas"

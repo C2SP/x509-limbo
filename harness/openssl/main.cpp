@@ -207,6 +207,13 @@ json evaluate_testcase(const json &testcase)
         }
     }
 
+    auto max_chain_depth_obj = testcase["max_chain_depth"];
+    if (!max_chain_depth_obj.is_null())
+    {
+        auto max_chain_depth = max_chain_depth_obj.template get<int64_t>();
+        X509_VERIFY_PARAM_set_depth(param, max_chain_depth);
+    }
+
     auto should_pass = testcase["expected_result"] == "SUCCESS";
     auto does_pass = X509_verify_cert(ctx.get());
     if (should_pass ^ does_pass)
