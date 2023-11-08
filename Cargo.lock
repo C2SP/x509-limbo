@@ -275,7 +275,7 @@ checksum = "1ad4cc8da4ef723ed60bced201181d83791ad433213d8c24efffda1eec85d741"
 [[package]]
 name = "schemafy"
 version = "0.6.0"
-source = "git+https://github.com/woodruffw-forks/schemafy?branch=ww/allow-optimize#de28e873b4209a872f697535717135190caf67c0"
+source = "git+https://github.com/woodruffw-forks/schemafy?rev=de28e87#de28e873b4209a872f697535717135190caf67c0"
 dependencies = [
  "Inflector",
  "schemafy_core",
@@ -290,7 +290,7 @@ dependencies = [
 [[package]]
 name = "schemafy_core"
 version = "0.6.0"
-source = "git+https://github.com/woodruffw-forks/schemafy?branch=ww/allow-optimize#de28e873b4209a872f697535717135190caf67c0"
+source = "git+https://github.com/woodruffw-forks/schemafy?rev=de28e87#de28e873b4209a872f697535717135190caf67c0"
 dependencies = [
  "serde",
  "serde_json",
@@ -299,7 +299,7 @@ dependencies = [
 [[package]]
 name = "schemafy_lib"
 version = "0.6.0"
-source = "git+https://github.com/woodruffw-forks/schemafy?branch=ww/allow-optimize#de28e873b4209a872f697535717135190caf67c0"
+source = "git+https://github.com/woodruffw-forks/schemafy?rev=de28e87#de28e873b4209a872f697535717135190caf67c0"
 dependencies = [
  "Inflector",
  "proc-macro2",
