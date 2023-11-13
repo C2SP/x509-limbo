@@ -25,7 +25,7 @@ _TOPSITES = [
 ]
 
 
-def _rename(name: str):
+def _rename(name: str) -> Callable:
     def deco(f: Callable) -> Callable:
         f.__name__ = name
         return f
@@ -33,12 +33,12 @@ def _rename(name: str):
     return deco
 
 
-def build_testcases():
+def build_testcases() -> None:
     for site in _TOPSITES:
 
         @testcase
         @_rename(site)
-        def _(builder: Builder):
+        def _(builder: Builder) -> None:
             # TODO: Figure out the docstring here at some point.
             ctx = SSL.Context(method=SSL.TLS_METHOD)
             ctx.load_verify_locations(cafile=certifi.where())
@@ -48,7 +48,9 @@ def build_testcases():
             conn.connect((site, 443))
             conn.do_handshake()
 
-            peer_chain = [Certificate(c.to_cryptography()) for c in conn.get_verified_chain()]
+            peer_chain = [
+                Certificate(c.to_cryptography()) for c in (conn.get_verified_chain() or [])
+            ]
 
             builder = (
                 builder.server_validation()

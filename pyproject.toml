@@ -28,6 +28,7 @@ lint = [
     "ruff < 0.1.6",
     "mypy >= 1.0",
     "types-pyyaml",
+    "types-pyOpenSSL",
 ]
 doc = []
 test = []
