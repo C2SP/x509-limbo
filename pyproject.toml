@@ -12,7 +12,13 @@ authors = [
     { name = "The Python Cryptographic Authority and individual contributors", email = "cryptography-dev@python.org" },
 ]
 
-dependencies = ["pydantic ~= 1.0", "cryptography", "pyyaml ~= 6.0"]
+dependencies = [
+    "pydantic ~= 1.0",
+    "cryptography",
+    "pyyaml ~= 6.0",
+    "pyOpenSSL",
+    "certifi",
+]
 requires-python = ">=3.11"
 
 [project.optional-dependencies]

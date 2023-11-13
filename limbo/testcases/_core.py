@@ -459,7 +459,9 @@ registry: dict[str, Callable] = {}
 
 
 def testcase(func: Callable) -> Callable:
-    namespace = func.__module__.split(".")[-1].replace("_", "-")
+    namespace = (
+        func.__module__.removeprefix("limbo.testcases.").replace(".", "::").replace("_", "-")
+    )
     name = func.__name__.replace("_", "-")
     id = f"{namespace}::{name}"
 
