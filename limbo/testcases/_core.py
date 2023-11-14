@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from textwrap import dedent
 from typing import Callable, Literal, Self
@@ -18,6 +19,8 @@ from limbo.assets import (
     ext,
 )
 from limbo.models import OID, Feature, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
+
+logger = logging.getLogger(__name__)
 
 
 class Builder:
@@ -464,6 +467,7 @@ def testcase(func: Callable) -> Callable:
     )
     name = func.__name__.replace("_", "-")
     id = f"{namespace}::{name}"
+    logger.debug(f"defining testcase for {id}")
 
     if id in registry:
         raise ValueError(f"duplicate testcase name: {id} is already registered")
@@ -471,6 +475,7 @@ def testcase(func: Callable) -> Callable:
     description = dedent(func.__doc__).strip() if func.__doc__ else name
 
     def wrapped() -> Testcase:
+        logger.info(f"generating {id}")
         builder = Builder(id=id, description=description)
 
         func(builder)
