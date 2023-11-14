@@ -222,7 +222,7 @@ def cross_signed_root_missing_aki(builder: Builder) -> None:
     root = builder.intermediate_ca(xsigner_root, pathlen=0, aki=None)
     leaf = builder.leaf_cert(root)
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.pedantic_rfc5280])
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
