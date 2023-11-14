@@ -1,9 +1,8 @@
 import logging
 import socket
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import certifi
-from cryptography import x509
 from OpenSSL import SSL
 
 from limbo._assets import ASSETS_DIR_RW
