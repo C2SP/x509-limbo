@@ -1,8 +1,9 @@
 import logging
 import socket
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import certifi
+from cryptography import x509
 from OpenSSL import SSL
 
 from limbo._assets import ASSETS_DIR_RW
@@ -48,14 +49,21 @@ def compile() -> None:
 
         peer_chain = [Certificate(c.to_cryptography()) for c in (conn.get_verified_chain() or [])]
 
+        # NOTE: We use the peer certificate's own state to produce our expected
+        #  validation time. This would be incorrect in a normal path validation operation,
+        # but the point of these testcases is to exercise consistent verification of known-good
+        # inputs. Using the peer's own states helps make our generation more reproducible here.
+        peer_cert = peer_chain[0]
+        peer_cert_validation_time = peer_cert.cert.not_valid_before + timedelta(seconds=1)
+
         builder = (
             Builder(id=f"webpki::online::{site}", description=f"A valid chain for `{site}`.")
             .server_validation()
-            .peer_certificate(peer_chain[0])
+            .peer_certificate(peer_cert)
             .untrusted_intermediates(*peer_chain[1:-1])
             .trusted_certs(*peer_chain[-1:])
             .expected_peer_name(PeerName(kind="DNS", value=site))
-            .validation_time(datetime.now(timezone.utc))
+            .validation_time(peer_cert_validation_time)
             .succeeds()
         )
 
