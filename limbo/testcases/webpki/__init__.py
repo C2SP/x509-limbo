@@ -609,7 +609,7 @@ def forbidden_p192_spki_leaf(builder: Builder) -> None:
     root -> EE
     ```
 
-    The EE cert is signed with a P-192 key, which is not one of the permitted
+    The EE cert contains a P-192 key, which is not one of the permitted
     public keys under the CA/B BR profile.
     """
 
@@ -618,7 +618,7 @@ def forbidden_p192_spki_leaf(builder: Builder) -> None:
     leaf_key = ec.generate_private_key(ec.SECP192R1())
     leaf = builder.leaf_cert(root, key=leaf_key)
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.pedantic_webpki])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
@@ -642,7 +642,7 @@ def forbidden_dsa_spki_leaf(builder: Builder) -> None:
     leaf_key = dsa.generate_private_key(3072)
     leaf = builder.leaf_cert(root, key=leaf_key)
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.pedantic_webpki])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
