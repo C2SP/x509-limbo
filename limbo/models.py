@@ -263,15 +263,6 @@ class Testcase(BaseModel):
 
     max_chain_depth: int | None = Field(None, description="The maximum chain-building depth")
 
-    @validator("validation_time")
-    def validate_validation_time(cls, v: datetime | None) -> datetime | None:
-        if v is not None:
-            # Chop off the microsecond; our tests don't require this level of
-            # precision, and including it makes pydantic serialize times in
-            # ISO 8601 rather than RFC 3339.
-            return v.replace(microsecond=0)
-        return v
-
 
 class Limbo(BaseModel):
     """
