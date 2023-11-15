@@ -5,7 +5,6 @@ Web PKI (CA/B Forum) profile tests.
 from datetime import datetime
 
 from cryptography import x509
-from cryptography.hazmat._oid import NameOID
 from cryptography.hazmat.primitives.asymmetric import dsa, ec
 
 from limbo.assets import ASSETS_PATH, Certificate, ext
