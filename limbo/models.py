@@ -192,6 +192,11 @@ class Feature(str, Enum):
     a configurable path length.
     """
 
+    pedantic_rfc5280 = "pedantic-rfc5280"
+    """
+    Tests that exercise "pednatic" corners of the RFC 5280 certificate profile.
+    """
+
 
 class ValidationKind(str, Enum):
     """

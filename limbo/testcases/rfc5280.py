@@ -9,7 +9,7 @@ from ipaddress import IPv4Address, IPv4Network
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from limbo.assets import _ASSETS_PATH, Certificate, ext
+from limbo.assets import ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
 
@@ -222,7 +222,7 @@ def cross_signed_root_missing_aki(builder: Builder) -> None:
     root = builder.intermediate_ca(xsigner_root, pathlen=0, aki=None)
     leaf = builder.leaf_cert(root)
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.pedantic_rfc5280])
     builder.trusted_certs(root).peer_certificate(leaf).fails()
 
 
@@ -1608,7 +1608,7 @@ def mismatching_signature_algorithm(builder: Builder) -> None:
 
     [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
     """
-    chain_path = _ASSETS_PATH / "cryptography.io_mismatched.pem"
+    chain_path = ASSETS_PATH / "cryptography.io_mismatched.pem"
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]
 
     leaf, root = chain.pop(0), chain.pop(-1)

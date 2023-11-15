@@ -5,11 +5,11 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import NoReturn
 
 from pydantic.schema import schema
 
 from limbo import testcases
+from limbo.testcases.webpki import online
 
 from . import __version__
 from .models import Limbo
@@ -21,11 +21,6 @@ logger = logging.getLogger(__name__)
 # to avoid overly verbose logging in third-party code by default.
 package_logger = logging.getLogger("limbo")
 package_logger.setLevel(os.environ.get("LIMBO_LOGLEVEL", "INFO").upper())
-
-
-def _die(msg: str) -> NoReturn:
-    logger.error(msg)
-    sys.exit(1)
 
 
 def main() -> None:
@@ -40,6 +35,12 @@ def main() -> None:
     )
     schema.set_defaults(func=_schema)
 
+    # `limbo online-cases`
+    online_cases = subparsers.add_parser(
+        "online-cases", help="Regenerate cached testcases made from online requests"
+    )
+    online_cases.set_defaults(func=_online_cases)
+
     # `limbo compile`
     compile = subparsers.add_parser(
         "compile", help="Generate all testcases and produce a single JSON test suite"
@@ -47,6 +48,7 @@ def main() -> None:
     compile.add_argument(
         "-o", "--output", type=Path, metavar="FILE", help="The path to write the testcase suite to"
     )
+    compile.add_argument("--online", action="store_true", help="Regenerate cached online testcases")
     compile.add_argument("-f", "--force", action="store_true", help="Overwrite any existing output")
     compile.set_defaults(func=_compile)
 
@@ -72,7 +74,15 @@ def _schema(args: argparse.Namespace) -> None:
         print(json.dumps(top, indent=2), file=io)
 
 
+def _online_cases(args: argparse.Namespace) -> None:
+    online.compile()
+
+
 def _compile(args: argparse.Namespace) -> None:
+    if args.online:
+        online.compile()
+
+    online.register_testcases()
     all_testcases = [testcase() for _, testcase in testcases.registry.items()]
     combined = Limbo(version=1, testcases=all_testcases)
 

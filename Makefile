@@ -58,6 +58,10 @@ limbo-schema.json: $(NEEDS_VENV) $(PY_MODULE)/models.py
 limbo.json: $(NEEDS_VENV)
 	$(MAKE) run ARGS="compile -o limbo.json"
 
+.PHONY: online-cases
+online-cases: $(NEEDS_VENV)
+	$(MAKE) run ARGS="online-cases"
+
 .PHONY: testcases
 testcases: $(NEEDS_VENV)
 	$(MAKE) run ARGS="compile --testcases testcases/ --force"

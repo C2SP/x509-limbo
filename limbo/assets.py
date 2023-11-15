@@ -21,7 +21,7 @@ from cryptography.x509 import ExtensionType
 # before the epoch.
 EPOCH = datetime.datetime.utcfromtimestamp(1)
 ONE_THOUSAND_YEARS_OF_TORMENT = EPOCH + datetime.timedelta(days=365 * 1000)
-_ASSETS_PATH = resources.files("limbo._assets")
+ASSETS_PATH = resources.files("limbo._assets")
 _ExtensionType = TypeVar("_ExtensionType", bound=ExtensionType)
 
 
