@@ -1477,6 +1477,27 @@ def serial_number_zero(builder: Builder) -> None:
 
 
 @testcase
+def serial_number_negative(builder: Builder) -> None:
+    """
+    Produces an **invalid** chain due to an invalid EE cert. Verifies against a
+    saved copy of a certificate with a negative serial number from the
+    `cryptography.io` test suite since the API won't allow us to create
+    certificates with negative serial numbers.
+
+    The EE cert contains a negative serial number, which is disallowed
+    under RFC 5280.
+    """
+
+    cert_path = ASSETS_PATH / "negative_serial.pem"
+    cert = Certificate(x509.load_pem_x509_certificate(cert_path.read_bytes()))
+
+    builder = builder.server_validation().features([Feature.pedantic_serial_number])
+    builder.trusted_certs(cert).peer_certificate(cert).expected_peer_name(
+        PeerName(kind="DNS", value="gov.us")
+    ).fails()
+
+
+@testcase
 def duplicate_extensions(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
