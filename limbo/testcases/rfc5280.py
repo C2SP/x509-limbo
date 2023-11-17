@@ -1494,7 +1494,7 @@ def serial_number_negative(builder: Builder) -> None:
     builder = builder.server_validation().features([Feature.pedantic_serial_number])
     builder.trusted_certs(cert).peer_certificate(cert).expected_peer_name(
         PeerName(kind="DNS", value="gov.us")
-    ).fails()
+    ).validation_time(datetime.fromisoformat("2016-09-01T00:00:00Z")).fails()
 
 
 @testcase
