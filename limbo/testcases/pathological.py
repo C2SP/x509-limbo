@@ -127,6 +127,95 @@ def intermediate_cycle_distinct_cas(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica_1_pair, ica_2_pair)
         .peer_certificate(leaf)
+        .fails()
+    )
+
+
+@testcase
+def intermediate_cycle_distinct_cas_max_depth(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -/-> (ICA' <-> ICA'') -> EE
+    ```
+
+    `ICA'` and `ICA''` are separate logical CAs that sign for each other.
+    Neither chains up to the root.
+
+    This testcase is identical to `intermediate-cycle-distinct-cas`, except
+    that it specifies a large explicit max depth.
+    """
+
+    root = builder.root_ca()
+
+    basic_constraints = x509.BasicConstraints(ca=True, path_length=None)
+    key_usage = x509.KeyUsage(
+        digital_signature=False,
+        key_cert_sign=True,
+        content_commitment=False,
+        key_encipherment=False,
+        data_encipherment=False,
+        key_agreement=False,
+        crl_sign=False,
+        encipher_only=False,
+        decipher_only=False,
+    )
+
+    ica_1_key = ec.generate_private_key(ec.SECP256R1())
+    ica_2_key = ec.generate_private_key(ec.SECP256R1())
+
+    # NOTE: Uses CertificateBuilder directly to sidestep the certificate dep cycle.
+    ica_1 = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .issuer_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca2"))
+        .subject_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca1"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(ica_2_key.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(ica_1_key.public_key()), critical=False
+        )
+        .public_key(ica_1_key.public_key())
+    ).sign(ica_2_key, algorithm=hashes.SHA256())
+    ica_1_pair = CertificatePair(ica_1, ica_1_key)
+
+    ica_2 = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .issuer_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca1"))
+        .subject_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca2"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(ica_1_key.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(ica_2_key.public_key()), critical=False
+        )
+        .public_key(ica_2_key.public_key())
+    ).sign(ica_1_key, algorithm=hashes.SHA256())
+    ica_2_pair = CertificatePair(ica_2, ica_2_key)
+
+    # Sanity check
+    ica_1.verify_directly_issued_by(ica_2)
+    ica_2.verify_directly_issued_by(ica_1)
+
+    leaf = builder.leaf_cert(ica_1_pair)
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica_1_pair, ica_2_pair)
+        .peer_certificate(leaf)
         # NOTE: This chain depth exercises an overflow check in pyca/cryptography.
         .max_chain_depth(255)
         .fails()
