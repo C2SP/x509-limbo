@@ -60,6 +60,19 @@ def intermediate_cycle_distinct_cas(builder: Builder) -> None:
 
     root = builder.root_ca()
 
+    basic_constraints = x509.BasicConstraints(ca=True, path_length=None)
+    key_usage = x509.KeyUsage(
+        digital_signature=False,
+        key_cert_sign=True,
+        content_commitment=False,
+        key_encipherment=False,
+        data_encipherment=False,
+        key_agreement=False,
+        crl_sign=False,
+        encipher_only=False,
+        decipher_only=False,
+    )
+
     ica_1_key = ec.generate_private_key(ec.SECP256R1())
     ica_2_key = ec.generate_private_key(ec.SECP256R1())
 
@@ -71,7 +84,8 @@ def intermediate_cycle_distinct_cas(builder: Builder) -> None:
         .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
         .issuer_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca2"))
         .subject_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca1"))
-        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
         .add_extension(
             x509.AuthorityKeyIdentifier.from_issuer_public_key(ica_2_key.public_key()),
             critical=False,
@@ -90,7 +104,8 @@ def intermediate_cycle_distinct_cas(builder: Builder) -> None:
         .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
         .issuer_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca1"))
         .subject_name(x509.Name.from_rfc4514_string("CN=intermediate-cycle-distinct-ca2"))
-        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
         .add_extension(
             x509.AuthorityKeyIdentifier.from_issuer_public_key(ica_1_key.public_key()),
             critical=False,
