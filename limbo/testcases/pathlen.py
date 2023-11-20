@@ -1,3 +1,7 @@
+"""
+Testcases for path length constraints, as well as chain depth constraints.
+"""
+
 from limbo.models import Feature
 from limbo.testcases._core import Builder, testcase
 
