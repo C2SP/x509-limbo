@@ -333,39 +333,6 @@ def missing_ski(builder: Builder) -> None:
 
 
 @testcase
-def multiple_chains_expired_intermediate(builder: Builder) -> None:
-    """
-    Produces the following chain:
-
-    ```
-    root 2 -> intermediate (expired) -> root -> EE
-    ```
-
-    Both roots are trusted. A chain should be built successfully, disregarding
-    the expired intermediate certificate and the second root. This scenario is
-    known as the "chain of pain"; for further reference, see
-    https://www.agwa.name/blog/post/fixing_the_addtrust_root_expiration.
-    """
-    root = builder.root_ca()
-    root_two = builder.root_ca(issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-root-2"))
-    ski = x509.SubjectKeyIdentifier.from_public_key(root.key.public_key())  # type: ignore[arg-type]
-    expired_intermediate = builder.intermediate_ca(
-        root_two,
-        pathlen=1,
-        subject=root.cert.subject,
-        not_after=datetime.fromisoformat("1988-11-25T00:00:00Z"),
-        key=root.key,
-        ski=ext(ski, critical=False),
-    )
-    leaf = builder.leaf_cert(root)
-
-    builder = builder.server_validation()
-    builder.trusted_certs(root, root_two).untrusted_intermediates(
-        expired_intermediate
-    ).peer_certificate(leaf).succeeds()
-
-
-@testcase
 def chain_untrusted_root(builder: Builder) -> None:
     """
     Produces the following chain:
