@@ -112,6 +112,8 @@ def intermediate_cycle_distinct_cas(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica_1_pair, ica_2_pair)
         .peer_certificate(leaf)
+        # NOTE: This chain depth exercises an overflow check in pyca/cryptography.
+        .max_chain_depth(255)
         .fails()
     )
 
