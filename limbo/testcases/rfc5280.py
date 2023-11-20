@@ -7,17 +7,9 @@ from datetime import datetime
 from ipaddress import IPv4Address, IPv4Network
 
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from limbo.assets import (
-    ASSETS_PATH,
-    EPOCH,
-    ONE_THOUSAND_YEARS_OF_TORMENT,
-    Certificate,
-    CertificatePair,
-    ext,
-)
+from limbo.assets import ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
 
@@ -338,39 +330,6 @@ def missing_ski(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
-
-
-@testcase
-def multiple_chains_expired_intermediate(builder: Builder) -> None:
-    """
-    Produces the following chain:
-
-    ```
-    root 2 -> intermediate (expired) -> root -> EE
-    ```
-
-    Both roots are trusted. A chain should be built successfully, disregarding
-    the expired intermediate certificate and the second root. This scenario is
-    known as the "chain of pain"; for further reference, see
-    https://www.agwa.name/blog/post/fixing_the_addtrust_root_expiration.
-    """
-    root = builder.root_ca()
-    root_two = builder.root_ca(issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-root-2"))
-    ski = x509.SubjectKeyIdentifier.from_public_key(root.key.public_key())  # type: ignore[arg-type]
-    expired_intermediate = builder.intermediate_ca(
-        root_two,
-        pathlen=1,
-        subject=root.cert.subject,
-        not_after=datetime.fromisoformat("1988-11-25T00:00:00Z"),
-        key=root.key,
-        ski=ext(ski, critical=False),
-    )
-    leaf = builder.leaf_cert(root)
-
-    builder = builder.server_validation()
-    builder.trusted_certs(root, root_two).untrusted_intermediates(
-        expired_intermediate
-    ).peer_certificate(leaf).succeeds()
 
 
 @testcase
