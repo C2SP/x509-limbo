@@ -4,7 +4,7 @@ RFC5280 profile tests.
 
 import random
 from datetime import datetime
-from ipaddress import IPv4Address, IPv4Network
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -806,7 +806,7 @@ def ca_nameconstraints_permitted_ip_mismatch(builder: Builder) -> None:
 
 
 @testcase
-def ca_nameconstraints_excluded_ip_match(builder: Builder) -> None:
+def ca_nameconstraints_excluded_ipv4_match(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -836,6 +836,38 @@ def ca_nameconstraints_excluded_ip_match(builder: Builder) -> None:
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="IP", value="192.0.2.1")
+    ).fails()
+
+
+@testcase
+def ca_nameconstraints_excluded_ipv6_match(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with an excluded iPAddress of
+    ::1/128, matching the iPAddress in the SubjectAlternativeName of the leaf.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=None,
+                excluded_subtrees=[x509.IPAddress(IPv6Network("::1/128"))],
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.IPAddress(IPv6Address("::1"))]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="::1")
     ).fails()
 
 
@@ -1294,7 +1326,7 @@ def ca_nameconstraints_invalid_dnsname(builder: Builder) -> None:
 
 
 @testcase
-def ca_nameconstraints_invalid_ipaddress(builder: Builder) -> None:
+def ca_nameconstraints_invalid_ipv4_address(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -1302,8 +1334,8 @@ def ca_nameconstraints_invalid_ipaddress(builder: Builder) -> None:
     root -> leaf
     ```
 
-    The root contains a NameConstraints extension with a malformed iPAddress
-    (not in CIDR form).
+    The root contains a NameConstraints extension with a malformed IPv4
+    iPAddress (not in CIDR form).
     """
 
     # NOTE: Set `_permitted_subtrees` directly to avoid validation.
@@ -1323,6 +1355,37 @@ def ca_nameconstraints_invalid_ipaddress(builder: Builder) -> None:
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="IP", value="127.0.0.1")
+    ).fails()
+
+
+@testcase
+def ca_nameconstraints_invalid_ipv6_address(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a malformed IPv6
+    iPAddress (not in CIDR form).
+    """
+
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.IPAddress(IPv6Network("::1/128"))], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.IPAddress(IPv6Address("::1"))]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.IPAddress(IPv6Address("::1"))]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="::1")
     ).fails()
 
 
