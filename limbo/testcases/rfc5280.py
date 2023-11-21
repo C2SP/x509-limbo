@@ -872,7 +872,7 @@ def ca_nameconstraints_excluded_ipv6_match(builder: Builder) -> None:
 
 
 @testcase
-def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
+def ca_nameconstraints_permitted_ipv4_match(builder: Builder) -> None:
     """
     Produces the following **valid** chain:
 
@@ -903,6 +903,39 @@ def ca_nameconstraints_permitted_ip_match(builder: Builder) -> None:
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="IP", value="192.0.2.1")
+    ).succeeds()
+
+
+@testcase
+def ca_nameconstraints_permitted_ipv6_match(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a NameConstraints extension with a permitted iPAddress of
+    ::1/128, which matches the iPAddress in the SubjectAlternativeName
+    of the leaf.
+    """
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.IPAddress(IPv6Network("::1/128"))],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        )
+    )
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.IPAddress(IPv6Address("::1"))]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="::1")
     ).succeeds()
 
 
