@@ -26,6 +26,9 @@ _TOPSITES = [
     "amazon.com",
     "aws.amazon.com",
     "s3.amazonaws.com",
+    "apple.com",
+    "microsoft.com",
+    "bing.com",
 ]
 
 
