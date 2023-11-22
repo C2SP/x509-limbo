@@ -865,7 +865,7 @@ def invalid_ipv6_address(builder: Builder) -> None:
 
 
 @testcase
-def not_allowed_in_ee_noncritical(builder: Builder):
+def not_allowed_in_ee_noncritical(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -898,7 +898,7 @@ def not_allowed_in_ee_noncritical(builder: Builder):
 
 
 @testcase
-def not_allowed_in_ee_critical(builder: Builder):
+def not_allowed_in_ee_critical(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
