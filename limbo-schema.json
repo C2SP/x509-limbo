@@ -13,7 +13,8 @@
         "pedantic-webpki-eku",
         "pedantic-serial-number",
         "max-chain-depth",
-        "pedantic-rfc5280"
+        "pedantic-rfc5280",
+        "rfc5280-incompatible-with-webpki"
       ],
       "type": "string"
     },
