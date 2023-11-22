@@ -40,3 +40,71 @@ def permitted_dns_match_noncritical(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).succeeds()
+
+
+@testcase
+def intermediate_permitted_excluded_subtrees_both_null(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate -> leaf
+    ```
+
+    The intermediate contains a NameConstraints extension with `ASN.1 NULL` for
+    both permittedSubtrees and excludedSubtrees, which is forbidden under
+    CABF 7.1.2.5.2.
+    """
+
+    # NOTE: Set inner attributes directly to bypass validation.
+    nc = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+    )
+    nc._permitted_subtrees = None
+    nc._excluded_subtrees = None
+
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        name_constraints=ext(nc, critical=True),
+    )
+    leaf = builder.leaf_cert(intermediate)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind="DNS", value="example.com")).fails()
+
+
+@testcase
+def intermediate_permitted_excluded_subtrees_both_empty_sequences(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> intermediate -> leaf
+    ```
+
+    The intermediate contains a NameConstraints extension with empty sequences for
+    both permittedSubtrees and excludedSubtrees, which is forbidden under
+    CABF 7.1.2.5.2.
+    """
+
+    # NOTE: Set inner attributes directly to bypass validation.
+    nc = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+    )
+    nc._permitted_subtrees = []
+    nc._excluded_subtrees = []
+
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        name_constraints=ext(nc, critical=True),
+    )
+    leaf = builder.leaf_cert(intermediate)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind="DNS", value="example.com")).fails()
