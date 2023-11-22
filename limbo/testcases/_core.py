@@ -196,6 +196,7 @@ class Builder:
         san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
+        name_constraints: _Extension[x509.NameConstraints] | None = None,
         extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
     ) -> CertificatePair:
         """
@@ -237,7 +238,7 @@ class Builder:
             san,
             aki,
             ski,
-            None,
+            name_constraints,
             extra_extension,
             parent,
         )
