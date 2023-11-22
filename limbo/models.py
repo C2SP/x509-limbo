@@ -178,7 +178,7 @@ class Feature(str, Enum):
 
     pedantic_webpki_eku = "pedantic-webpki-eku"
     """
-    Like `pedantic_webpki`, but specifically for "pedantic" EKU handling under CABF.
+    Like `pedantic_webpkif`, but specifically for "pedantic" EKU handling under CABF.
     """
 
     pedantic_serial_number = "pedantic-serial-number"
@@ -195,6 +195,11 @@ class Feature(str, Enum):
     pedantic_rfc5280 = "pedantic-rfc5280"
     """
     Tests that exercise "pednatic" corners of the RFC 5280 certificate profile.
+    """
+
+    rfc5280_incompatible_with_webpki = "rfc5280-incompatible-with-webpki"
+    """
+    Tests where RFC 5280's prescription is stronger than the Web PKI's.
     """
 
 
