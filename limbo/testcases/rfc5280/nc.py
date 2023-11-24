@@ -928,3 +928,58 @@ def not_allowed_in_ee_critical(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def intermediate_with_san_rejected_by_nc(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA1 -> ICA2 -> EE
+             |       |       |
+             |       |       |
+             NC     SAN1    SAN2
+    ```
+
+    ICA1 contains a NameConstraints extension that forbids
+    SAN1 (forbidden.example.com) and permits SAN2 (permitted.example.com),
+    which should be rejected under RFC 5280:
+
+    > The name constraints extension, which MUST be used only in a CA
+    > certificate, indicates a name space within which all subject names in
+    > subsequent certificates in a certification path MUST be located.
+    """
+
+    root = builder.root_ca()
+    ica1 = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("permitted.example.com")],
+                excluded_subtrees=[x509.DNSName("forbidden.example.com")],
+            ),
+            critical=True,
+        ),
+    )
+    ica2 = builder.intermediate_ca(
+        ica1,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("forbidden.example.com")]), critical=False
+        ),
+    )
+    leaf = builder.leaf_cert(
+        ica2,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("permitted.example.com")]), critical=False
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica1, ica2)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="permitted.example.com"))
+        .fails()
+    )
