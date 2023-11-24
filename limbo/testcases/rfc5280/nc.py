@@ -1,5 +1,5 @@
 """
-RFC 5280 Name Constraints (nc) testcases.
+RFC 5280 Name Constraints (NC) testcases.
 """
 
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
