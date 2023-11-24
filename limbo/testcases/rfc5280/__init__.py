@@ -6,7 +6,6 @@ import random
 from datetime import datetime
 
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KnownEKUs, PeerName
