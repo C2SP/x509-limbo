@@ -1040,12 +1040,16 @@ def intermediate_with_san_rejected_by_root_nc(builder: Builder) -> None:
 
 
 @testcase
-def restrictive_permits_in_intermediates(builder: Builder) -> None:
+def restrictive_permits_in_intermediates_narrows(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
     ```
-    root -> ICA1 -> ICA2 -> EE
+    root     ->     ICA1     ->     ICA2     ->     EE
+                     |               |               |
+                  permits:        permits:       SAN: foo.example.com
+              foo.example.com   bar.example.com
+              bar.example.com
     ```
 
     ICA1 contains a NameConstraints extension permitting `foo.example.com`
@@ -1076,6 +1080,69 @@ def restrictive_permits_in_intermediates(builder: Builder) -> None:
         name_constraints=ext(
             x509.NameConstraints(
                 permitted_subtrees=[x509.DNSName("bar.example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(
+        ica2,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.example.com")]), critical=False),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica1, ica2)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="foo.example.com"))
+        .fails()
+    )
+
+
+@testcase
+def restrictive_permits_in_intermediates_widens(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root     ->     ICA1     ->     ICA2     ->     EE
+                     |               |               |
+                  permits:        permits:       SAN: foo.example.com
+              bar.example.com   foo.example.com
+                                bar.example.com
+    ```
+
+    ICA1 contains a NameConstraints extension permitting only `bar.example.com`,
+    while ICA2 contains a NameConstraints extension permitting `foo.example.com`
+    and `bar.example.com`. The EE then contains a SAN for `foo.example.com`,
+    which should be rejected under RFC 5280:
+
+    > a name space within which all subject names in
+    > subsequent certificates in a certification path MUST be located.
+    """
+
+    root = builder.root_ca()
+    ica1 = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[
+                    x509.DNSName("bar.example.com"),
+                ],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+    )
+    ica2 = builder.intermediate_ca(
+        ica1,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[
+                    x509.DNSName("foo.example.com"),
+                    x509.DNSName("bar.example.com"),
+                ],
+                excluded_subtrees=None,
             ),
             critical=True,
         ),
