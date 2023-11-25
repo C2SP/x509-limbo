@@ -1160,3 +1160,93 @@ def restrictive_permits_in_intermediates_widens(builder: Builder) -> None:
         .expected_peer_name(PeerName(kind="DNS", value="foo.example.com"))
         .fails()
     )
+
+
+@testcase
+def nc_permits_invalid_dns_san(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    root -> ICA (NC: example.com) -> EE (SAN: .example.com)
+
+    The ICA contains a NC that allows `example.com` and all subdomains,
+    but the EE's SAN contains a malformed DNS name (`.example.com`). This should
+    fail per RFC 5280, since all names MUST be located within the
+    permitted namespace.
+    """
+
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(
+        intermediate,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DNSName(".example.com"), x509.DNSName("foo.example.com")]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="foo.example.com"))
+        .fails()
+    )
+
+
+@testcase
+def nc_permits_invalid_ip_san(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    root -> ICA (NC: 192.0.2.0/24) -> EE (SAN: 192.0.2.0/24)
+
+    The ICA contains a NC that permits 192.0.2.0/24, but the EE's SAN
+    is malformed (containing a CIDR range instead of an IP address). This should
+    fail per RFC 5280, since all names MUST be located within the
+    permitted namespace.
+    """
+
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.IPAddress(IPv4Network("192.0.2.0/24"))],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(
+        intermediate,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [
+                    x509.IPAddress(IPv4Network("192.0.2.0/24")),
+                    x509.IPAddress(IPv4Address("192.0.2.1")),
+                ]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="IP", value="192.0.2.1"))
+        .fails()
+    )
