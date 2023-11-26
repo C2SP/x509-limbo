@@ -35,7 +35,7 @@ def critical_ski(builder: Builder) -> None:
 
 
 @testcase
-def missing_ski(builder: Builder) -> None:
+def root_missing_ski(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -61,3 +61,35 @@ def missing_ski(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def intermediate_missing_ski(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> EE
+    ```
+
+    The intermediate cert is missing the SKI extension, which is disallowed under the
+    [RFC 5280 profile].
+
+    > To facilitate certification path construction, this extension MUST
+    > appear in all conforming CA certificates, that is, all certificates
+    > including the basic constraints extension (Section 4.2.1.9) where the
+    > value of cA is TRUE.
+
+    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
+    """
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(root, ski=None)
+    leaf = builder.leaf_cert(intermediate)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
+        .fails()
+    )
