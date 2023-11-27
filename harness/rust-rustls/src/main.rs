@@ -18,7 +18,7 @@ fn main() {
 
     let result = LimboResult {
         version: 1,
-        harness: "rust-webpki".into(),
+        harness: "rustls-webpki".into(),
         results,
     };
 
