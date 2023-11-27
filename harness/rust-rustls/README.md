@@ -3,7 +3,7 @@
 This directory contains a basic test harness for running the x509-limbo
 testsuite against the Rust [`rustls-webpki` crate].
 
-[`webpki` crate]: https://docs.rs/rustls-webpki/latest/rustls-webpki/index.html
+[`rustls-webpki` crate]: https://docs.rs/rustls-webpki/latest/rustls-webpki/index.html
 
 ## Building
 
