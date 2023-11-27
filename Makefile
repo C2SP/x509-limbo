@@ -78,5 +78,9 @@ test-openssl:
 test-rust-webpki:
 	@cargo run --bin rust-webpki-harness
 
+.PHONY: test-rustls-webpki
+test-rustls-webpki:
+	@cargo run --bin rust-rustls-harness
+
 .PHONY: test
-test: test-go test-openssl test-rust-webpki
+test: test-go test-openssl test-rust-webpki test-rustls-webpki

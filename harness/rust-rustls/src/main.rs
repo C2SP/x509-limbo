@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use std::{net::IpAddr, time::SystemTime};
 
 use chrono::{DateTime, Utc};
 use limbo_harness_support::{
@@ -6,7 +6,7 @@ use limbo_harness_support::{
     models::{Feature, LimboResult, PeerKind, Testcase, TestcaseResult, ValidationKind},
 };
 
-const LIMBO_RESULTS_OUT: &str = "./harness/rust-webpki/results.json";
+const LIMBO_RESULTS_OUT: &str = "./harness/rust-rustls/results.json";
 
 fn main() {
     let limbo = load_limbo();
@@ -18,7 +18,7 @@ fn main() {
 
     let result = LimboResult {
         version: 1,
-        harness: "rust-webpki".into(),
+        harness: "rustls-webpki".into(),
         results,
     };
 
@@ -27,19 +27,6 @@ fn main() {
         serde_json::to_string_pretty(&result).unwrap(),
     )
     .unwrap()
-}
-
-fn render_err(e: &webpki::ErrorExt) -> String {
-    match e {
-        webpki::ErrorExt::Error(e) => e.to_string(),
-        webpki::ErrorExt::MaximumPathBuildCallsExceeded => {
-            "maximum path build calls exceeded".into()
-        }
-        webpki::ErrorExt::MaximumSignatureChecksExceeded => {
-            "maximum signature checks exceeded".into()
-        }
-        _ => "unknown error".into(),
-    }
 }
 
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
@@ -109,33 +96,46 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         &webpki::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
     ];
 
-    if let Err(e) = leaf.verify_is_valid_tls_server_cert_ext(
+    if let Err(e) = leaf.verify_for_usage(
         sig_algs,
-        &webpki::TlsServerTrustAnchors(&trust_anchors),
+        &trust_anchors,
         &intermediates
             .iter()
             .map(|ic| ic.contents())
             .collect::<Vec<_>>(),
         validation_time,
+        webpki::KeyUsage::server_auth(),
+        &[],
     ) {
-        return TestcaseResult::fail(tc, &render_err(&e));
+        return TestcaseResult::fail(tc, &e.to_string());
     }
 
-    let dns_name = match &tc.expected_peer_name {
+    let subject_name = match &tc.expected_peer_name {
         None => return TestcaseResult::skip(tc, "implementation requires peer names"),
         Some(pn) => match pn.kind {
-            PeerKind::Dns => webpki::DnsNameRef::try_from_ascii_str(&pn.value)
-                .expect("invalid expected DNS name"),
-            _ => return TestcaseResult::skip(tc, "implementation requires DNS peer names"),
+            PeerKind::Dns => webpki::SubjectNameRef::DnsName(
+                webpki::DnsNameRef::try_from_ascii_str(&pn.value)
+                    .expect("invalid expected DNS name"),
+            ),
+            PeerKind::Ip => {
+                // Very dumb: rustls-webpki doesn't allow compressed IPv6 string representations,
+                // so we need to round-trip through `std::net::IpAddr`. This in turn requires
+                // us to round-trip through `webpki::IpAddr` and perform a leak, since
+                // we have no outliving reference to borrow against.
+                let addr = pn.value.parse::<IpAddr>().unwrap();
+                let addr_leaked: &'static webpki::IpAddr = Box::leak(Box::new(addr.into()));
+
+                let addr_ref = webpki::IpAddrRef::from(addr_leaked);
+
+                webpki::SubjectNameRef::IpAddress(addr_ref)
+            }
+            _ => return TestcaseResult::skip(tc, "implementation requires DNS or IP peer names"),
         },
     };
 
-    if let Err(_) = leaf.verify_is_valid_for_dns_name(dns_name) {
-        TestcaseResult::fail(tc, "DNS name validation failed")
+    if let Err(_) = leaf.verify_is_valid_for_subject_name(subject_name) {
+        TestcaseResult::fail(tc, "subject name validation failed")
     } else {
         TestcaseResult::success(tc)
     }
-
-    // We're not actually initiating a TLS connection, so we don't
-    // perform `EndEntityCert.verify_signature`.
 }
