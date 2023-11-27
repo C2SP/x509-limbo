@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "harness": "rust-webpki",
+  "harness": "rustls-webpki",
   "results": [
     {
       "id": "pathlen::ee-with-intermediate-pathlen-0",

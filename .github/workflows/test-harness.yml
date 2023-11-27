@@ -63,3 +63,22 @@ jobs:
           python ./harness/render-summary.py \
             limbo.json \
             harness/rust-webpki/results.json
+
+  rustls-webpki:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ">=3.12"
+
+      - name: run tests
+        run: make test-rustls-webpki
+
+      - name: render summary
+        run: |
+          python ./harness/render-summary.py \
+            limbo.json \
+            harness/rust-rustls/results.json
+
