@@ -1,4 +1,5 @@
 site_name: x509-limbo
+site_description: x509-limbo
 site_url: https://trailofbits.github.io/x509-limbo/
 docs_dir: site
 site_dir: site_html

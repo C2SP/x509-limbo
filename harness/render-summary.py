@@ -14,7 +14,11 @@ if summary := os.getenv("GITHUB_STEP_SUMMARY"):
 else:
     _OUT = sys.stdout
 
-_RESULT_ROW = "| `{testcase_id}` | {status} | {expected} | {actual} | {context} |"
+_RESULT_ROW = "| [`{testcase_id}`]({testcase_url}) | {status} | {expected} | {actual} | {context} |"
+
+
+def _slugify_id(id_: str) -> str:
+    return id_.replace("::", "")
 
 
 def _render(s: str) -> None:
@@ -39,6 +43,11 @@ _render(
 
 for result in results["results"]:
     testcase_id = result["id"]
+
+    namespace, _ = testcase_id.split("::", 1)
+    slug = _slugify_id(testcase_id)
+    testcase_url = f"https://trailofbits.github.io/x509-limbo/testcases/{namespace}/#{slug}"
+
     actual = result["actual_result"]
 
     context = result["context"]
@@ -58,6 +67,7 @@ for result in results["results"]:
 
     row = _RESULT_ROW.format(
         testcase_id=testcase_id,
+        testcase_url=testcase_url,
         status=status,
         expected=expected,
         actual=actual,
