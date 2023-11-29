@@ -13,7 +13,7 @@ from limbo.testcases._core import Builder, testcase
 
 
 @testcase
-def serial_number_too_long(builder: Builder) -> None:
+def too_long(builder: Builder) -> None:
     """
     Produces an **invalid** chain due to an invalid EE cert.
 
@@ -33,7 +33,7 @@ def serial_number_too_long(builder: Builder) -> None:
 
 
 @testcase
-def serial_number_zero(builder: Builder) -> None:
+def zero(builder: Builder) -> None:
     """
     Produces an **invalid** chain due to an invalid EE cert.
 
@@ -51,7 +51,7 @@ def serial_number_zero(builder: Builder) -> None:
 
 
 @testcase
-def serial_number_negative(builder: Builder) -> None:
+def negative(builder: Builder) -> None:
     """
     Produces an **invalid** chain due to an invalid EE cert. Verifies against a
     saved copy of a certificate with a negative serial number from the
