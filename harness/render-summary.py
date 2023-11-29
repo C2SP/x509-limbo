@@ -44,10 +44,9 @@ _render(
 for result in results["results"]:
     testcase_id = result["id"]
 
-    namespace, remainder = testcase_id.split("::", 1)
-    testcase_url = (
-        f"https://trailofbits.github.io/x509-limbo/testcases/{namespace}/#{_slugify_id(remainder)}"
-    )
+    namespace, _ = testcase_id.split("::", 1)
+    slug = _slugify_id(testcase_id)
+    testcase_url = f"https://trailofbits.github.io/x509-limbo/testcases/{namespace}/#{slug}"
 
     actual = result["actual_result"]
 
