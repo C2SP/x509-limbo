@@ -18,11 +18,9 @@ def critical_ski(builder: Builder) -> None:
     ```
 
     The root cert has an SKI extension marked as critical, which is disallowed
-    under the [RFC 5280 profile].
+    under RFC 5280 4.2.1.2.
 
     > Conforming CAs MUST mark this extension as non-critical.
-
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
     """
     key = ec.generate_private_key(ec.SECP256R1())
     root = builder.root_ca(
@@ -43,8 +41,8 @@ def root_missing_ski(builder: Builder) -> None:
     root -> EE
     ```
 
-    The root cert is missing the SKI extension, which is disallowed under the
-    [RFC 5280 profile].
+    The root cert is missing the SKI extension, which is disallowed under
+    RFC 5280 4.2.1.2.
 
     > To facilitate certification path construction, this extension MUST
     > appear in all conforming CA certificates, that is, all certificates
@@ -53,8 +51,6 @@ def root_missing_ski(builder: Builder) -> None:
 
     Note: for roots, the SKI should be the same value as the AKI, therefore,
     this extension isn't strictly necessary, although required by the RFC.
-
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
     """
     root = builder.root_ca(ski=None)
     leaf = builder.leaf_cert(root)
@@ -72,15 +68,13 @@ def intermediate_missing_ski(builder: Builder) -> None:
     root -> ICA -> EE
     ```
 
-    The intermediate cert is missing the SKI extension, which is disallowed under the
-    [RFC 5280 profile].
+    The intermediate cert is missing the SKI extension, which is disallowed under
+    RFC 5280 4.2.1.2.
 
     > To facilitate certification path construction, this extension MUST
     > appear in all conforming CA certificates, that is, all certificates
     > including the basic constraints extension (Section 4.2.1.9) where the
     > value of cA is TRUE.
-
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.2
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, ski=None)

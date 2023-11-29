@@ -146,15 +146,13 @@ def permitted_dns_match_more(builder: Builder) -> None:
 
     The root contains a NameConstraints extension with a permitted dNSName of
     "example.com". The leaf's "foo.bar.example.com" satisfies this constraint
-    per the [RFC 5280 profile]:
+    per the RFC 5280 profile:
 
     > DNS name restrictions are expressed as host.example.com.  Any DNS
     > name that can be constructed by simply adding zero or more labels to
     > the left-hand side of the name satisfies the name constraint.  For
     > example, www.host.example.com would satisfy the constraint but
     > host1.example.com would not.
-
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -222,7 +220,7 @@ def permitted_ip_mismatch(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with a permitted iPAddress of
-    192.0.2.0/24, which does not match the iPAddress in the SubjectAlternativeName
+    `192.0.2.0/24`, which does not match the iPAddress in the SubjectAlternativeName
     of the leaf.
     """
     root = builder.root_ca(
@@ -257,7 +255,7 @@ def excluded_ipv4_match(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with an excluded iPAddress of
-    192.0.2.0/24, matching the iPAddress in the SubjectAlternativeName of the leaf.
+    `192.0.2.0/24`, matching the iPAddress in the SubjectAlternativeName of the leaf.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -291,7 +289,7 @@ def excluded_ipv6_match(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with an excluded iPAddress of
-    ::1/128, matching the iPAddress in the SubjectAlternativeName of the leaf.
+    `::1/128`, matching the iPAddress in the SubjectAlternativeName of the leaf.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -323,7 +321,7 @@ def permitted_ipv4_match(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with a permitted iPAddress of
-    192.0.2.0/24, which matches the iPAddress in the SubjectAlternativeName
+    `192.0.2.0/24`, which matches the iPAddress in the SubjectAlternativeName
     of the leaf.
     """
     root = builder.root_ca(
@@ -358,7 +356,7 @@ def permitted_ipv6_match(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with a permitted iPAddress of
-    ::1/128, which matches the iPAddress in the SubjectAlternativeName
+    `::1/128`, which matches the iPAddress in the SubjectAlternativeName
     of the leaf.
     """
     root = builder.root_ca(
@@ -391,7 +389,7 @@ def permitted_dn_mismatch(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with a permitted DirectoryName
-    of "CN=foo". This should not match the child's DirectoryName of "CN=not-foo".
+    of `CN=foo`. This should not match the child's DirectoryName of `CN=not-foo`.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -427,7 +425,7 @@ def excluded_dn_match(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with an excluded DirectoryName
-    of "CN=foo", matching the leaf's SubjectAlternativeName.
+    of `CN=foo`, matching the leaf's SubjectAlternativeName.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -463,7 +461,7 @@ def permitted_dn_match(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with a permitted DirectoryName
-    of "CN=foo", matching the leaf's SubjectAlternativeName.
+    of `CN=foo`, matching the leaf's SubjectAlternativeName.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -500,14 +498,12 @@ def permitted_dn_match_subject_san_mismatch(builder: Builder) -> None:
 
     The root contains a NameConstraints extension with a permitted DirectoryName
     of "CN=foo", matching the leaf's SubjectAlternativeName but not its subject.
-    The leaf must be rejected per the [RFC5280 profile] due to this mismatch:
+    The leaf must be rejected per RFC 5280 4.2.1.10 due to this mismatch:
 
     > Restrictions of the form directoryName MUST be applied to the subject
     > field in the certificate (when the certificate includes a non-empty
     > subject field) and to any names of type directoryName in the
     > subjectAltName extension.
-
-    [RFC5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -544,14 +540,12 @@ def excluded_dn_match_sub_mismatch(builder: Builder) -> None:
 
     The root contains a NameConstraints extension with an excluded DirectoryName
     of "CN=foo", matching the leaf's subject but not its SubjectAlternativeName.
-    The leaf must be rejected per the [RFC5280 profile] due to this match:
+    The leaf must be rejected per RFC 5280 4.2.1.10 due to this match:
 
     > Restrictions of the form directoryName MUST be applied to the subject
     > field in the certificate (when the certificate includes a non-empty
     > subject field) and to any names of type directoryName in the
     > subjectAltName extension.
-
-    [RFC5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -717,7 +711,7 @@ def permitted_different_constraint_type(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with a permitted iPAddress of
-    192.0.2.0/24, while the leaf's SubjectAlternativeName is a dNSName.
+    `192.0.2.0/24`, while the leaf's SubjectAlternativeName is a dNSName.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -748,7 +742,7 @@ def excluded_different_constraint_type(builder: Builder) -> None:
     ```
 
     The root contains a NameConstraints extension with an excluded iPAddress of
-    192.0.2.0/24, while the leaf's SubjectAlternativeName is a dNSName.
+    `192.0.2.0/24`, while the leaf's SubjectAlternativeName is a dNSName.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -1167,7 +1161,9 @@ def nc_permits_invalid_dns_san(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
+    ```
     root -> ICA (NC: example.com) -> EE (SAN: .example.com)
+    ```
 
     The ICA contains a NC that allows `example.com` and all subdomains,
     but the EE's SAN contains a malformed DNS name (`.example.com`). This should
@@ -1210,7 +1206,9 @@ def nc_permits_invalid_ip_san(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
+    ```
     root -> ICA (NC: 192.0.2.0/24) -> EE (SAN: 192.0.2.0/24)
+    ```
 
     The ICA contains a NC that permits 192.0.2.0/24, but the EE's SAN
     is malformed (containing a CIDR range instead of an IP address). This should

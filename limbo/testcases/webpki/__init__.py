@@ -1,5 +1,5 @@
 """
-Web PKI (CA/B Forum) profile tests.
+Web PKI (CABF) profile tests.
 """
 
 from datetime import datetime
@@ -65,11 +65,9 @@ def malformed_aia(builder: Builder) -> None:
     Produces a chain with an EE cert.
 
     This EE cert contains an Authority Information Access extension with malformed
-    contents. This is **invalid** per the [CA/B BR profile].
+    contents. This is **invalid** per CABF.
 
     > The AuthorityInfoAccessSyntax MUST contain one or more AccessDescriptions.
-
-    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
     root = builder.root_ca()
     leaf = builder.leaf_cert(
@@ -100,14 +98,12 @@ def root_with_extkeyusage(builder: Builder) -> None:
     ```
 
     The root cert includes the extKeyUsage extension, which is forbidden
-    under the [CA/B BR profile]:
+    under CABF:
 
     > 7.1.2.1.2 Root CA Extensions
     > Extension     Presence        Critical
     > ...
     > extKeyUsage   MUST NOT        N
-
-    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
 
     root = builder.root_ca(
@@ -134,7 +130,7 @@ def forbidden_p192_spki_leaf(builder: Builder) -> None:
     ```
 
     The EE cert contains a P-192 key, which is not one of the permitted
-    public keys under the CA/B BR profile.
+    public keys under CABF.
     """
 
     root = builder.root_ca()
@@ -158,7 +154,7 @@ def forbidden_dsa_spki_leaf(builder: Builder) -> None:
     ```
 
     The EE cert is signed with a DSA key, which is not one of the permitted
-    public keys under the CA/B BR profile.
+    public keys under CABF.
     """
 
     root = builder.root_ca()
@@ -182,7 +178,7 @@ def forbidden_signature_algorithm_in_root(builder: Builder) -> None:
     ```
 
     The root cert is signed with a DSA-3072 key, which is not one of the
-    permitted signature algorithms under the CA/B BR profile.
+    permitted signature algorithms under CABF.
     """
 
     root_key = dsa.generate_private_key(3072)
@@ -205,7 +201,7 @@ def forbidden_signature_algorithm_in_leaf(builder: Builder) -> None:
     ```
 
     The EE cert is signed with a DSA-3072 key, which is not one of the
-    permitted signature algorithms under the CA/B BR profile.
+    permitted signature algorithms under CABF.
 
     This case is distinct from `forbidden_signature_algorithm_in_root`,
     as DSA keys are forbidden in both places but not all implementations
@@ -238,7 +234,7 @@ def v1_cert(builder: Builder) -> None:
 
     This chain is correctly constructed, but the EE cert is marked with
     version 2 (ordinal 1) rather than version 3 (ordinal 2). This is invalid,
-    per CA/B 7.1.1:
+    per CABF 7.1.1:
 
     > Certificates MUST be of type X.509 v3.
     """
@@ -263,7 +259,7 @@ def eku_contains_anyeku(builder: Builder) -> None:
 
     This chain is correctly constructed, but the EE cert contains an
     Extended Key Usage extension that contains `anyExtendedKeyUsage`,
-    which is explicitly forbidden under CA/B 7.1.2.7.10.
+    which is explicitly forbidden under CABF 7.1.2.7.10.
     """
 
     root = builder.root_ca()
@@ -295,13 +291,13 @@ def ee_basicconstraints_ca(builder: Builder) -> None:
 
     The EE certificate has `keyUsage.keyCertSign=FALSE` but
     `basicConstraints.cA=TRUE`, which is explicitly forbidden under
-    CA/B 7.1.2.7.8:
+    CABF 7.1.2.7.8:
 
     > cA MUST be FALSE
     """
 
     # NOTE: This behavior is implied by RFC 5280, but is only made explicit
-    # in the CA/B BRs. In 5280, the only requirement is that `keyUsage.keyCertSign`
+    # in the CABF BRs. In 5280, the only requirement is that `keyUsage.keyCertSign`
     # implies `basicConstraints.cA`, not the other way around.
 
     root = builder.root_ca()
