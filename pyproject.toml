@@ -32,7 +32,8 @@ lint = [
 ]
 doc = []
 test = []
-dev = ["limbo[doc,test,lint]", "twine", "wheel", "build"]
+site = ["mkdocs", "mkdocs-gen-files", "pymdown-extensions"]
+dev = ["limbo[doc,test,lint,site]", "twine", "wheel", "build"]
 [project.scripts]
 "limbo" = "limbo._cli:main"
 
