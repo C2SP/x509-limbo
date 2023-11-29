@@ -84,3 +84,7 @@ test-rustls-webpki:
 
 .PHONY: test
 test: test-go test-openssl test-rust-webpki test-rustls-webpki
+
+.PHONY: site
+site: $(NEEDS_VENV)
+	./$(VENV_BIN)/mkdocs build

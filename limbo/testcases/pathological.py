@@ -24,7 +24,7 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
     Both roots are trusted. A chain should be built successfully, disregarding
     the expired intermediate certificate and the second root. This scenario is
     known as the "chain of pain"; for further reference, see
-    https://www.agwa.name/blog/post/fixing_the_addtrust_root_expiration.
+    <https://www.agwa.name/blog/post/fixing_the_addtrust_root_expiration>.
     """
     root = builder.root_ca()
     root_two = builder.root_ca(issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-root-2"))
