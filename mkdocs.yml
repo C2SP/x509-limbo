@@ -3,7 +3,8 @@ site_description: x509-limbo
 site_url: https://trailofbits.github.io/x509-limbo/
 docs_dir: site
 site_dir: site_html
-theme: readthedocs
+theme:
+  name: material
 plugins:
   - gen-files:
       scripts:

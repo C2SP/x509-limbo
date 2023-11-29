@@ -183,14 +183,14 @@ def intermediate_ca_without_ca_bit(builder: Builder) -> None:
     ```
 
     The intermediate CA does not have the cA bit set in BasicConstraints, thus
-    no valid chain to the leaf exists per the [RFC 5280 profile]:
+    no valid chain to the leaf exists per [RFC 5280 4.2.1.9]:
 
     > If the basic constraints extension is not present in a version 3
     > certificate, or the extension is present but the cA boolean
     > is not asserted, then the certified public key MUST NOT be used to
     > verify certificate signatures.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    [RFC 5280 4.2.1.9]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(
@@ -213,14 +213,14 @@ def intermediate_ca_missing_basic_constraints(builder: Builder) -> None:
     ```
 
     The intermediate CA is missing the BasicConstraints extension, which is disallowed
-    under the [RFC 5280 profile]:
+    under [RFC 5280 4.2.1.9]:
 
     > Conforming CAs MUST include this extension in all CA certificates
     > that contain public keys used to validate digital signatures on
     > certificates and MUST mark the extension as critical in such
     > certificates.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    [RFC 5280 4.2.1.9]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(root, basic_constraints=None)
@@ -240,14 +240,14 @@ def root_missing_basic_constraints(builder: Builder) -> None:
     ```
 
     The root CA is missing the BasicConstraints extension, which is disallowed
-    under the [RFC 5280 profile]:
+    under [RFC 5280 4.2.1.9]:
 
     > Conforming CAs MUST include this extension in all CA certificates
     > that contain public keys used to validate digital signatures on
     > certificates and MUST mark the extension as critical in such
     > certificates.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    [RFC 5280 4.2.1.9]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca(basic_constraints=None)
     leaf = builder.leaf_cert(root)
@@ -266,14 +266,14 @@ def root_non_critical_basic_constraints(builder: Builder) -> None:
     ```
 
     The root CA has a non-critical BasicConstraints extension, which is disallowed
-    under the [RFC 5280 profile]:
+    under [RFC 5280 4.2.1.9]:
 
     > Conforming CAs MUST include this extension in all CA certificates
     > that contain public keys used to validate digital signatures on
     > certificates and MUST mark the extension as critical in such
     > certificates.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    [RFC 5280 4.2.1.9]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca(basic_constraints=ext(x509.BasicConstraints(True, None), critical=False))
     leaf = builder.leaf_cert(root)
@@ -291,8 +291,8 @@ def root_inconsistent_ca_extensions(builder: Builder) -> None:
     root -> EE
     ```
 
-    The root CA has BasicConstraints.cA=TRUE and KeyUsage.keyCertSign=FALSE.
-    According to the [RFC 5280 profile], these two fields are related in the
+    The root CA has `BasicConstraints.cA=TRUE` and `KeyUsage.keyCertSign=FALSE`.
+    According to [RFC 5280], these two fields are related in the
     following ways:
 
     > If the keyCertSign bit is asserted, then the cA bit in the basic
@@ -307,7 +307,7 @@ def root_inconsistent_ca_extensions(builder: Builder) -> None:
     when cA is asserted, this configuration is inconsistent and clients should
     reject it.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280
+    [RFC 5280]: https://datatracker.ietf.org/doc/html/rfc5280
     """
     root = builder.root_ca(
         key_usage=ext(
@@ -341,13 +341,13 @@ def ica_ku_keycertsign(builder: Builder) -> None:
     ```
 
     The intermediate CA includes BasicConstraints with pathLenConstraint=0 and
-    KeyUsage.keyCertSign=FALSE, which is disallowed under the [RFC 5280 profile]:
+    KeyUsage.keyCertSign=FALSE, which is disallowed under [RFC 5280 4.2.1.9]:
 
     > CAs MUST NOT include the pathLenConstraint field unless the cA
     > boolean is asserted and the key usage extension asserts the
     > keyCertSign bit.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    [RFC 5280 4.2.1.9]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca()
     intermediate = builder.intermediate_ca(
@@ -384,15 +384,15 @@ def leaf_ku_keycertsign(builder: Builder) -> None:
     ```
 
     The leaf has a BasicConstraints extension with cA=FALSE and a KeyUsage
-    extension with keyCertSign=TRUE. This is disallowed under the
-    [RFC 5280 profile]:
+    extension with keyCertSign=TRUE. This is disallowed under
+    [RFC 5280 4.2.19]:
 
     > The cA boolean indicates whether the certified public key may be used
     > to verify certificate signatures.  If the cA boolean is not asserted,
     > then the keyCertSign bit in the key usage extension MUST NOT be
     > asserted.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
+    [RFC 5280 4.2.19]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
     root = builder.root_ca()
     leaf = builder.leaf_cert(
@@ -482,12 +482,12 @@ def duplicate_extensions(builder: Builder) -> None:
 
     This chain is invalid solely because of the EE cert's construction:
     it contains multiple X.509v3 extensions with the same OID, which
-    is prohibited under the [RFC 5280 profile].
+    is prohibited under [RFC 5280 4.2].
 
     > A certificate MUST NOT include more than one instance of a particular
     > extension.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
+    [RFC 5280 4.2]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
     """
 
     root = builder.root_ca()
@@ -596,12 +596,12 @@ def mismatching_signature_algorithm(builder: Builder) -> None:
     """
     Verifies against a saved copy of `cryptography.io`'s chain with
     the root certificate modified to have mismatched `signatureAlgorithm`
-    fields, which is prohibited under the [RFC 5280 profile].
+    fields, which is prohibited under [RFC 5280 4.2].
 
     > A certificate MUST NOT include more than one instance of a particular
     > extension.
 
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
+    [RFC 5280 4.2]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2
     """
     chain_path = ASSETS_PATH / "cryptography.io_mismatched.pem"
     chain = [Certificate(c) for c in x509.load_pem_x509_certificates(chain_path.read_bytes())]

@@ -43,7 +43,7 @@ for namespace, tcs in namespaces.items():
                     val_kind=tc.validation_kind.value,
                     val_time=tc.validation_time.isoformat() if tc.validation_time else "N/A",
                     features=", ".join([f.value for f in tc.features]) if tc.features else "N/A",
-                    description=tc.description,
+                    description=tc.description.strip(),
                 ),
                 file=f,
             )
