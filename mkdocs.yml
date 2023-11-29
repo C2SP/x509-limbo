@@ -2,6 +2,7 @@ site_name: x509-limbo
 site_url: https://trailofbits.github.io/x509-limbo/
 docs_dir: site
 site_dir: site_html
+theme: readthedocs
 plugins:
   - gen-files:
       scripts:
@@ -9,3 +10,5 @@ plugins:
 markdown_extensions:
   # Makes sure we render `<https://...>`-style links correctly.
   - pymdownx.magiclink
+extra_css:
+  - style.css
