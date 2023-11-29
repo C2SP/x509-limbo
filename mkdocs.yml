@@ -5,6 +5,8 @@ docs_dir: site
 site_dir: site_html
 theme:
   name: material
+  features:
+    - navigation.expand
 plugins:
   - gen-files:
       scripts:
@@ -14,3 +16,9 @@ markdown_extensions:
   - pymdownx.magiclink
 extra_css:
   - style.css
+exclude_docs: |
+  render-testcases.py
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
