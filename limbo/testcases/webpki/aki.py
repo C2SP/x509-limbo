@@ -20,14 +20,12 @@ def root_with_aki_missing_keyidentifier(builder: Builder) -> None:
     ```
 
     The root cert incudes the authorityKeyIdentifier extension but without
-    the keyIdentifier field, which is required under the [CA/B BR profile]:
+    the keyIdentifier field, which is required under CABF:
 
     > 7.1.2.1.3 Root CA Authority Key Identifier
     > Field                 Description
     > ...
     > keyIdentifier         MUST be present. MUST be identical to the subjectKeyIdentifier field.
-
-    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
 
     aki = x509.AuthorityKeyIdentifier(
@@ -50,14 +48,12 @@ def root_with_aki_authoritycertissuer(builder: Builder) -> None:
     ```
 
     The root cert includes the authorityKeyIdentifier extension with the
-    authorityCertIssuer field, which is forbidden under the [CA/B BR profile]:
+    authorityCertIssuer field, which is forbidden under CABF:
 
     > 7.1.2.1.3 Root CA Authority Key Identifier
     > Field                 Description
     > ...
     > authorityCertIssuer   MUST NOT be present
-
-    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
 
     key = ec.generate_private_key(ec.SECP256R1())
@@ -91,8 +87,6 @@ def root_with_aki_authoritycertserialnumber(builder: Builder) -> None:
     > Field                         Description
     > ...
     > authorityCertSerialNumber     MUST NOT be present
-
-    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
 
     key = ec.generate_private_key(ec.SECP256R1())
@@ -120,15 +114,13 @@ def root_with_aki_all_fields(builder: Builder) -> None:
 
     The root cert includes the authorityKeyIdentifier extension with the
     authorityCertIssuer and authorityCertSerialNumber fields, which is
-    forbidden under the [CA/B BR profile]:
+    forbidden under CABF:
 
     > 7.1.2.1.3 Root CA Authority Key Identifier
     > Field                         Description
     > ...
     > authorityCertIssuer           MUST NOT be present
     > authorityCertSerialNumber     MUST NOT be present
-
-    [CA/B BR profile]: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.0.pdf
     """
 
     key = ec.generate_private_key(ec.SECP256R1())
@@ -155,7 +147,7 @@ def root_with_aki_ski_mismatch(builder: Builder) -> None:
 
     The root cert is self-signed contains an authorityKeyIdentifier, but
     the keyIdentifier field doesn't match the subjectKeyIdentifier field
-    as required under the CA/B BR profile.
+    as required under CABF.
     """
     throwaway_key = ec.generate_private_key(ec.SECP256R1())
     aki = x509.AuthorityKeyIdentifier.from_issuer_public_key(throwaway_key.public_key())

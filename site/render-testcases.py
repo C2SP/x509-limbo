@@ -4,6 +4,7 @@
 # TODO(ww): Use some kind of Markdown builder API here, rather than
 # smashing strings together.
 
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -24,6 +25,33 @@ TESTCASE_TEMPLATE = """
 | {exp_result}    | {val_kind}      | {val_time}      | {features} |
 """
 
+
+LINK_SUBSTITUTIONS = [
+    # Rewrite `RFC XXXX A.B.C.D` into a section link.
+    (
+        r"(?<!\[)RFC (\d+) (\d(?:.\d)*)(?!\])",
+        r"[\g<0>](https://datatracker.ietf.org/doc/html/rfc\g<1>#section-\g<2>)",
+    ),
+    # Rewrite bare `RFC XXXX` into an RFC link.
+    (
+        r"(?<!\[)RFC (\d+)(?!\])",
+        r"[\g<0>](https://datatracker.ietf.org/doc/html/rfc\g<1>)",
+    ),
+    # Rewrite `CABF` into a PDF link.
+    # TODO(ww): Figure out a good way to hotlink to specific CABF sections.
+    (
+        r"(?<!\[)CABF(?!\])",
+        r"[\g<0>](https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.1.pdf)",
+    ),
+]
+
+
+def _linkify(description: str) -> str:
+    for pat, subst in LINK_SUBSTITUTIONS:
+        description = re.sub(pat, subst, description)
+    return description
+
+
 limbo = Limbo.parse_file(LIMBO_JSON)
 
 namespaces: dict[str, list[Testcase]] = defaultdict(list)
@@ -43,7 +71,7 @@ for namespace, tcs in namespaces.items():
                     val_kind=tc.validation_kind.value,
                     val_time=tc.validation_time.isoformat() if tc.validation_time else "N/A",
                     features=", ".join([f.value for f in tc.features]) if tc.features else "N/A",
-                    description=tc.description.strip(),
+                    description=_linkify(tc.description.strip()),
                 ),
                 file=f,
             )

@@ -92,7 +92,7 @@ def validation_ignores_pathlen_in_leaf(builder: Builder) -> None:
     root -> intermediate (pathlen:0) -> intermediate (pathlen:0)
     ```
 
-    This is, unintuitively, a valid chain construction: [RFC 5280 4.2.1.9]
+    This is, unintuitively, a valid chain construction: RFC 5280 4.2.1.9
     notes that the leaf certificate in a validation path is definitionally
     not an intermediate, meaning that it is not included in the maximum
     number of intermediate certificates that may follow a path length
@@ -101,8 +101,6 @@ def validation_ignores_pathlen_in_leaf(builder: Builder) -> None:
     > Note: The last certificate in the certification path is not an intermediate
     > certificate, and is not included in this limit.  Usually, the last certificate
     > is an end entity certificate, but it can be a CA certificate.
-
-    [RFC 5280 4.2.1.9]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
 
     root = builder.root_ca()
@@ -216,10 +214,8 @@ def self_issued_certs_pathlen(builder: Builder) -> None:
 
     The second ICA' intermediate is a self-issued certificate. Self-issued certificates
     are certificates with identical issuers and subjects. While this chain trivially
-    seems to violate the assigned path length constraints, the [RFC 5280 profile]
+    seems to violate the assigned path length constraints, the RFC 5280 4.2.1.9
     states that self issued certificates should not be counted.
-
-    [RFC 5280 profile]: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9
     """
 
     root = builder.root_ca()
