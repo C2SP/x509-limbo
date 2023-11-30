@@ -37,18 +37,18 @@ jobs:
           go build -C bettertls/test-suites/cmd/bettertls/ -o /tmp/bettertls
           /tmp/bettertls export-tests -out limbo/_assets/bettertls.json
 
-      # - name: create PR
-      #   uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
-      #   with:
-      #     commit-message: "[BOT] update online testcases"
-      #     branch: update-online-testcases
-      #     branch-suffix: timestamp
-      #     title: "[BOT] update online testcases"
-      #     body: |
-      #       This is an automated pull request, updating the cached online testcases
-      #       in Limbo.
+      - name: create PR
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        with:
+          commit-message: "[BOT] update BetterTLS testcases"
+          branch: update-BetterTLS-testcases
+          branch-suffix: timestamp
+          title: "[BOT] update BetterTLS testcases"
+          body: |
+            This is an automated pull request, updating the cached BetterTLS testcases
+            in Limbo.
 
-      #       Please review manually before merging.
-      #     add-paths: limbo/_assets/online
-      #     assignees: "woodruffw"
-      #     reviewers: "woodruffw"
+            Please review manually before merging.
+          add-paths: limbo/_assets/bettertls.json
+          assignees: "woodruffw"
+          reviewers: "woodruffw"
