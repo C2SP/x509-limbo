@@ -7,7 +7,7 @@ name = "limbo"
 dynamic = ["version"]
 description = "x509-limbo's command line"
 readme = "README.md"
-license = { text = "Apache-2.0 OR BSD-3-Clause" }
+license = { text = "Apache-2.0" }
 authors = [
     { name = "The Python Cryptographic Authority and individual contributors", email = "cryptography-dev@python.org" },
 ]
