@@ -40,7 +40,7 @@ def _bettertls_testcase(id_: str, testcase: dict) -> Testcase:
 
     try:
         addr = ipaddress.ip_address(testcase["hostname"])
-        peer = PeerName(kind=PeerKind.DNS, value=str(addr))
+        peer = PeerName(kind=PeerKind.IP, value=str(addr))
     except ValueError:
         peer = PeerName(kind=PeerKind.DNS, value=testcase["hostname"])
 
@@ -55,6 +55,7 @@ def _bettertls_testcase(id_: str, testcase: dict) -> Testcase:
         .validation_time(validation_time)
     )
 
+    # TODO: Handle failureIsWarning.
     if testcase["expected"] == "ACCEPT":
         builder = builder.succeeds()
     else:

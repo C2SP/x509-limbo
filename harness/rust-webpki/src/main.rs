@@ -125,7 +125,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         None => return TestcaseResult::skip(tc, "implementation requires peer names"),
         Some(pn) => match pn.kind {
             PeerKind::Dns => webpki::DnsNameRef::try_from_ascii_str(&pn.value)
-                .expect("invalid expected DNS name"),
+                .expect(&format!("invalid expected DNS name: {}", &pn.value)),
             _ => return TestcaseResult::skip(tc, "implementation requires DNS peer names"),
         },
     };
