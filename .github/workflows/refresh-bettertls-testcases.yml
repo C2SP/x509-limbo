@@ -2,9 +2,6 @@ name: Refresh BetterTLS testcases
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - ww/bettertls
   schedule:
     # tuesday every other month at 5PM UTC
     - cron: "0 17 * */2 2"
