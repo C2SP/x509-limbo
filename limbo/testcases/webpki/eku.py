@@ -38,6 +38,31 @@ def ee_anyeku(builder: Builder) -> None:
 
 
 @testcase
+def ee_without_eku(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    This chain is correctly constructed, but the EE does not have
+    the extKeyUsage extension, which is required per CABF 7.1.2.7.6.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, eku=None)
+
+    builder = (
+        builder.features([Feature.pedantic_webpki_eku])
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .fails()
+    )
+
+
+@testcase
 def root_has_eku(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
