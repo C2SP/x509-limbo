@@ -34,9 +34,7 @@ jobs:
 
       - name: Build BetterTLS JSON
         run: |
-          pushd bettertls
-          go build -o /tmp/bettertls ./test-suite/cmd/bettertls
-          popd
+          go build -C bettertls/test-suites/cmd/bettertls/ -o /tmp/bettertls
           /tmp/bettertls export-tests -out limbo/_assets/bettertls.json
 
       # - name: create PR
