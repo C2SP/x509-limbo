@@ -33,8 +33,9 @@ jobs:
           path: bettertls
 
       - name: Build BetterTLS JSON
+        working-directory: bettertls
         run: |
-          go build -o /tmp/bettertls ./bettertls/test-suite/cmd/bettertls
+          go build -o /tmp/bettertls ./test-suite/cmd/bettertls
           /tmp/bettertls export-tests -out limbo/_assets/bettertls.json
 
       # - name: create PR
