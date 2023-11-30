@@ -30,13 +30,14 @@ jobs:
         with:
           repository: Netflix/bettertls
           ref: master
-          path: bettertls
+          path: /tmp/bettertls
 
       - name: Build BetterTLS JSON
-        working-directory: bettertls
         run: |
-          go build -o /tmp/bettertls ./test-suite/cmd/bettertls
-          /tmp/bettertls export-tests -out limbo/_assets/bettertls.json
+          pushd /tmp/bettertls
+          go build -o /tmp/bettertls-run ./test-suite/cmd/bettertls
+          popd
+          /tmp/bettertls-run export-tests -out limbo/_assets/bettertls.json
 
       # - name: create PR
       #   uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
