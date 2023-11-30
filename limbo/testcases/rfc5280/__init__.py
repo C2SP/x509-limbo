@@ -11,6 +11,7 @@ from limbo.models import KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
 
 from .aki import *  # noqa: F403
+from .eku import *  # noqa: F403
 from .nc import *  # noqa: F403
 from .san import *  # noqa: F403
 from .serial import *  # noqa: F403
@@ -539,39 +540,6 @@ def no_basicconstraints(builder: Builder) -> None:
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="example.com"))
         .succeeds()
-    )
-
-
-@testcase
-def wrong_eku(builder: Builder) -> None:
-    """
-    Produces the following **invalid** chain:
-
-    ```
-    root -> EE
-    ```
-
-    The chain is correctly constructed, but the EE cert contains
-    an Extended Key Usage extension that contains just `id-kp-clientAuth`
-    while the validator expects `id-kp-serverAuth`.
-    """
-
-    root = builder.root_ca()
-    leaf = builder.leaf_cert(
-        root,
-        eku=ext(
-            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
-            critical=False,
-        ),
-    )
-
-    builder = builder.server_validation()
-    builder = (
-        builder.trusted_certs(root)
-        .extended_key_usage([KnownEKUs.server_auth])
-        .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
-        .fails()
     )
 
 
