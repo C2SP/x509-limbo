@@ -35,7 +35,7 @@ jobs:
       - name: Build BetterTLS JSON
         run: |
           go build -C bettertls/test-suites/cmd/bettertls/ -o /tmp/bettertls
-          /tmp/bettertls export-tests -out limbo/_assets/bettertls.json
+          /tmp/bettertls export-tests | jq . > limbo/_assets/bettertls.json
 
       - name: create PR
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
