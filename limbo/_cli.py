@@ -9,6 +9,7 @@ from pathlib import Path
 from pydantic.schema import schema
 
 from limbo import testcases
+from limbo.testcases import bettertls
 from limbo.testcases.webpki import online
 
 from . import __version__
@@ -82,7 +83,9 @@ def _compile(args: argparse.Namespace) -> None:
     if args.online:
         online.compile()
 
+    bettertls.register_testcases()
     online.register_testcases()
+
     all_testcases = [testcase() for _, testcase in testcases.registry.items()]
     combined = Limbo(version=1, testcases=all_testcases)
 
