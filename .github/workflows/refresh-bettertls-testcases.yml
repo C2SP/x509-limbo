@@ -35,7 +35,21 @@ jobs:
       - name: Build BetterTLS JSON
         run: |
           go build -C bettertls/test-suites/cmd/bettertls/ -o /tmp/bettertls
-          /tmp/bettertls export-tests | jq . > limbo/_assets/bettertls.json
+          /tmp/bettertls export-tests | jq . > /tmp/bettertls.json
+
+          if [[ -f limbo/_assets/bettertls.json ]]; then
+            # Only update if the betterTlsRevision has changed
+            old_revision=$(jq -r .betterTlsRevision limbo/_assets/bettertls.json)
+            new_revision=$(jq -r .betterTlsRevision /tmp/bettertls.json)
+
+            if [[ "${old_revision}" != "${new_revision}" ]]; then
+              mv /tmp/bettertls.json
+            else
+              echo "::notice::BetterTLS did not change, not updating"
+            fi
+          else
+            mv /tmp/bettertls.json limbo/_assets/bettertls.json
+          fi
 
       - name: create PR
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
