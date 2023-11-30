@@ -7,7 +7,7 @@ from datetime import datetime
 from cryptography import x509
 
 from limbo.assets import ASSETS_PATH, Certificate, ext
-from limbo.models import KnownEKUs, PeerName
+from limbo.models import PeerName
 from limbo.testcases._core import Builder, testcase
 
 from .aki import *  # noqa: F403
