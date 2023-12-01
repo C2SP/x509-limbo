@@ -25,7 +25,7 @@ BETTERTLS_JSON = ASSETS_PATH / "bettertls.json"
 logger = logging.getLogger(__name__)
 
 
-def _bettertls_testcase(id_: str, testcase: dict) -> Testcase:
+def _bettertls_testcase(id_: str, root: Certificate, testcase: dict) -> Testcase:
     logger.info(f"generating {id_}")
     builder = Builder(
         id=id_,
@@ -36,7 +36,12 @@ def _bettertls_testcase(id_: str, testcase: dict) -> Testcase:
         Certificate(x509.load_der_x509_certificate(base64.b64decode(cert)))
         for cert in testcase["certificates"]
     ]
-    leaf, *intermediates, root = certs
+    leaf, *intermediates = certs
+
+    # NOTE(ww): The nameconstraints suite appears to list the root in the intermediate set,
+    # while the pathbuilding suite doesn't. This has no practical effect, so we remove it.
+    if root in intermediates:
+        intermediates.remove(root)
 
     try:
         addr = ipaddress.ip_address(testcase["hostname"])
@@ -44,7 +49,25 @@ def _bettertls_testcase(id_: str, testcase: dict) -> Testcase:
     except ValueError:
         peer = PeerName(kind=PeerKind.DNS, value=testcase["hostname"])
 
-    validation_time = leaf.cert.not_valid_before.replace(tzinfo=timezone.utc) + timedelta(seconds=1)
+    expected = testcase["expected"]
+    # TODO: Handle failureIsWarning.
+    if expected == "ACCEPT":
+        builder = builder.succeeds()
+    else:
+        assert expected == "REJECT"
+        builder = builder.fails()
+
+    if "INVALID_REASON_EXPIRED" in testcase["requiredFeatures"] and expected == "REJECT":
+        # If the testcase is explicitly exercising expiry logic, set our
+        # validation time to something that must fail.
+        validation_time = leaf.cert.not_valid_after.replace(tzinfo=timezone.utc) + timedelta(
+            seconds=1
+        )
+    else:
+        # Otherwise, pick a validation time that should be valid for the whole chain.
+        validation_time = leaf.cert.not_valid_before.replace(tzinfo=timezone.utc) + timedelta(
+            seconds=1
+        )
 
     builder = (
         builder.server_validation()
@@ -55,19 +78,13 @@ def _bettertls_testcase(id_: str, testcase: dict) -> Testcase:
         .validation_time(validation_time)
     )
 
-    # TODO: Handle failureIsWarning.
-    if testcase["expected"] == "ACCEPT":
-        builder = builder.succeeds()
-    else:
-        assert testcase["expected"] == "REJECT"
-        builder = builder.fails()
-
     return builder.build()
 
 
 def register_testcases() -> None:
     bettertls: dict = json.loads(BETTERTLS_JSON.read_text())
+    root = Certificate(x509.load_der_x509_certificate(base64.b64decode(bettertls["trustRoot"])))
     for suite_name, suite in bettertls["suites"].items():
         for testcase in suite["testCases"]:
             id_ = f"bettertls::{suite_name}::tc{testcase['id']}"
-            registry[id_] = functools.partial(_bettertls_testcase, id_, testcase)
+            registry[id_] = functools.partial(_bettertls_testcase, id_, root, testcase)
