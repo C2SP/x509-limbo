@@ -43,7 +43,7 @@ jobs:
             new_revision=$(jq -r .betterTlsRevision /tmp/bettertls.json)
 
             if [[ "${old_revision}" != "${new_revision}" ]]; then
-              mv /tmp/bettertls.json
+              mv /tmp/bettertls.json limbo/_assets/bettertls.json
             else
               echo "::notice::BetterTLS did not change, not updating"
             fi
