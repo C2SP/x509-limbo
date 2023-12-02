@@ -24,7 +24,7 @@ jobs:
         run: make test-go
 
       - name: render summary
-        run: make run ARGS="render-summary"
+        run: make run ARGS="render-summary --skip-passes"
   openssl:
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +38,7 @@ jobs:
         run: make CXX=clang++ test-openssl
 
       - name: render summary
-        run: make run ARGS="render-summary"
+        run: make run ARGS="render-summary --skip-passes"
 
   rust-webpki:
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
         run: make test-rust-webpki
 
       - name: render summary
-        run: make run ARGS="render-summary"
+        run: make run ARGS="render-summary --skip-passes"
 
   rustls-webpki:
     runs-on: ubuntu-latest
@@ -68,5 +68,5 @@ jobs:
         run: make test-rustls-webpki
 
       - name: render summary
-        run: make run ARGS="render-summary"
+        run: make run ARGS="render-summary --skip-passes"
 

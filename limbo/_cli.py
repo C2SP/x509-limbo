@@ -112,6 +112,11 @@ def main() -> None:
         metavar="FILE",
         help="The harness results to load from",
     )
+    render_summary.add_argument(
+        "--skip-passes",
+        action="store_true",
+        help="Don't render passing testcases, only skips and failures",
+    )
     render_summary.set_defaults(func=_render_summary)
 
     args = parser.parse_args()
@@ -218,6 +223,8 @@ def _render_summary(args: argparse.Namespace) -> None:
 
         match (expected, actual):
             case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
+                if args.skip_passes:
+                    continue
                 status = "✅"
             case (_, "SKIPPED"):
                 status = "🚧"
