@@ -47,28 +47,30 @@ def excluded_dns_match(builder: Builder) -> None:
     Produces the following **invalid** chain:
 
     ```
-    root -> leaf
+    root -> ICA -> leaf
     ```
 
-    The root contains a NameConstraints extension with an excluded dNSName of
+    The ICA contains a NameConstraints extension with an excluded dNSName of
     "example.com", matching the leaf's SubjectAlternativeName.
     """
-    root = builder.root_ca(
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
         name_constraints=ext(
             x509.NameConstraints(
                 permitted_subtrees=None, excluded_subtrees=[x509.DNSName("example.com")]
             ),
             critical=True,
-        )
+        ),
     )
     leaf = builder.leaf_cert(
-        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
+        ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
-    ).fails()
+    builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind="DNS", value="example.com")).fails()
 
 
 @testcase

@@ -115,7 +115,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         Some(pn) => match pn.kind {
             PeerKind::Dns => webpki::SubjectNameRef::DnsName(
                 webpki::DnsNameRef::try_from_ascii_str(&pn.value)
-                    .expect("invalid expected DNS name"),
+                    .expect(&format!("invalid expected DNS name: {}", &pn.value)),
             ),
             PeerKind::Ip => {
                 // Very dumb: rustls-webpki doesn't allow compressed IPv6 string representations,
