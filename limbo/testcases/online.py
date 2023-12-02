@@ -61,7 +61,7 @@ def compile() -> None:
         ) + timedelta(seconds=1)
 
         builder = (
-            Builder(id=f"webpki::online::{site}", description=f"A valid chain for `{site}`.")
+            Builder(id=f"online::{site}", description=f"A valid chain for `{site}`.")
             .server_validation()
             .peer_certificate(peer_cert)
             .untrusted_intermediates(*peer_chain[1:-1])
