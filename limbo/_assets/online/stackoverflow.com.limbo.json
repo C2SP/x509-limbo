@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::stackoverflow.com",
+  "id": "online::stackoverflow.com",
   "features": null,
   "description": "A valid chain for `stackoverflow.com`.",
   "validation_kind": "SERVER",

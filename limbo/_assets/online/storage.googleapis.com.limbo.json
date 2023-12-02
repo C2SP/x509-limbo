@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::storage.googleapis.com",
+  "id": "online::storage.googleapis.com",
   "features": null,
   "description": "A valid chain for `storage.googleapis.com`.",
   "validation_kind": "SERVER",

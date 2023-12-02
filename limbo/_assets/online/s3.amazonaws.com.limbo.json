@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::s3.amazonaws.com",
+  "id": "online::s3.amazonaws.com",
   "features": null,
   "description": "A valid chain for `s3.amazonaws.com`.",
   "validation_kind": "SERVER",
