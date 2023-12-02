@@ -68,19 +68,23 @@ testcases: $(NEEDS_VENV)
 
 .PHONY: test-go
 test-go:
-	$(MAKE) -C harness/gocryptox509 run
+	$(MAKE) -C harness/gocryptox509
+	$(MAKE) run ARGS="harness ./harness/gocryptox509/gocryptox509"
 
 .PHONY: test-openssl
 test-openssl:
-	$(MAKE) -C harness/openssl run
+	$(MAKE) -C harness/openssl
+	$(MAKE) run ARGS="harness ./harness/openssl/main"
 
 .PHONY: test-rust-webpki
 test-rust-webpki:
-	@cargo run --bin rust-webpki-harness
+	@cargo build --bin rust-webpki-harness
+	$(MAKE) run ARGS="harness ./target/debug/rust-webpki-harness"
 
 .PHONY: test-rustls-webpki
 test-rustls-webpki:
-	@cargo run --bin rust-rustls-harness
+	@cargo build --bin rust-rustls-harness
+	$(MAKE) run ARGS="harness ./target/debug/rust-rustls-harness"
 
 .PHONY: test
 test: test-go test-openssl test-rust-webpki test-rustls-webpki

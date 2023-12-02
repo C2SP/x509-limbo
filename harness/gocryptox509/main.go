@@ -7,9 +7,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"runtime"
 	"time"
@@ -42,37 +41,28 @@ type results struct {
 }
 
 func main() {
-	testCasePath := flag.String("testcases", "../../limbo.json", "testcases")
-	resultsPath := flag.String("results", "./results.json", "results")
-	flag.Parse()
-
-	testcases, err := loadTestcases(*testCasePath)
+	testcases, err := loadTestcases()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Loaded testcases from %s\n", *testCasePath)
 
-	resultsFile, err := os.Create(*resultsPath)
-	if err != nil {
-		panic(err)
-	}
-	resultsEncoder := json.NewEncoder(resultsFile)
+	resultsEncoder := json.NewEncoder(os.Stdout)
 
 	var (
 		conform, nonconform, skip int
 		outputResults             results
 	)
 	for _, tc := range testcases.Testcases {
-		fmt.Printf("Running test %s ... ", tc.Id)
+		fmt.Fprintf(os.Stderr, "Running test %s ... ", tc.Id)
 		r, err := evaluateTestcase(tc)
 
 		var context string
 		if r != testcaseResult(tc.ExpectedResult.(string)) {
 			if r != resultSkipped {
-				fmt.Printf("NON-CONFORMANT\n\terr=%s\n", err)
+				fmt.Fprintf(os.Stderr, "NON-CONFORMANT\n\terr=%s\n", err)
 				nonconform++
 			} else {
-				fmt.Println("SKIPPED")
+				fmt.Fprintln(os.Stderr, "SKIPPED")
 				skip++
 			}
 
@@ -80,7 +70,7 @@ func main() {
 				context = err.Error()
 			}
 		} else {
-			fmt.Println("CONFORMANT")
+			fmt.Fprintln(os.Stderr, "CONFORMANT")
 			conform++
 		}
 
@@ -95,11 +85,11 @@ func main() {
 	outputResults.Harness = fmt.Sprintf("gocryptox509-%s", runtime.Version())
 	resultsEncoder.Encode(outputResults)
 
-	fmt.Printf("done! conformant/nonconformant/skipped/total %d/%d/%d/%d.\n", conform, nonconform, skip, len(testcases.Testcases))
+	fmt.Fprintf(os.Stderr, "done! conformant/nonconformant/skipped/total %d/%d/%d/%d.\n", conform, nonconform, skip, len(testcases.Testcases))
 }
 
-func loadTestcases(path string) (testcases Limbo, err error) {
-	contents, err := ioutil.ReadFile(path)
+func loadTestcases() (testcases Limbo, err error) {
+	contents, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return
 	}
