@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic.schema import schema
 
 from limbo import testcases
-from limbo.testcases.webpki import online
+from limbo.testcases import online
 
 from . import __version__
 from .models import Limbo
