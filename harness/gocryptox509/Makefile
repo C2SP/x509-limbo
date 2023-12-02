@@ -1,10 +1,5 @@
-.PHONY: all
-all:
-	@echo "Run my targets individually!"
-
-.PHONY: run
-run:
-	go run .
+gocryptox509: main.go schema.go
+	go build
 
 schema.go: ../../limbo-schema.json
 	go generate

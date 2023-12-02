@@ -1,10 +1,13 @@
 import argparse
 import contextlib
+import fnmatch
 import json
 import logging
 import os
+import subprocess
 import sys
 from pathlib import Path
+from xml.etree.ElementInclude import include
 
 from pydantic.schema import schema
 
@@ -62,6 +65,35 @@ def main() -> None:
     dump_chain.add_argument("id", type=str, metavar="ID", help="The testcase ID to dump")
     dump_chain.set_defaults(func=_dump_chain)
 
+    # `limbo harness`
+    harness = subparsers.add_parser("harness", help="Run the given test harness")
+    harness.add_argument(
+        "--limbo",
+        default=Path("limbo.json"),
+        type=Path,
+        metavar="FILE",
+        help="The limbo testcase suite to load from",
+    )
+    harness.add_argument(
+        "--output",
+        default=Path("results.json"),
+        type=Path,
+        metavar="FILE",
+        help="The path to write the harness's results to",
+    )
+    harness.add_argument(
+        "--include",
+        type=str,
+        help="Include only testcases matching the given fnmatch(2)-style pattern",
+    )
+    harness.add_argument(
+        "--exclude",
+        type=str,
+        help="Exclude any testcases matching the given fnmatch(2)-style pattern",
+    )
+    harness.add_argument("harness", type=str, help="The harness to execute")
+    harness.set_defaults(func=_harness)
+
     args = parser.parse_args()
     args.func(args)
 
@@ -103,3 +135,22 @@ def _dump_chain(args: argparse.Namespace) -> None:
         print(cert)
     for cert in testcase.trusted_certs:
         print(cert)
+
+
+def _harness(args: argparse.Namespace) -> None:
+    limbo_json = args.limbo.read_text()
+    if args.include is not None or args.exclude is not None:
+        testcases = Limbo.parse_raw(limbo_json).testcases
+        if args.include:
+            testcases = [tc for tc in testcases if fnmatch.fnmatch(tc.id, args.include)]
+        if args.exclude:
+            testcases = [tc for tc in testcases if not fnmatch.fnmatch(tc.id, args.exclude)]
+        limbo_json = Limbo(version=1, testcases=testcases).json()
+
+    result = subprocess.run(
+        [args.harness], input=limbo_json, encoding="utf-8", capture_output=True, check=True
+    )
+
+    print(result.stderr, file=sys.stderr)
+
+    args.output.write_text(result.stdout)

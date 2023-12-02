@@ -10,9 +10,6 @@
 #include "date.hpp"
 #include "json.hpp"
 
-#define LIMBO_JSON "../../limbo.json"
-#define LIMBO_RESULTS_OUT "./results.json"
-
 using json = nlohmann::json;
 
 static void SK_X509_free(stack_st_X509 *ptr)
@@ -235,8 +232,7 @@ json evaluate_testcase(const json &testcase)
 
 int main()
 {
-    std::ifstream f(LIMBO_JSON);
-    json limbo = json::parse(f);
+    json limbo = json::parse(std::cin);
 
     json results;
     for (auto &testcase : limbo["testcases"])
@@ -249,8 +245,7 @@ int main()
         {"harness", std::string("openssl-") + OPENSSL_VERSION_STR},
         {"results", std::move(results)},
     };
-    std::ofstream o(LIMBO_RESULTS_OUT);
-    o << std::setw(2) << limbo_result << std::endl;
+    std::cout << std::setw(2) << limbo_result << std::endl;
 
     return 0;
 }

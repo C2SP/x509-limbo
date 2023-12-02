@@ -1,4 +1,4 @@
-name: test-harness
+name: Run in-tree test harnesses
 
 on:
   push:
@@ -25,9 +25,7 @@ jobs:
 
       - name: render summary
         run: |
-          python ./harness/render-summary.py \
-            limbo.json \
-            harness/gocryptox509/results.json
+          python ./harness/render-summary.py limbo.json results.json
   openssl:
     runs-on: ubuntu-latest
     steps:
@@ -42,9 +40,7 @@ jobs:
 
       - name: render summary
         run: |
-          python ./harness/render-summary.py \
-            limbo.json \
-            harness/openssl/results.json
+          python ./harness/render-summary.py limbo.json results.json
 
   rust-webpki:
     runs-on: ubuntu-latest
@@ -60,9 +56,7 @@ jobs:
 
       - name: render summary
         run: |
-          python ./harness/render-summary.py \
-            limbo.json \
-            harness/rust-webpki/results.json
+          python ./harness/render-summary.py limbo.json results.json
 
   rustls-webpki:
     runs-on: ubuntu-latest
@@ -78,7 +72,5 @@ jobs:
 
       - name: render summary
         run: |
-          python ./harness/render-summary.py \
-            limbo.json \
-            harness/rust-rustls/results.json
+          python ./harness/render-summary.py limbo.json results.json
 

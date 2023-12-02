@@ -6,8 +6,6 @@ use limbo_harness_support::{
     models::{Feature, LimboResult, PeerKind, Testcase, TestcaseResult, ValidationKind},
 };
 
-const LIMBO_RESULTS_OUT: &str = "./harness/rust-rustls/results.json";
-
 fn main() {
     let limbo = load_limbo();
 
@@ -22,11 +20,7 @@ fn main() {
         results,
     };
 
-    std::fs::write(
-        LIMBO_RESULTS_OUT,
-        serde_json::to_string_pretty(&result).unwrap(),
-    )
-    .unwrap()
+    serde_json::to_writer_pretty(std::io::stdout(), &result).unwrap();
 }
 
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
