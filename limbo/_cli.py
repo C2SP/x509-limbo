@@ -93,6 +93,27 @@ def main() -> None:
     harness.add_argument("harness", type=str, help="The harness to execute")
     harness.set_defaults(func=_harness)
 
+    # `limbo render-summary`
+    render_summary = subparsers.add_parser(
+        "render-summary",
+        help="Render a GitHub Actions CI summary for the results of a test harness",
+    )
+    render_summary.add_argument(
+        "--limbo",
+        default=Path("limbo.json"),
+        type=Path,
+        metavar="FILE",
+        help="The limbo testcase suite to load from",
+    )
+    render_summary.add_argument(
+        "--results",
+        default=Path("results.json"),
+        type=Path,
+        metavar="FILE",
+        help="The harness results to load from",
+    )
+    render_summary.set_defaults(func=_render_summary)
+
     args = parser.parse_args()
     args.func(args)
 
@@ -153,3 +174,62 @@ def _harness(args: argparse.Namespace) -> None:
     print(result.stderr, file=sys.stderr)
 
     args.output.write_text(result.stdout)
+
+
+def _render_summary(args: argparse.Namespace) -> None:
+    out = (
+        Path(summary).open("wt+")  # noqa: SIM115
+        if (summary := os.getenv("GITHUB_STEP_SUMMARY"))
+        else sys.stdout
+    )
+
+    result_row = (
+        "| [`{testcase_id}`]({testcase_url}) | {status} | {expected} | {actual} | {context} |"
+    )
+
+    def _render(s: str) -> None:
+        print(f"{s}", file=out)
+
+    limbo = json.loads(args.limbo.read_text())
+    results = json.loads(args.results.read_text())
+
+    _render(f"## Limbo results for `{results["harness"]}`\n")
+
+    _render(
+        """
+    | Testcase | Status | Expected | Actual | Context |
+    | -------- | ------ | -------- | ------ | ------- |"""
+    )
+
+    for result in results["results"]:
+        testcase_id = result["id"]
+
+        namespace, _ = testcase_id.split("::", 1)
+        slug = testcase_id.replace("::", "")
+        testcase_url = f"https://trailofbits.github.io/x509-limbo/testcases/{namespace}/#{slug}"
+
+        actual = result["actual_result"]
+
+        context = result["context"]
+        context = f"`{context}`" if context else ""
+
+        testcase = next(t for t in limbo["testcases"] if t["id"] == testcase_id)
+        expected = testcase["expected_result"]
+
+        match (expected, actual):
+            case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
+                status = "✅"
+            case (_, "SKIPPED"):
+                status = "🚧"
+            case _:
+                status = "❌"
+
+        row = result_row.format(
+            testcase_id=testcase_id,
+            testcase_url=testcase_url,
+            status=status,
+            expected=expected,
+            actual=actual,
+            context=context,
+        )
+        _render(row)
