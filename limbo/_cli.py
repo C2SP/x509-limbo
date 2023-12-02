@@ -54,16 +54,6 @@ def main() -> None:
     compile.add_argument("-f", "--force", action="store_true", help="Overwrite any existing output")
     compile.set_defaults(func=_compile)
 
-    # `limbo dump-chain`
-    dump_chain = subparsers.add_parser(
-        "dump-chain", help="Dump each PEM-formatted certificate in a given testcase"
-    )
-    dump_chain.add_argument(
-        "input", type=Path, metavar="FILE", help="The limbo testcase suite to load from"
-    )
-    dump_chain.add_argument("id", type=str, metavar="ID", help="The testcase ID to dump")
-    dump_chain.set_defaults(func=_dump_chain)
-
     # `limbo harness`
     harness = subparsers.add_parser("harness", help="Run the given test harness")
     harness.add_argument(
@@ -148,18 +138,6 @@ def _compile(args: argparse.Namespace) -> None:
     io = args.output.open(mode="w") if args.output else sys.stdout
     with contextlib.closing(io):
         print(combined.json(indent=2), file=io)
-
-
-def _dump_chain(args: argparse.Namespace) -> None:
-    limbo = Limbo.parse_file(args.input)
-    testcase = next(tc for tc in limbo.testcases if tc.id == args.id)
-
-    # Dump EE first, then intermediates, then trusted certs.
-    print(testcase.peer_certificate)
-    for cert in testcase.untrusted_intermediates:
-        print(cert)
-    for cert in testcase.trusted_certs:
-        print(cert)
 
 
 def _harness(args: argparse.Namespace) -> None:
