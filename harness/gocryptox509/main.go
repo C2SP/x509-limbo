@@ -162,10 +162,12 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	case validationKindServer:
 		var dnsName string
 		if peerName, ok := testcase.ExpectedPeerName.(map[string]interface{}); ok {
-			if peerName["kind"] != "DNS" {
-				return resultSkipped, fmt.Errorf("non-DNS peer name checks not supported yet")
+			if peerName["kind"] == "DNS" {
+				dnsName = peerName["value"].(string)
+			} else {
+				// crypto/x509 takes IP subjects in `[addr]` form.
+				dnsName = fmt.Sprintf("[%s]", peerName["value"].(string))
 			}
-			dnsName = peerName["value"].(string)
 		}
 		roots, intermediates := x509.NewCertPool(), x509.NewCertPool()
 		roots.AppendCertsFromPEM(concatPEMCerts(testcase.TrustedCerts))
