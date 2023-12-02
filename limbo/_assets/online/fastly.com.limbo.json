@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::fastly.com",
+  "id": "online::fastly.com",
   "features": null,
   "description": "A valid chain for `fastly.com`.",
   "validation_kind": "SERVER",

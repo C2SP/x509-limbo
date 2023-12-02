@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::bing.com",
+  "id": "online::bing.com",
   "features": null,
   "description": "A valid chain for `bing.com`.",
   "validation_kind": "SERVER",

@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::google.com",
+  "id": "online::google.com",
   "features": null,
   "description": "A valid chain for `google.com`.",
   "validation_kind": "SERVER",

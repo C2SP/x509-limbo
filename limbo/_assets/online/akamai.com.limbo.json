@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::akamai.com",
+  "id": "online::akamai.com",
   "features": null,
   "description": "A valid chain for `akamai.com`.",
   "validation_kind": "SERVER",

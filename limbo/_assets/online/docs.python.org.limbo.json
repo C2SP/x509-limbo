@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::docs.python.org",
+  "id": "online::docs.python.org",
   "features": null,
   "description": "A valid chain for `docs.python.org`.",
   "validation_kind": "SERVER",

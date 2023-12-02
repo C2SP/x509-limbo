@@ -1,5 +1,5 @@
 {
-  "id": "webpki::online::amazon.com",
+  "id": "online::amazon.com",
   "features": null,
   "description": "A valid chain for `amazon.com`.",
   "validation_kind": "SERVER",
