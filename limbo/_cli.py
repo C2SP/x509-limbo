@@ -7,7 +7,6 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from xml.etree.ElementInclude import include
 
 from pydantic.schema import schema
 
