@@ -202,8 +202,8 @@ def _render_summary(args: argparse.Namespace) -> None:
 
     _render(
         """
-    | Testcase | Status | Expected | Actual | Context |
-    | -------- | ------ | -------- | ------ | ------- |"""
+| Testcase | Status | Expected | Actual | Context |
+| -------- | ------ | -------- | ------ | ------- |"""
     )
 
     for result in results["results"]:
