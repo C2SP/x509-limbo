@@ -18,7 +18,16 @@ from limbo.assets import (
     _Extension,
     ext,
 )
-from limbo.models import OID, Feature, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
+from limbo.models import (
+    OID,
+    Feature,
+    KeyUsage,
+    KnownEKUs,
+    PeerName,
+    SignatureAlgorithm,
+    Testcase,
+    TestCaseID,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -364,6 +373,7 @@ class Builder:
 
     def __init__(self, id: str, description: str):
         self._id = id
+        self._conflicts_with: list[TestCaseID] = []
         self._features: list[Feature] | None = None
         self._description = description
         self._validation_kind: str | None = None
@@ -379,6 +389,10 @@ class Builder:
         self._expected_peer_name: PeerName | None = PeerName(kind="DNS", value="example.com")
         self._expected_peer_names: list[PeerName] | None = None
         self._max_chain_depth: int | None = None
+
+    def conflicts_with(self, *conflicting_ids: TestCaseID) -> Self:
+        self._conflicts_with = list(conflicting_ids)
+        return self
 
     def features(self, feats: list[Feature]) -> Self:
         self._features = feats
@@ -443,6 +457,7 @@ class Builder:
     def build(self) -> Testcase:
         return Testcase(
             id=self._id,
+            conflicts_with=self._conflicts_with,
             features=self._features,
             description=self._description,
             validation_kind=self._validation_kind,

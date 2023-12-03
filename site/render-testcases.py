@@ -10,7 +10,7 @@ from pathlib import Path
 
 import mkdocs_gen_files
 
-from limbo.models import Limbo, Testcase
+from limbo.models import Limbo, Testcase, TestCaseID
 
 LIMBO_JSON = Path(__file__).parent.parent / "limbo.json"
 assert LIMBO_JSON.is_file()
@@ -19,6 +19,8 @@ TESTCASE_TEMPLATE = """
 ## {tc_id}
 
 {description}
+
+{conflicts}
 
 | Expected result | Validation kind | Validation time | Features   |
 | --------------- | --------------- | --------------- | ---------- |
@@ -52,6 +54,22 @@ def _linkify(description: str) -> str:
     return description
 
 
+def _testcase_url(testcase_id: TestCaseID) -> str:
+    namespace, _ = testcase_id.split("::", 1)
+    slug = testcase_id.replace("::", "")
+    return f"https://trailofbits.github.io/x509-limbo/testcases/{namespace}/#{slug}"
+
+
+def _render_conflicts(tc: Testcase) -> str:
+    if not tc.conflicts_with:
+        return ""
+
+    urls = [_testcase_url(id_) for id_ in tc.conflicts_with]
+    md_urls = [f"[`{id_}`]({url})" for (id_, url) in zip(tc.conflicts_with, urls)]
+
+    return ", ".join(md_urls)
+
+
 limbo = Limbo.parse_file(LIMBO_JSON)
 
 namespaces: dict[str, list[Testcase]] = defaultdict(list)
@@ -72,6 +90,7 @@ for namespace, tcs in namespaces.items():
                     val_time=tc.validation_time.isoformat() if tc.validation_time else "N/A",
                     features=", ".join([f.value for f in tc.features]) if tc.features else "N/A",
                     description=_linkify(tc.description.strip()),
+                    conflicts=_render_conflicts(tc),
                 ),
                 file=f,
             )

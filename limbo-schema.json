@@ -148,6 +148,16 @@
           "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$",
           "type": "string"
         },
+        "conflicts_with": {
+          "title": "Conflicts With",
+          "description": "A list of testcase IDs that this testcase is mutually incompatible with",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$"
+          }
+        },
         "features": {
           "description": "One or more human-readable tags that describe OPTIONAL functionality described by this testcase. Implementers should use this to specify testcases for non-mandatory X.509 behavior (like certificate policy validation) or for 'pedantic' cases. Consumers that don't understand a given feature should skip tests that are marked with it.",
           "type": "array",

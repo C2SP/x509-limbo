@@ -116,8 +116,6 @@ def permitted_dns_match_noncritical(builder: Builder) -> None:
     "example.com", matching the leaf's SubjectAlternativeName. However,
     the NameConstraints extension is not marked as critical, which is required by
     the RFC 5280 profile.
-
-    NOTE: This exact chain is valid under the CABF profile.
     """
     root = builder.root_ca(
         name_constraints=ext(
@@ -131,10 +129,15 @@ def permitted_dns_match_noncritical(builder: Builder) -> None:
         root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
-    builder = builder.server_validation().features([Feature.rfc5280_incompatible_with_webpki])
-    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
-    ).fails()
+    builder = (
+        builder.server_validation()
+        .conflicts_with("webpki::nc::permitted-dns-match-noncritical")
+        .features([Feature.rfc5280_incompatible_with_webpki])
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
 
 
 @testcase

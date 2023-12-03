@@ -36,10 +36,14 @@ def permitted_dns_match_noncritical(builder: Builder) -> None:
         root, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
-    builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
-    ).succeeds()
+    builder = (
+        builder.server_validation()
+        .conflicts_with("rfc5280::nc::permitted-dns-match-noncritical")
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .succeeds()
+    )
 
 
 @testcase
