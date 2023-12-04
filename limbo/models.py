@@ -219,6 +219,10 @@ class Testcase(BaseModel):
 
     id: TestCaseID = Field(..., description="A short, unique identifier for this testcase")
 
+    conflicts_with: list[TestCaseID] = Field(
+        [], description="A list of testcase IDs that this testcase is mutually incompatible with"
+    )
+
     features: list[Feature] | None = Field(
         None,
         description=(
@@ -285,12 +289,26 @@ class Limbo(BaseModel):
     testcases: list[Testcase] = Field(..., description="One or more testcases in this testsuite")
 
     @validator("testcases")
-    def validate_testcases_unique_ids(cls, v: list[Testcase]) -> list[Testcase]:
-        ids = set()
+    def validate_testcases(cls, v: list[Testcase]) -> list[Testcase]:
+        # Check that all IDs are unique.
+        id_tc_map: dict[TestCaseID, Testcase] = {}
         for case in v:
-            if case.id in ids:
+            if case.id in id_tc_map:
                 raise ValueError(f"duplicated testcase id: {case.id}")
-            ids.add(case.id)
+            id_tc_map[case.id] = case
+
+        # Check that all conflicts_with references are valid,
+        # and bidirectional.
+        for case in v:
+            for cid in case.conflicts_with:
+                # NOTE: https://github.com/python/mypy/issues/12998
+                match _ := id_tc_map.get(cid):
+                    case None:
+                        raise ValueError(f"{case.id} marks conflict with nonexistent case: {cid}")
+                    case conflicting_case:
+                        if case.id not in conflicting_case.conflicts_with:
+                            raise ValueError(f"{case.id} -> {cid} conflict is not bidirectional")
+
         return v
 
 

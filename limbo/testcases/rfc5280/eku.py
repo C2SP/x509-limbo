@@ -54,12 +54,15 @@ def ee_without_eku(builder: Builder) -> None:
 
     The EE is missing an extKeyUsage extension, which is permitted under
     RFC 5280 4.2.1.12.
-
-    NOTE: This test conflicts with `webpki::eku::ee-without-eku`, which
-    explicitly tests for the opposite behavior.
     """
 
     root = builder.root_ca()
     leaf = builder.leaf_cert(root, eku=None)
 
-    builder = builder.server_validation().trusted_certs(root).peer_certificate(leaf).succeeds()
+    builder = (
+        builder.conflicts_with("webpki::eku::ee-without-eku")
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .succeeds()
+    )

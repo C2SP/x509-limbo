@@ -90,7 +90,8 @@ def ee_without_eku(builder: Builder) -> None:
     leaf = builder.leaf_cert(root, eku=None)
 
     builder = (
-        builder.features([Feature.pedantic_webpki_eku])
+        builder.conflicts_with("rfc5280::eku::ee-without-eku")
+        .features([Feature.pedantic_webpki_eku])
         .server_validation()
         .trusted_certs(root)
         .peer_certificate(leaf)
