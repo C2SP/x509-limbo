@@ -20,11 +20,9 @@ TESTCASE_TEMPLATE = """
 
 {description}
 
-{conflicts}
-
-| Expected result | Validation kind | Validation time | Features   |
-| --------------- | --------------- | --------------- | ---------- |
-| {exp_result}    | {val_kind}      | {val_time}      | {features} |
+| Expected result | Validation kind | Validation time | Features   | Conflicts   |
+| --------------- | --------------- | --------------- | ---------- | ----------- |
+| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} |
 """
 
 
@@ -62,7 +60,7 @@ def _testcase_url(testcase_id: TestCaseID) -> str:
 
 def _render_conflicts(tc: Testcase) -> str:
     if not tc.conflicts_with:
-        return ""
+        return "N/A"
 
     urls = [_testcase_url(id_) for id_ in tc.conflicts_with]
     md_urls = [f"[`{id_}`]({url})" for (id_, url) in zip(tc.conflicts_with, urls)]

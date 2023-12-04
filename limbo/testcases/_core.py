@@ -26,7 +26,6 @@ from limbo.models import (
     PeerName,
     SignatureAlgorithm,
     Testcase,
-    TestCaseID,
 )
 
 logger = logging.getLogger(__name__)
@@ -373,7 +372,7 @@ class Builder:
 
     def __init__(self, id: str, description: str):
         self._id = id
-        self._conflicts_with: list[TestCaseID] = []
+        self._conflicts_with: list[str] = []
         self._features: list[Feature] | None = None
         self._description = description
         self._validation_kind: str | None = None
@@ -390,7 +389,7 @@ class Builder:
         self._expected_peer_names: list[PeerName] | None = None
         self._max_chain_depth: int | None = None
 
-    def conflicts_with(self, *conflicting_ids: TestCaseID) -> Self:
+    def conflicts_with(self, *conflicting_ids: str) -> Self:
         self._conflicts_with = list(conflicting_ids)
         return self
 

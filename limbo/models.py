@@ -301,7 +301,8 @@ class Limbo(BaseModel):
         # and bidirectional.
         for case in v:
             for cid in case.conflicts_with:
-                match id_tc_map.get(cid):
+                # NOTE: https://github.com/python/mypy/issues/12998
+                match _ := id_tc_map.get(cid):
                     case None:
                         raise ValueError(f"{case.id} marks conflict with nonexistent case: {cid}")
                     case conflicting_case:
