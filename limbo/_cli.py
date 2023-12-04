@@ -150,13 +150,13 @@ def _harness(args: argparse.Namespace) -> None:
             testcases = [tc for tc in testcases if not fnmatch.fnmatch(tc.id, args.exclude)]
         limbo_json = Limbo(version=1, testcases=testcases).json()
 
-    result = subprocess.run(
-        [args.harness], input=limbo_json, encoding="utf-8", capture_output=True, check=True
-    )
-
-    print(result.stderr, file=sys.stderr)
-
-    args.output.write_text(result.stdout)
+    try:
+        result = subprocess.run(
+            [args.harness], input=limbo_json, encoding="utf-8", capture_output=True, check=True
+        )
+        args.output.write_text(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(e.stderr, file=sys.stderr)
 
 
 def _render_summary(args: argparse.Namespace) -> None:

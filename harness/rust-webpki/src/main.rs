@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use limbo_harness_support::{
     load_limbo,
     models::{Feature, LimboResult, PeerKind, Testcase, TestcaseResult, ValidationKind},
@@ -37,11 +37,7 @@ fn render_err(e: &webpki::ErrorExt) -> String {
 }
 
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
-    if tc
-        .features
-        .as_ref()
-        .map_or(false, |features| features.contains(&Feature::MaxChainDepth))
-    {
+    if tc.features.contains(&Feature::MaxChainDepth) {
         return TestcaseResult::skip(
             tc,
             "max-chain-depth testcases are not supported by this API",
@@ -52,11 +48,11 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::skip(tc, "non-SERVER testcases not supported yet");
     }
 
-    if !matches!(tc.signature_algorithms, None) {
+    if !tc.signature_algorithms.is_empty() {
         return TestcaseResult::skip(tc, "signature_algorithms not supported yet");
     }
 
-    if !matches!(tc.key_usage, None) {
+    if !tc.key_usage.is_empty() {
         return TestcaseResult::skip(tc, "key_usage not supported yet");
     }
 
@@ -86,9 +82,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
     };
 
     let validation_time = webpki::Time::try_from(SystemTime::from(
-        tc.validation_time.as_ref().map_or(Utc::now().into(), |s| {
-            DateTime::parse_from_rfc3339(&s).expect("RFC 3339 parse failed")
-        }),
+        tc.validation_time.unwrap_or(Utc::now().into()),
     ))
     .expect("SystemTime to webpki::Time conversion failed");
 
