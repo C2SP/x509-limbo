@@ -10,7 +10,7 @@ validation.
 This repository contains canned testcases for developing or testing
 implementations of X.509 path validation.
 
-To use it, you'll need to understand (and use) three pieces:
+To use it, you'll need to understand (and use) two pieces:
 
 1. [`limbo-schema.json`](./limbo-schema.json): The testcase schema. This is
    provided as a [JSON Schema](https://json-schema.org/) definition.
@@ -44,3 +44,12 @@ the schema and test suite:
 make limbo-schema.json
 make limbo.json
 ```
+
+## Licensing
+
+This repository and the Limbo testsuite are licensed under the Apache License,
+version 2.0.
+
+This repository additionally contains testcases that are generated from
+the [BetterTLS](https://github.com/Netflix/bettertls) project, which
+is also licensed under the Apache License, version 2.0.
