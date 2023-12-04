@@ -1,0 +1,5 @@
+[attr]generated linguist-generated=true diff=generated
+
+limbo.json                      generated
+limbo/_assets/bettertls.json    generated
+limbo/_assets/online/*.json     generated

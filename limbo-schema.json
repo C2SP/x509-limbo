@@ -19,7 +19,9 @@
         "pedantic-webpki",
         "pedantic-webpki-eku",
         "pedantic-serial-number",
-        "max-chain-depth"
+        "max-chain-depth",
+        "pedantic-rfc5280",
+        "rfc5280-incompatible-with-webpki"
       ],
       "title": "Feature",
       "type": "string"
@@ -157,6 +159,16 @@
           "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$",
           "title": "Id",
           "type": "string"
+        },
+        "conflicts_with": {
+          "default": [],
+          "description": "A list of testcase IDs that this testcase is mutually incompatible with",
+          "items": {
+            "pattern": "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$",
+            "type": "string"
+          },
+          "title": "Conflicts With",
+          "type": "array"
         },
         "features": {
           "anyOf": [

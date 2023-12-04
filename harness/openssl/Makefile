@@ -9,10 +9,6 @@ all: main
 debug: CXXFLAGS += -g -fsanitize=address,undefined
 debug: main
 
-.PHONY: run
-run: main
-	./main
-
 .PHONY: clean
 clean:
 	rm -f main

@@ -10,10 +10,17 @@ x509-limbo's own development.
 Each harness should behave as follows:
 
 1. It should be a single binary that takes no inputs or flags;
-1. It should load the current Limbo testcase set
-   (i.e., [../limbo.json](../limbo.json));
-1. It should exit with a non-zero exit code on any harness-specific
-   errors (i.e. failure to parse a testcase, unexpected internal errors);
-1. On success (all testcases evaluated) it should produce a `results.json`
-   output in its harness directory. This file should match the
-   `LimboResult` schema, which is internal to this repository.
+1. It should read a Limbo-formatted testsuite via `stdin`;
+1. It should exit with a non-zero exit code on any harness-specific errors
+   (e.g. unexpected internal errors, not testcase failures);
+1. It *may* log informational or error messages to `stderr`;
+1. It should write a JSON-formatted result summary to `stdout`. The format
+   of this result payload should match the `LimboResult` schema, which
+   is internal to this repository.
+
+In other words, every harness should behave correctly if invoked like
+this:
+
+```bash
+./harness < limbo.json > results.json
+```

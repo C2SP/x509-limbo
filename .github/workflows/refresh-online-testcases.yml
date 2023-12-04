@@ -1,0 +1,42 @@
+name: Refresh online testcases
+
+on:
+  workflow_dispatch:
+  schedule:
+    # tuesday every other month at 4PM UTC
+    - cron: "0 16 * */2 2"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # for branch creation
+      pull-requests: write  # for PR creation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ">=3.11"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: regenerate online testcases
+        run: make online-cases
+
+      - name: create PR
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        with:
+          commit-message: "[BOT] update online testcases"
+          branch: update-online-testcases
+          branch-suffix: timestamp
+          title: "[BOT] update online testcases"
+          body: |
+            This is an automated pull request, updating the cached online testcases
+            in Limbo.
+
+            Please review manually before merging.
+          add-paths: limbo/_assets/online
+          assignees: "woodruffw"
+          reviewers: "woodruffw"

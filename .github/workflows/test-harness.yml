@@ -1,4 +1,4 @@
-name: test-harness
+name: Run in-tree test harnesses
 
 on:
   push:
@@ -24,10 +24,7 @@ jobs:
         run: make test-go
 
       - name: render summary
-        run: |
-          python ./harness/render-summary.py \
-            limbo.json \
-            harness/gocryptox509/results.json
+        run: make run ARGS="render-summary --skip-passes"
   openssl:
     runs-on: ubuntu-latest
     steps:
@@ -41,10 +38,7 @@ jobs:
         run: make CXX=clang++ test-openssl
 
       - name: render summary
-        run: |
-          python ./harness/render-summary.py \
-            limbo.json \
-            harness/openssl/results.json
+        run: make run ARGS="render-summary --skip-passes"
 
   rust-webpki:
     runs-on: ubuntu-latest
@@ -59,7 +53,20 @@ jobs:
         run: make test-rust-webpki
 
       - name: render summary
-        run: |
-          python ./harness/render-summary.py \
-            limbo.json \
-            harness/rust-webpki/results.json
+        run: make run ARGS="render-summary --skip-passes"
+
+  rustls-webpki:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ">=3.12"
+
+      - name: run tests
+        run: make test-rustls-webpki
+
+      - name: render summary
+        run: make run ARGS="render-summary --skip-passes"
+

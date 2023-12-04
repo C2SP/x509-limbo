@@ -58,18 +58,37 @@ limbo-schema.json: $(NEEDS_VENV) $(PY_MODULE)/models.py
 limbo.json: $(NEEDS_VENV)
 	$(MAKE) run ARGS="compile -o limbo.json"
 
+.PHONY: online-cases
+online-cases: $(NEEDS_VENV)
+	$(MAKE) run ARGS="online-cases"
+
 .PHONY: testcases
 testcases: $(NEEDS_VENV)
 	$(MAKE) run ARGS="compile --testcases testcases/ --force"
 
 .PHONY: test-go
 test-go:
-	$(MAKE) -C harness/gocryptox509 run
+	$(MAKE) -C harness/gocryptox509
+	$(MAKE) run ARGS="harness ./harness/gocryptox509/gocryptox509"
 
 .PHONY: test-openssl
 test-openssl:
-	$(MAKE) -C harness/openssl run
+	$(MAKE) -C harness/openssl
+	$(MAKE) run ARGS="harness ./harness/openssl/main"
 
 .PHONY: test-rust-webpki
 test-rust-webpki:
-	@cargo run --bin rust-webpki-harness
+	@cargo build --bin rust-webpki-harness
+	$(MAKE) run ARGS="harness ./target/debug/rust-webpki-harness"
+
+.PHONY: test-rustls-webpki
+test-rustls-webpki:
+	@cargo build --bin rust-rustls-harness
+	$(MAKE) run ARGS="harness ./target/debug/rust-rustls-harness"
+
+.PHONY: test
+test: test-go test-openssl test-rust-webpki test-rustls-webpki
+
+.PHONY: site
+site: $(NEEDS_VENV)
+	./$(VENV_BIN)/mkdocs build

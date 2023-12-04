@@ -1,0 +1,5 @@
+# rendered HTML
+site_html/
+
+# harness results
+results.json

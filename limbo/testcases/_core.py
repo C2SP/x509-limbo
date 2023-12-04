@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from textwrap import dedent
 from typing import Callable, Literal, Self
@@ -17,7 +18,17 @@ from limbo.assets import (
     _Extension,
     ext,
 )
-from limbo.models import OID, Feature, KeyUsage, KnownEKUs, PeerName, SignatureAlgorithm, Testcase
+from limbo.models import (
+    OID,
+    Feature,
+    KeyUsage,
+    KnownEKUs,
+    PeerName,
+    SignatureAlgorithm,
+    Testcase,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class Builder:
@@ -193,6 +204,7 @@ class Builder:
         san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None = True,
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
+        name_constraints: _Extension[x509.NameConstraints] | None = None,
         extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
     ) -> CertificatePair:
         """
@@ -234,7 +246,7 @@ class Builder:
             san,
             aki,
             ski,
-            None,
+            name_constraints,
             extra_extension,
             parent,
         )
@@ -360,6 +372,7 @@ class Builder:
 
     def __init__(self, id: str, description: str):
         self._id = id
+        self._conflicts_with: list[str] = []
         self._features: list[Feature] | None = None
         self._description = description
         self._validation_kind: str | None = None
@@ -375,6 +388,10 @@ class Builder:
         self._expected_peer_name: PeerName | None = PeerName(kind="DNS", value="example.com")
         self._expected_peer_names: list[PeerName] | None = None
         self._max_chain_depth: int | None = None
+
+    def conflicts_with(self, *conflicting_ids: str) -> Self:
+        self._conflicts_with = list(conflicting_ids)
+        return self
 
     def features(self, feats: list[Feature]) -> Self:
         self._features = feats
@@ -439,6 +456,7 @@ class Builder:
     def build(self) -> Testcase:
         return Testcase(
             id=self._id,
+            conflicts_with=self._conflicts_with,
             features=self._features,
             description=self._description,
             validation_kind=self._validation_kind,
@@ -459,9 +477,12 @@ registry: dict[str, Callable] = {}
 
 
 def testcase(func: Callable) -> Callable:
-    namespace = func.__module__.split(".")[-1].replace("_", "-")
+    namespace = (
+        func.__module__.removeprefix("limbo.testcases.").replace(".", "::").replace("_", "-")
+    )
     name = func.__name__.replace("_", "-")
     id = f"{namespace}::{name}"
+    logger.debug(f"defining testcase for {id}")
 
     if id in registry:
         raise ValueError(f"duplicate testcase name: {id} is already registered")
@@ -469,6 +490,7 @@ def testcase(func: Callable) -> Callable:
     description = dedent(func.__doc__).strip() if func.__doc__ else name
 
     def wrapped() -> Testcase:
+        logger.info(f"generating {id}")
         builder = Builder(id=id, description=description)
 
         func(builder)

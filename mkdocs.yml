@@ -1,0 +1,24 @@
+site_name: x509-limbo
+site_description: x509-limbo
+site_url: https://trailofbits.github.io/x509-limbo/
+docs_dir: site
+site_dir: site_html
+theme:
+  name: material
+  features:
+    - navigation.expand
+plugins:
+  - gen-files:
+      scripts:
+        - site/render-testcases.py
+markdown_extensions:
+  # Makes sure we render `<https://...>`-style links correctly.
+  - pymdownx.magiclink
+extra_css:
+  - style.css
+exclude_docs: |
+  render-testcases.py
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn

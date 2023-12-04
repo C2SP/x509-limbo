@@ -7,25 +7,32 @@ name = "limbo"
 dynamic = ["version"]
 description = "x509-limbo's command line"
 readme = "README.md"
-license = { text = "Apache-2.0 OR BSD-3-Clause" }
+license = { text = "Apache-2.0" }
 authors = [
     { name = "The Python Cryptographic Authority and individual contributors", email = "cryptography-dev@python.org" },
 ]
-
-dependencies = ["pydantic ~= 2.4", "cryptography", "pyyaml ~= 6.0"]
+dependencies = [
+    "pydantic ~= 2.4",
+    "cryptography",
+    "pyyaml ~= 6.0",
+    "pyOpenSSL",
+    "certifi",
+]
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
 lint = [
     # NOTE: ruff is under active development, so we pin conservatively here
     # and let Dependabot periodically perform this update.
-    "ruff < 0.1.5",
+    "ruff < 0.1.7",
     "mypy >= 1.0",
     "types-pyyaml",
+    "types-pyOpenSSL",
 ]
 doc = []
 test = []
-dev = ["limbo[doc,test,lint]", "twine", "wheel", "build"]
+site = ["mkdocs", "mkdocs-gen-files", "pymdown-extensions", "mkdocs-material"]
+dev = ["limbo[doc,test,lint,site]", "twine", "wheel", "build"]
 [project.scripts]
 "limbo" = "limbo._cli:main"
 
