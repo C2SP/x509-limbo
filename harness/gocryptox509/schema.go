@@ -108,6 +108,9 @@ const SignatureAlgorithmRSAWITHSHA512 SignatureAlgorithm = "RSA_WITH_SHA512"
 
 // Represents an individual Limbo testcase.
 type Testcase struct {
+	// A list of testcase IDs that this testcase is mutually incompatible with
+	ConflictsWith []string `json:"conflicts_with,omitempty" yaml:"conflicts_with,omitempty" mapstructure:"conflicts_with,omitempty"`
+
 	// A short, Markdown-formatted description
 	Description string `json:"description" yaml:"description" mapstructure:"description"`
 
@@ -342,6 +345,9 @@ func (j *Testcase) UnmarshalJSON(b []byte) error {
 	var plain Plain
 	if err := json.Unmarshal(b, &plain); err != nil {
 		return err
+	}
+	if v, ok := raw["conflicts_with"]; !ok || v == nil {
+		plain.ConflictsWith = []string{}
 	}
 	*j = Testcase(plain)
 	return nil
