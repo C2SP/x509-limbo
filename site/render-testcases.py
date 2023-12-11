@@ -17,22 +17,14 @@ assert LIMBO_JSON.is_file()
 
 BASE_URL = "https://trailofbits.github.io/x509-limbo"
 
-PEM_TABLE_TEMPLATE = """
-| Peer          | Intermediates  | Roots          | Full Bundle     |
-| ------------- | -------------- | -------------- | --------------- |
-| [PEM]({peer}) | [PEM]({inter}) | [PEM]({roots}) | [PEM]({bundle}) |
-"""
-
 TESTCASE_TEMPLATE = """
 ## {tc_id}
 
 {description}
 
-| Expected result | Validation kind | Validation time | Features   | Conflicts   |
-| --------------- | --------------- | --------------- | ---------- | ----------- |
-| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} |
-
-{pems}
+| Expected result | Validation kind | Validation time | Features   | Conflicts   | Download |
+| --------------- | --------------- | --------------- | ---------- | ----------- | -------- |
+| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} | {pems}   |
 """
 
 
@@ -78,7 +70,7 @@ def _render_conflicts(tc: Testcase) -> str:
     return ", ".join(md_urls)
 
 
-def _generate_tc_pems(tc: Testcase) -> str:
+def _tc_pem_bundle(tc: Testcase) -> str:
     # NOTE: Don't bother generating or linking individual PEMs for
     # the bettertls suite, since they're entirely auto-generated.
     if tc.id.startswith("bettertls"):
@@ -91,21 +83,7 @@ def _generate_tc_pems(tc: Testcase) -> str:
     with mkdocs_gen_files.open(f"testcases/{namespace}/assets/{slug}/bundle.pem", "w") as f:
         print("\n".join(bundle), file=f)
 
-    with mkdocs_gen_files.open(f"testcases/{namespace}/assets/{slug}/leaves.pem", "w") as f:
-        print(tc.peer_certificate, file=f)
-
-    with mkdocs_gen_files.open(f"testcases/{namespace}/assets/{slug}/intermediates.pem", "w") as f:
-        print("\n".join(tc.untrusted_intermediates), file=f)
-
-    with mkdocs_gen_files.open(f"testcases/{namespace}/assets/{slug}/roots.pem", "w") as f:
-        print("\n".join(tc.trusted_certs), file=f)
-
-    return PEM_TABLE_TEMPLATE.format(
-        peer=f"{BASE_URL}/testcases/{namespace}/assets/{slug}/leaves.pem",
-        inter=f"{BASE_URL}/testcases/{namespace}/assets/{slug}/intermediates.pem",
-        roots=f"{BASE_URL}/testcases/{namespace}/assets/{slug}/roots.pem",
-        bundle=f"{BASE_URL}/testcases/{namespace}/assets/{slug}/bundle.pem",
-    )
+    return f"[PEM bundle]({BASE_URL}/testcases/{namespace}/assets/{slug}/bundle.pem)"
 
 
 limbo = Limbo.parse_file(LIMBO_JSON)
@@ -129,7 +107,7 @@ for namespace, tcs in namespaces.items():
                     features=", ".join([f.value for f in tc.features]) if tc.features else "N/A",
                     description=_linkify(tc.description.strip()),
                     conflicts=_render_conflicts(tc),
-                    pems=_generate_tc_pems(tc),
+                    pems=_tc_pem_bundle(tc),
                 ),
                 file=f,
             )
