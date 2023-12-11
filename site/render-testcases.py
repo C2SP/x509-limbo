@@ -15,14 +15,16 @@ from limbo.models import Limbo, Testcase, TestCaseID
 LIMBO_JSON = Path(__file__).parent.parent / "limbo.json"
 assert LIMBO_JSON.is_file()
 
+BASE_URL = "https://trailofbits.github.io/x509-limbo"
+
 TESTCASE_TEMPLATE = """
 ## {tc_id}
 
 {description}
 
-| Expected result | Validation kind | Validation time | Features   | Conflicts   |
-| --------------- | --------------- | --------------- | ---------- | ----------- |
-| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} |
+| Expected result | Validation kind | Validation time | Features   | Conflicts   | Download |
+| --------------- | --------------- | --------------- | ---------- | ----------- | -------- |
+| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} | {pems}   |
 """
 
 
@@ -55,7 +57,7 @@ def _linkify(description: str) -> str:
 def _testcase_url(testcase_id: TestCaseID) -> str:
     namespace, _ = testcase_id.split("::", 1)
     slug = testcase_id.replace("::", "")
-    return f"https://trailofbits.github.io/x509-limbo/testcases/{namespace}/#{slug}"
+    return f"{BASE_URL}/testcases/{namespace}/#{slug}"
 
 
 def _render_conflicts(tc: Testcase) -> str:
@@ -66,6 +68,22 @@ def _render_conflicts(tc: Testcase) -> str:
     md_urls = [f"[`{id_}`]({url})" for (id_, url) in zip(tc.conflicts_with, urls)]
 
     return ", ".join(md_urls)
+
+
+def _tc_pem_bundle(tc: Testcase) -> str:
+    # NOTE: Don't bother generating or linking individual PEMs for
+    # the bettertls suite, since they're entirely auto-generated.
+    if tc.id.startswith("bettertls"):
+        return ""
+
+    namespace, _ = tc.id.split("::", 1)
+    slug = tc.id.replace("::", "")
+
+    bundle = [tc.peer_certificate, *tc.untrusted_intermediates, *tc.trusted_certs]
+    with mkdocs_gen_files.open(f"testcases/{namespace}/assets/{slug}/bundle.pem", "w") as f:
+        print("\n".join(bundle), file=f)
+
+    return f"[PEM bundle]({BASE_URL}/testcases/{namespace}/assets/{slug}/bundle.pem)"
 
 
 limbo = Limbo.parse_file(LIMBO_JSON)
@@ -89,6 +107,7 @@ for namespace, tcs in namespaces.items():
                     features=", ".join([f.value for f in tc.features]) if tc.features else "N/A",
                     description=_linkify(tc.description.strip()),
                     conflicts=_render_conflicts(tc),
+                    pems=_tc_pem_bundle(tc),
                 ),
                 file=f,
             )
