@@ -4,12 +4,16 @@
 # TODO(ww): Use some kind of Markdown builder API here, rather than
 # smashing strings together.
 
+import json
 import re
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import mkdocs_gen_files
+from json_schema_for_humans.generate import generate_from_file_object
+from json_schema_for_humans.generation_configuration import GenerationConfiguration
 from py_markdown_table.markdown_table import markdown_table
 
 from limbo.models import (
@@ -26,6 +30,9 @@ _HERE = Path(__file__).parent
 
 LIMBO_JSON = _HERE.parent / "limbo.json"
 assert LIMBO_JSON.is_file()
+
+LIMBO_SCHEMA_JSON = _HERE.parent / "limbo-schema.json"
+assert LIMBO_SCHEMA_JSON.is_file()
 
 RESULTS = _HERE.parent / "results"
 
@@ -178,3 +185,15 @@ for namespace, results in namespaces.items():
                 ),
                 file=f,
             )
+
+with mkdocs_gen_files.open("schema.md", "w") as f, NamedTemporaryFile(mode="w+") as schema:
+    print(json.dumps(Limbo.model_json_schema()), file=schema)
+    schema.seek(0)
+    generate_from_file_object(
+        schema,
+        f,
+        config=GenerationConfiguration(
+            template_name="md",
+            show_toc=False,
+        ),
+    )
