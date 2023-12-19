@@ -19,7 +19,6 @@ from limbo.assets import (
     ext,
 )
 from limbo.models import (
-    OID,
     Feature,
     KeyUsage,
     KnownEKUs,
@@ -373,20 +372,20 @@ class Builder:
     def __init__(self, id: str, description: str):
         self._id = id
         self._conflicts_with: list[str] = []
-        self._features: list[Feature] | None = None
+        self._features: list[Feature] = []
         self._description = description
         self._validation_kind: str | None = None
         self._trusted_certs: list[str] = []
         self._untrusted_intermediates: list[str] = []
         self._peer_certificate: str | None = None
         self._validation_time: datetime | None = None
-        self._signature_algorithms: list[SignatureAlgorithm] | None = None
-        self._key_usage: list[KeyUsage] | None = None
-        self._extended_key_usage: list[KnownEKUs | OID] | None = None
+        self._signature_algorithms: list[SignatureAlgorithm] = []
+        self._key_usage: list[KeyUsage] = []
+        self._extended_key_usage: list[KnownEKUs] = []
 
         self._expected_result: str | None = None
         self._expected_peer_name: PeerName | None = PeerName(kind="DNS", value="example.com")
-        self._expected_peer_names: list[PeerName] | None = None
+        self._expected_peer_names: list[PeerName] = []
         self._max_chain_depth: int | None = None
 
     def conflicts_with(self, *conflicting_ids: str) -> Self:
@@ -429,7 +428,7 @@ class Builder:
         self._key_usage = usage
         return self
 
-    def extended_key_usage(self, usage: list[KnownEKUs | OID]) -> Self:
+    def extended_key_usage(self, usage: list[KnownEKUs]) -> Self:
         self._extended_key_usage = usage
         return self
 
@@ -469,6 +468,7 @@ class Builder:
             extended_key_usage=self._extended_key_usage,
             expected_result=self._expected_result,
             expected_peer_name=self._expected_peer_name,
+            expected_peer_names=self._expected_peer_names,
             max_chain_depth=self._max_chain_depth,
         )
 

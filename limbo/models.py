@@ -119,15 +119,6 @@ class KnownEKUs(str, Enum):
     ocsp_signing = "OCSPSigning"
 
 
-class OID(ConstrainedStr):
-    """
-    A "bare" OID, in dotted form.
-    """
-
-    regex = r"^([0-2])((\.0)|(\.[1-9][0-9]*))*$"
-    strict = True
-
-
 _ID_COMPONENT = r"[A-Za-z][A-Za-z0-9-.]+"
 _NAMESPACE = rf"{_ID_COMPONENT}::"
 
@@ -223,10 +214,10 @@ class Testcase(BaseModel):
         [], description="A list of testcase IDs that this testcase is mutually incompatible with"
     )
 
-    features: list[Feature] | None = Field(
-        None,
+    features: list[Feature] = Field(
+        [],
         description=(
-            "One or more human-readable tags that describe OPTIONAL functionality described "
+            "Zero or more human-readable tags that describe OPTIONAL functionality described "
             "by this testcase. Implementers should use this to specify testcases for non-mandatory "
             "X.509 behavior (like certificate policy validation) or for 'pedantic' cases. "
             "Consumers that don't understand a given feature should skip tests that are "
@@ -252,14 +243,14 @@ class Testcase(BaseModel):
         None, description="The time at which to perform the validation"
     )
 
-    signature_algorithms: list[SignatureAlgorithm] | None = Field(
-        None, description="A list of acceptable signature algorithms to constrain against"
+    signature_algorithms: list[SignatureAlgorithm] = Field(
+        ..., description="A list of acceptable signature algorithms to constrain against"
     )
 
-    key_usage: list[KeyUsage] | None = Field(None, description="A constraining list of key usages")
+    key_usage: list[KeyUsage] = Field(..., description="A constraining list of key usages")
 
-    extended_key_usage: list[KnownEKUs | OID] | None = Field(
-        None,
+    extended_key_usage: list[KnownEKUs] = Field(
+        ...,
         description=(
             "A constraining list of extended key usages, either in well-known form or as OIDs"
         ),
@@ -271,8 +262,8 @@ class Testcase(BaseModel):
         None, description="For client-side validation: the expected peer name, if any"
     )
 
-    expected_peer_names: list[PeerName] | None = Field(
-        None, description="For server-side validation: the expected peer names, if any"
+    expected_peer_names: list[PeerName] = Field(
+        ..., description="For server-side validation: the expected peer names"
     )
 
     max_chain_depth: int | None = Field(None, description="The maximum chain-building depth")

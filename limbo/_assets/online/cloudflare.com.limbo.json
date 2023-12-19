@@ -1,6 +1,7 @@
 {
   "id": "online::cloudflare.com",
-  "features": null,
+  "conflicts_with": [],
+  "features": [],
   "description": "A valid chain for `cloudflare.com`.",
   "validation_kind": "SERVER",
   "trusted_certs": [
@@ -11,14 +12,14 @@
   ],
   "peer_certificate": "-----BEGIN CERTIFICATE-----\nMIIFazCCBRCgAwIBAgIQD6mCk6e2Frl9Kxn7HkZryTAKBggqhkjOPQQDAjBKMQsw\nCQYDVQQGEwJVUzEZMBcGA1UEChMQQ2xvdWRmbGFyZSwgSW5jLjEgMB4GA1UEAxMX\nQ2xvdWRmbGFyZSBJbmMgRUNDIENBLTMwHhcNMjMxMjAxMDAwMDAwWhcNMjQwMjI5\nMjM1OTU5WjBuMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQG\nA1UEBxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQQ2xvdWRmbGFyZSwgSW5jLjEX\nMBUGA1UEAxMOY2xvdWRmbGFyZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC\nAARztq5fyytdP7i+iy1/BM1EJrHYUSFUB7O3oIx1NES3aqyw5JrLWsqYm+eqkRjH\nIbZtg4IcYow9t+VqgsJlRLBXo4IDsjCCA64wHwYDVR0jBBgwFoAUpc436uuwdQ6U\nZ4i0RfrZJBCHlh8wHQYDVR0OBBYEFBT/6R9QP4yq4059q1FQlUo2oDkhMHcGA1Ud\nEQRwMG6CEyoubnMuY2xvdWRmbGFyZS5jb22CDmNsb3VkZmxhcmUuY29tghoqLnNl\nY29uZGFyeS5jbG91ZGZsYXJlLmNvbYIYc2Vjb25kYXJ5LmNsb3VkZmxhcmUuY29t\nghFucy5jbG91ZGZsYXJlLmNvbTA+BgNVHSAENzA1MDMGBmeBDAECAjApMCcGCCsG\nAQUFBwIBFhtodHRwOi8vd3d3LmRpZ2ljZXJ0LmNvbS9DUFMwDgYDVR0PAQH/BAQD\nAgOIMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjB7BgNVHR8EdDByMDeg\nNaAzhjFodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vQ2xvdWRmbGFyZUluY0VDQ0NB\nLTMuY3JsMDegNaAzhjFodHRwOi8vY3JsNC5kaWdpY2VydC5jb20vQ2xvdWRmbGFy\nZUluY0VDQ0NBLTMuY3JsMHYGCCsGAQUFBwEBBGowaDAkBggrBgEFBQcwAYYYaHR0\ncDovL29jc3AuZGlnaWNlcnQuY29tMEAGCCsGAQUFBzAChjRodHRwOi8vY2FjZXJ0\ncy5kaWdpY2VydC5jb20vQ2xvdWRmbGFyZUluY0VDQ0NBLTMuY3J0MAwGA1UdEwEB\n/wQCMAAwggF/BgorBgEEAdZ5AgQCBIIBbwSCAWsBaQB2AHb/iD8KtvuVUcJhzPWH\nujS0pM27KdxoQgqf5mdMWjp0AAABjCOqNRwAAAQDAEcwRQIhAJn8ASUjdUuyelN/\nAVqyveXoFc76qPdrQMexv1+2CTV1AiAU8mOzzPCOkEl2UaeQ9+D/uPS9C2f0xfTI\nE9BXzM056QB2AEiw42vapkc0D+VqAvqdMOscUgHLVt0sgdm7v6s52IRzAAABjCOq\nNOQAAAQDAEcwRQIgWmDV1m4cNplvbS0FqvN5m/9LFoAj1Xa/UTl8Ift7CsQCIQD5\ntzEdm8h5VZl2X2QkK5KoD+8HMDVM+tb04WILOxXJuAB3ANq2v2s/tbYin5vCu1xr\n6HCRcWy7UYSFNL2kPTBI1/urAAABjCOqNMkAAAQDAEgwRgIhAJhXHT5NVq+PBnsZ\n8l6OXbQXav/Unh/g5Y1Ga466504dAiEAzbOGZpRNyDdBWKZhhoBFJOzrAicBhQOI\n7xFjxttm5NEwCgYIKoZIzj0EAwIDSQAwRgIhAKWv9Ti6qS5/CuQ0glEIbXAd2iKQ\n1SPKb/0z/OVyZmwWAiEAlqjb0tvjFuxQBHk2qqMsQ0f6AYQ/zs20hyoYz6qHifc=\n-----END CERTIFICATE-----\n",
   "validation_time": "2023-12-01T00:00:01+00:00",
-  "signature_algorithms": null,
-  "key_usage": null,
-  "extended_key_usage": null,
+  "signature_algorithms": [],
+  "key_usage": [],
+  "extended_key_usage": [],
   "expected_result": "SUCCESS",
   "expected_peer_name": {
     "kind": "DNS",
     "value": "cloudflare.com"
   },
-  "expected_peer_names": null,
+  "expected_peer_names": [],
   "max_chain_depth": null
 }

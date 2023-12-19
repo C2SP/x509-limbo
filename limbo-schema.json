@@ -159,7 +159,8 @@
           }
         },
         "features": {
-          "description": "One or more human-readable tags that describe OPTIONAL functionality described by this testcase. Implementers should use this to specify testcases for non-mandatory X.509 behavior (like certificate policy validation) or for 'pedantic' cases. Consumers that don't understand a given feature should skip tests that are marked with it.",
+          "description": "Zero or more human-readable tags that describe OPTIONAL functionality described by this testcase. Implementers should use this to specify testcases for non-mandatory X.509 behavior (like certificate policy validation) or for 'pedantic' cases. Consumers that don't understand a given feature should skip tests that are marked with it.",
+          "default": [],
           "type": "array",
           "items": {
             "$ref": "#/definitions/Feature"
@@ -220,19 +221,10 @@
           }
         },
         "extended_key_usage": {
-          "title": "Extended Key Usage",
           "description": "A constraining list of extended key usages, either in well-known form or as OIDs",
           "type": "array",
           "items": {
-            "anyOf": [
-              {
-                "$ref": "#/definitions/KnownEKUs"
-              },
-              {
-                "type": "string",
-                "pattern": "^([0-2])((\\.0)|(\\.[1-9][0-9]*))*$"
-              }
-            ]
+            "$ref": "#/definitions/KnownEKUs"
           }
         },
         "expected_result": {
@@ -254,7 +246,7 @@
         },
         "expected_peer_names": {
           "title": "Expected Peer Names",
-          "description": "For server-side validation: the expected peer names, if any",
+          "description": "For server-side validation: the expected peer names",
           "type": "array",
           "items": {
             "$ref": "#/definitions/PeerName"
@@ -273,7 +265,11 @@
         "trusted_certs",
         "untrusted_intermediates",
         "peer_certificate",
-        "expected_result"
+        "signature_algorithms",
+        "key_usage",
+        "extended_key_usage",
+        "expected_result",
+        "expected_peer_names"
       ]
     },
     "Limbo": {
