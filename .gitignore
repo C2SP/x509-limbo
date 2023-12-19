@@ -3,3 +3,4 @@ site_html/
 
 # harness results
 results.json
+results/

@@ -1,6 +1,6 @@
 CXXFLAGS = -std=c++17
 CPPFLAGS = $(shell pkg-config --cflags libcrypto)
-LDFLAGS = $(shell pkg-config --libs libcrypto)
+LDLIBS = $(shell pkg-config --libs libcrypto)
 
 .PHONY: all
 all: main
