@@ -6,14 +6,28 @@
 
 import re
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
 import mkdocs_gen_files
 
-from limbo.models import Limbo, Testcase, TestCaseID
+from limbo.models import (
+    ActualResult,
+    ExpectedResult,
+    Limbo,
+    LimboResult,
+    Testcase,
+    TestCaseID,
+    TestcaseResult,
+)
 
-LIMBO_JSON = Path(__file__).parent.parent / "limbo.json"
+_HERE = Path(__file__).parent
+
+LIMBO_JSON = _HERE.parent / "limbo.json"
 assert LIMBO_JSON.is_file()
+
+RESULTS = _HERE.parent / "results"
+assert RESULTS.is_dir()
 
 BASE_URL = "https://trailofbits.github.io/x509-limbo"
 
@@ -25,6 +39,8 @@ TESTCASE_TEMPLATE = """
 | Expected result | Validation kind | Validation time | Features   | Conflicts   | Download |
 | --------------- | --------------- | --------------- | ---------- | ----------- | -------- |
 | {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} | {pems}   |
+
+{harness_results}
 """
 
 
@@ -46,6 +62,12 @@ LINK_SUBSTITUTIONS = [
         r"[\g<0>](https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.1.pdf)",
     ),
 ]
+
+
+@dataclass
+class CollatedResult:
+    tc: Testcase
+    results: list[tuple[str, TestcaseResult]]
 
 
 def _linkify(description: str) -> str:
@@ -86,28 +108,72 @@ def _tc_pem_bundle(tc: Testcase) -> str:
     return f"[PEM bundle]({BASE_URL}/testcases/{namespace}/assets/{slug}/bundle.pem)"
 
 
-limbo = Limbo.parse_file(LIMBO_JSON)
+def _result_emoji(expected: ExpectedResult, actual: ActualResult):
+    match expected.value, actual.value:
+        case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
+            return "✅"
+        case (_, "SKIPPED"):
+            return "🚧"
+        case _:
+            return f"❌ (unexpected {actual.value.lower()})"
 
-namespaces: dict[str, list[Testcase]] = defaultdict(list)
+
+def _render_harness_results(
+    results: list[tuple[str, TestcaseResult]], expected: ExpectedResult
+) -> str:
+    # This is written in a very silly way because my brain was not working.
+
+    harnesses = []
+    splitters = []
+    tc_results = []
+    contexts = []
+    for harness, tc_result in results:
+        harnesses.append(f"`{harness}`")
+        splitters.append(" - ")
+        tc_results.append(_result_emoji(expected, tc_result.actual_result))
+        contexts.append(f"`{tc_result.context}`" if tc_result.context else "N/A")
+
+    harness_line = f"| {" | ".join(harnesses)} | "
+    splitter_line = f"| {" | ".join(splitters)} | "
+    results_line = f"| {" | ".join(tc_results)} | "
+    contexts_line = f"| {" | ".join(contexts)} | "
+    return f"{harness_line}\n{splitter_line}\n{results_line}\n{contexts_line}"
+
+
+limbo = Limbo.parse_file(LIMBO_JSON)
+limbo_results = [LimboResult.parse_file(f) for f in RESULTS.glob("*.json")]
+
+namespaces: dict[str, list[CollatedResult]] = defaultdict(list)
 for tc in limbo.testcases:
     namespace, _ = tc.id.split("::", 1)
-    namespaces[namespace].append(tc)
 
-for namespace, tcs in namespaces.items():
+    tc_results_by_harness = []
+    for result in limbo_results:
+        harness = result.harness
+        tc_result = next(r for r in result.results if r.id == tc.id)
+        tc_results_by_harness.append((harness, tc_result))
+
+    collated = CollatedResult(tc=tc, results=tc_results_by_harness)
+    namespaces[namespace].append(collated)
+
+for namespace, results in namespaces.items():
     with mkdocs_gen_files.open(f"testcases/{namespace}.md", "w") as f:
         print(f"# {namespace}", file=f)
 
-        for tc in tcs:
+        for r in results:
             print(
                 TESTCASE_TEMPLATE.format(
-                    tc_id=tc.id,
-                    exp_result=tc.expected_result.value,
-                    val_kind=tc.validation_kind.value,
-                    val_time=tc.validation_time.isoformat() if tc.validation_time else "N/A",
-                    features=", ".join([f.value for f in tc.features]) if tc.features else "N/A",
-                    description=_linkify(tc.description.strip()),
-                    conflicts=_render_conflicts(tc),
-                    pems=_tc_pem_bundle(tc),
+                    tc_id=r.tc.id,
+                    exp_result=r.tc.expected_result.value,
+                    val_kind=r.tc.validation_kind.value,
+                    val_time=r.tc.validation_time.isoformat() if r.tc.validation_time else "N/A",
+                    features=", ".join([f.value for f in r.tc.features])
+                    if r.tc.features
+                    else "N/A",
+                    description=_linkify(r.tc.description.strip()),
+                    conflicts=_render_conflicts(r.tc),
+                    pems=_tc_pem_bundle(r.tc),
+                    harness_results=_render_harness_results(r.results, r.tc.expected_result),
                 ),
                 file=f,
             )
