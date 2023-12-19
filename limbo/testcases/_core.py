@@ -428,7 +428,7 @@ class Builder:
         self._key_usage = usage
         return self
 
-    def extended_key_usage(self, usage: list[KnownEKUs | OID]) -> Self:
+    def extended_key_usage(self, usage: list[KnownEKUs]) -> Self:
         self._extended_key_usage = usage
         return self
 
