@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - ww/render-results-site
 
   workflow_dispatch:
 
