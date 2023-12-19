@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import mkdocs_gen_files
+from py_markdown_table.markdown_table import markdown_table
 
 from limbo.models import (
     ActualResult,
@@ -120,23 +121,19 @@ def _result_emoji(expected: ExpectedResult, actual: ActualResult):
 def _render_harness_results(
     results: list[tuple[str, TestcaseResult]], expected: ExpectedResult
 ) -> str:
-    # This is written in a very silly way because my brain was not working.
+    if not results:
+        return ""
 
-    harnesses = []
-    splitters = []
-    tc_results = []
-    contexts = []
+    data = []
     for harness, tc_result in results:
-        harnesses.append(f"`{harness}`")
-        splitters.append(" - ")
-        tc_results.append(_result_emoji(expected, tc_result.actual_result))
-        contexts.append(f"`{tc_result.context}`" if tc_result.context else "N/A")
-
-    harness_line = f"| {" | ".join(harnesses)} | "
-    splitter_line = f"| {" | ".join(splitters)} | "
-    results_line = f"| {" | ".join(tc_results)} | "
-    contexts_line = f"| {" | ".join(contexts)} | "
-    return f"{harness_line}\n{splitter_line}\n{results_line}\n{contexts_line}"
+        data.append(
+            {
+                "Harness": f"`{harness}`",
+                "Result": _result_emoji(expected, tc_result.actual_result),
+                "Context": f"`{tc_result.context}`" if tc_result.context else "N/A",
+            }
+        )
+    return markdown_table(data).set_params(quote=False, row_sep="markdown").get_markdown()
 
 
 limbo = Limbo.parse_file(LIMBO_JSON)
@@ -145,17 +142,19 @@ if RESULTS.is_dir():
 else:
     limbo_results = []
 
+
+# Mapping: tc_id -> [(harness_id, result)]
+results_by_tc_id: dict[TestCaseID, list[tuple[str, TestcaseResult]]] = defaultdict(list)
+for limbo_result in limbo_results:
+    for result in limbo_result.results:
+        results_by_tc_id[result.id].append((limbo_result.harness, result))
+
+
 namespaces: dict[str, list[CollatedResult]] = defaultdict(list)
 for tc in limbo.testcases:
     namespace, _ = tc.id.split("::", 1)
 
-    tc_results_by_harness = []
-    for result in limbo_results:
-        harness = result.harness
-        tc_result = next(r for r in result.results if r.id == tc.id)
-        tc_results_by_harness.append((harness, tc_result))
-
-    collated = CollatedResult(tc=tc, results=tc_results_by_harness)
+    collated = CollatedResult(tc=tc, results=results_by_tc_id[tc.id])
     namespaces[namespace].append(collated)
 
 for namespace, results in namespaces.items():
