@@ -121,6 +121,9 @@ def _result_emoji(expected: ExpectedResult, actual: ActualResult):
 def _render_harness_results(
     results: list[tuple[str, TestcaseResult]], expected: ExpectedResult
 ) -> str:
+    if not results:
+        return ""
+
     data = []
     for harness, tc_result in results:
         data.append(
