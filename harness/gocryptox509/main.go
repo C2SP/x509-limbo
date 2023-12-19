@@ -151,7 +151,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		}
 
 		for _, elem := range testcase.ExtendedKeyUsage {
-			expected_eku := KnownEKUs(elem.(string))
+			expected_eku := KnownEKUs(elem)
 			ekus = append(ekus, extKeyUsagesMap[expected_eku])
 		}
 	}

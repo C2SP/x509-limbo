@@ -117,17 +117,17 @@ type Testcase struct {
 	// For client-side validation: the expected peer name, if any
 	ExpectedPeerName interface{} `json:"expected_peer_name,omitempty" yaml:"expected_peer_name,omitempty" mapstructure:"expected_peer_name,omitempty"`
 
-	// For server-side validation: the expected peer names, if any
-	ExpectedPeerNames []PeerName `json:"expected_peer_names,omitempty" yaml:"expected_peer_names,omitempty" mapstructure:"expected_peer_names,omitempty"`
+	// For server-side validation: the expected peer names
+	ExpectedPeerNames []PeerName `json:"expected_peer_names" yaml:"expected_peer_names" mapstructure:"expected_peer_names"`
 
 	// The expected validation result
 	ExpectedResult interface{} `json:"expected_result" yaml:"expected_result" mapstructure:"expected_result"`
 
 	// A constraining list of extended key usages, either in well-known form or as
 	// OIDs
-	ExtendedKeyUsage []interface{} `json:"extended_key_usage,omitempty" yaml:"extended_key_usage,omitempty" mapstructure:"extended_key_usage,omitempty"`
+	ExtendedKeyUsage []KnownEKUs `json:"extended_key_usage" yaml:"extended_key_usage" mapstructure:"extended_key_usage"`
 
-	// One or more human-readable tags that describe OPTIONAL functionality described
+	// Zero or more human-readable tags that describe OPTIONAL functionality described
 	// by this testcase. Implementers should use this to specify testcases for
 	// non-mandatory X.509 behavior (like certificate policy validation) or for
 	// 'pedantic' cases. Consumers that don't understand a given feature should skip
@@ -138,7 +138,7 @@ type Testcase struct {
 	Id string `json:"id" yaml:"id" mapstructure:"id"`
 
 	// A constraining list of key usages
-	KeyUsage []KeyUsage `json:"key_usage,omitempty" yaml:"key_usage,omitempty" mapstructure:"key_usage,omitempty"`
+	KeyUsage []KeyUsage `json:"key_usage" yaml:"key_usage" mapstructure:"key_usage"`
 
 	// The maximum chain-building depth
 	MaxChainDepth *int `json:"max_chain_depth,omitempty" yaml:"max_chain_depth,omitempty" mapstructure:"max_chain_depth,omitempty"`
@@ -147,7 +147,7 @@ type Testcase struct {
 	PeerCertificate string `json:"peer_certificate" yaml:"peer_certificate" mapstructure:"peer_certificate"`
 
 	// A list of acceptable signature algorithms to constrain against
-	SignatureAlgorithms []SignatureAlgorithm `json:"signature_algorithms,omitempty" yaml:"signature_algorithms,omitempty" mapstructure:"signature_algorithms,omitempty"`
+	SignatureAlgorithms []SignatureAlgorithm `json:"signature_algorithms" yaml:"signature_algorithms" mapstructure:"signature_algorithms"`
 
 	// A list of PEM-encoded CA certificates to consider trusted
 	TrustedCerts []string `json:"trusted_certs" yaml:"trusted_certs" mapstructure:"trusted_certs"`
@@ -323,14 +323,26 @@ func (j *Testcase) UnmarshalJSON(b []byte) error {
 	if v, ok := raw["description"]; !ok || v == nil {
 		return fmt.Errorf("field description in Testcase: required")
 	}
+	if v, ok := raw["expected_peer_names"]; !ok || v == nil {
+		return fmt.Errorf("field expected_peer_names in Testcase: required")
+	}
 	if v, ok := raw["expected_result"]; !ok || v == nil {
 		return fmt.Errorf("field expected_result in Testcase: required")
+	}
+	if v, ok := raw["extended_key_usage"]; !ok || v == nil {
+		return fmt.Errorf("field extended_key_usage in Testcase: required")
 	}
 	if v, ok := raw["id"]; !ok || v == nil {
 		return fmt.Errorf("field id in Testcase: required")
 	}
+	if v, ok := raw["key_usage"]; !ok || v == nil {
+		return fmt.Errorf("field key_usage in Testcase: required")
+	}
 	if v, ok := raw["peer_certificate"]; !ok || v == nil {
 		return fmt.Errorf("field peer_certificate in Testcase: required")
+	}
+	if v, ok := raw["signature_algorithms"]; !ok || v == nil {
+		return fmt.Errorf("field signature_algorithms in Testcase: required")
 	}
 	if v, ok := raw["trusted_certs"]; !ok || v == nil {
 		return fmt.Errorf("field trusted_certs in Testcase: required")
@@ -348,6 +360,9 @@ func (j *Testcase) UnmarshalJSON(b []byte) error {
 	}
 	if v, ok := raw["conflicts_with"]; !ok || v == nil {
 		plain.ConflictsWith = []string{}
+	}
+	if v, ok := raw["features"]; !ok || v == nil {
+		plain.Features = []Feature{}
 	}
 	*j = Testcase(plain)
 	return nil
