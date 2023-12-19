@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from pydantic.schema import schema
+from pydantic.json_schema import models_json_schema
 
 from limbo import testcases
 from limbo.testcases import bettertls, online
@@ -117,7 +117,7 @@ def _schema(args: argparse.Namespace) -> None:
     io = args.output.open(mode="w") if args.output else sys.stdout
 
     with contextlib.closing(io):
-        top = schema([Limbo], title="x509-limbo schemas")
+        top = models_json_schema([(Limbo, "validation")], title="x509-limbo schemas")[1]
         print(json.dumps(top, indent=2), file=io)
 
 
@@ -137,7 +137,7 @@ def _compile(args: argparse.Namespace) -> None:
 
     io = args.output.open(mode="w") if args.output else sys.stdout
     with contextlib.closing(io):
-        print(combined.json(indent=2), file=io)
+        print(combined.model_dump_json(indent=2), file=io)
 
 
 def _harness(args: argparse.Namespace) -> None:
@@ -145,7 +145,7 @@ def _harness(args: argparse.Namespace) -> None:
 
     limbo_json = args.limbo.read_text()
     if args.include is not None or args.exclude is not None:
-        testcases = Limbo.parse_raw(limbo_json).testcases
+        testcases = Limbo.model_validate_json(limbo_json).testcases
         if args.include:
             testcases = [tc for tc in testcases if fnmatch.fnmatch(tc.id, args.include)]
         if args.exclude:

@@ -11,9 +11,8 @@ license = { text = "Apache-2.0" }
 authors = [
     { name = "The Python Cryptographic Authority and individual contributors", email = "cryptography-dev@python.org" },
 ]
-
 dependencies = [
-    "pydantic ~= 1.0",
+    "pydantic ~= 2.4",
     "cryptography",
     "pyyaml ~= 6.0",
     "pyOpenSSL",

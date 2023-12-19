@@ -136,9 +136,9 @@ def _render_harness_results(
     return markdown_table(data).set_params(quote=False, row_sep="markdown").get_markdown()
 
 
-limbo = Limbo.parse_file(LIMBO_JSON)
+limbo = Limbo.model_validate_json(LIMBO_JSON.read_text())
 if RESULTS.is_dir():
-    limbo_results = [LimboResult.parse_file(f) for f in RESULTS.glob("*.json")]
+    limbo_results = [LimboResult.model_validate_json(f.read_text()) for f in RESULTS.glob("*.json")]
 else:
     limbo_results = []
 

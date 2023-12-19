@@ -109,11 +109,9 @@ func concatPEMCerts(certs []string) []byte {
 func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	_ = spew.Dump
 
-	if testcase.Features != nil {
-		for _, feature := range testcase.Features {
-			if feature == "max-chain-depth" {
-				return resultSkipped, fmt.Errorf("max chain depth not supported")
-			}
+	for _, feature := range testcase.Features {
+		if feature == "max-chain-depth" {
+			return resultSkipped, fmt.Errorf("max chain depth not supported")
 		}
 	}
 
@@ -121,16 +119,24 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	if testcase.ValidationTime == nil {
 		ts = time.Now()
 	} else {
-		ts = *testcase.ValidationTime
+		var err error
+		ts, err = time.Parse(time.RFC3339, testcase.ValidationTime.(string))
+
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return resultSkipped, errors.Wrap(err, "unable to parse testcase time as RFC3339")
+		}
 	}
 
 	// TODO: Support testcases that constrain signature algorthms.
-	if len(testcase.SignatureAlgorithms) != 0 {
+	var signatureAlgorithms = testcase.SignatureAlgorithms
+	if len(signatureAlgorithms) != 0 {
 		return resultSkipped, fmt.Errorf("signature algorithm checks not supported yet")
 	}
 
 	// TODO: Support testcases that constrain key usages.
-	if len(testcase.KeyUsage) != 0 {
+	var keyUsage = testcase.KeyUsage
+	if len(keyUsage) != 0 {
 		return resultSkipped, fmt.Errorf("key usage checks not supported yet")
 	}
 
@@ -139,7 +145,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	}
 
 	var ekus []x509.ExtKeyUsage
-	if len(testcase.ExtendedKeyUsage) != 0 {
+	if testcase.ExtendedKeyUsage != nil {
 		extKeyUsagesMap := map[KnownEKUs]x509.ExtKeyUsage{
 			KnownEKUsAnyExtendedKeyUsage: x509.ExtKeyUsageAny,
 			KnownEKUsClientAuth:          x509.ExtKeyUsageClientAuth,
