@@ -6,29 +6,268 @@ import "encoding/json"
 import "fmt"
 import "reflect"
 
-type ExpectedResult string
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_SignatureAlgorithm {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_SignatureAlgorithm, v)
+	}
+	*j = SignatureAlgorithm(v)
+	return nil
+}
 
-const ExpectedResultFAILURE ExpectedResult = "FAILURE"
+const KeyUsageDataEncipherment KeyUsage = "dataEncipherment"
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ExpectedResult) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_ExpectedResult {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_ExpectedResult, v)
+	}
+	*j = ExpectedResult(v)
+	return nil
+}
+
 const ExpectedResultSUCCESS ExpectedResult = "SUCCESS"
+
+type ExpectedResult string
 
 type Feature string
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ValidationKind) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_ValidationKind {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_ValidationKind, v)
+	}
+	*j = ValidationKind(v)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Feature) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_Feature {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_Feature, v)
+	}
+	*j = Feature(v)
+	return nil
+}
+
 const FeatureHasCertPolicies Feature = "has-cert-policies"
-const FeatureMaxChainDepth Feature = "max-chain-depth"
-const FeatureNameConstraintDn Feature = "name-constraint-dn"
 const FeatureNoCertPolicies Feature = "no-cert-policies"
 const FeaturePedanticPublicSuffixWildcard Feature = "pedantic-public-suffix-wildcard"
-const FeaturePedanticRfc5280 Feature = "pedantic-rfc5280"
-const FeaturePedanticSerialNumber Feature = "pedantic-serial-number"
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PeerKind) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_PeerKind {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_PeerKind, v)
+	}
+	*j = PeerKind(v)
+	return nil
+}
+
 const FeaturePedanticWebpki Feature = "pedantic-webpki"
 const FeaturePedanticWebpkiEku Feature = "pedantic-webpki-eku"
+const FeaturePedanticSerialNumber Feature = "pedantic-serial-number"
+const FeatureMaxChainDepth Feature = "max-chain-depth"
+const FeaturePedanticRfc5280 Feature = "pedantic-rfc5280"
 const FeatureRfc5280IncompatibleWithWebpki Feature = "rfc5280-incompatible-with-webpki"
 
 type KeyUsage string
 
-const KeyUsageCRLSign KeyUsage = "cRLSign"
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Limbo) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["testcases"]; !ok || v == nil {
+		return fmt.Errorf("field testcases in Limbo: required")
+	}
+	if v, ok := raw["version"]; !ok || v == nil {
+		return fmt.Errorf("field version in Limbo: required")
+	}
+	type Plain Limbo
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = Limbo(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *KeyUsage) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_KeyUsage {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_KeyUsage, v)
+	}
+	*j = KeyUsage(v)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Testcase) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["description"]; !ok || v == nil {
+		return fmt.Errorf("field description in Testcase: required")
+	}
+	if v, ok := raw["expected_peer_names"]; !ok || v == nil {
+		return fmt.Errorf("field expected_peer_names in Testcase: required")
+	}
+	if v, ok := raw["expected_result"]; !ok || v == nil {
+		return fmt.Errorf("field expected_result in Testcase: required")
+	}
+	if v, ok := raw["extended_key_usage"]; !ok || v == nil {
+		return fmt.Errorf("field extended_key_usage in Testcase: required")
+	}
+	if v, ok := raw["id"]; !ok || v == nil {
+		return fmt.Errorf("field id in Testcase: required")
+	}
+	if v, ok := raw["key_usage"]; !ok || v == nil {
+		return fmt.Errorf("field key_usage in Testcase: required")
+	}
+	if v, ok := raw["peer_certificate"]; !ok || v == nil {
+		return fmt.Errorf("field peer_certificate in Testcase: required")
+	}
+	if v, ok := raw["signature_algorithms"]; !ok || v == nil {
+		return fmt.Errorf("field signature_algorithms in Testcase: required")
+	}
+	if v, ok := raw["trusted_certs"]; !ok || v == nil {
+		return fmt.Errorf("field trusted_certs in Testcase: required")
+	}
+	if v, ok := raw["untrusted_intermediates"]; !ok || v == nil {
+		return fmt.Errorf("field untrusted_intermediates in Testcase: required")
+	}
+	if v, ok := raw["validation_kind"]; !ok || v == nil {
+		return fmt.Errorf("field validation_kind in Testcase: required")
+	}
+	type Plain Testcase
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if v, ok := raw["conflicts_with"]; !ok || v == nil {
+		plain.ConflictsWith = []string{}
+	}
+	if v, ok := raw["features"]; !ok || v == nil {
+		plain.Features = []Feature{}
+	}
+	*j = Testcase(plain)
+	return nil
+}
+
 const KeyUsageContentCommitment KeyUsage = "contentCommitment"
-const KeyUsageDataEncipherment KeyUsage = "dataEncipherment"
+const FeatureNameConstraintDn Feature = "name-constraint-dn"
+const ExpectedResultFAILURE ExpectedResult = "FAILURE"
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *PeerName) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["kind"]; !ok || v == nil {
+		return fmt.Errorf("field kind in PeerName: required")
+	}
+	if v, ok := raw["value"]; !ok || v == nil {
+		return fmt.Errorf("field value in PeerName: required")
+	}
+	type Plain PeerName
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = PeerName(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *KnownEKUs) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_KnownEKUs {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_KnownEKUs, v)
+	}
+	*j = KnownEKUs(v)
+	return nil
+}
+
+const KeyUsageCRLSign KeyUsage = "cRLSign"
 const KeyUsageDecipherOnly KeyUsage = "decipher_only"
 const KeyUsageDigitalSignature KeyUsage = "digitalSignature"
 const KeyUsageEncipherOnly KeyUsage = "encipher_only"
@@ -114,28 +353,28 @@ type Testcase struct {
 	// For client-side validation: the expected peer name, if any
 	ExpectedPeerName interface{} `json:"expected_peer_name,omitempty" yaml:"expected_peer_name,omitempty" mapstructure:"expected_peer_name,omitempty"`
 
-	// For server-side validation: the expected peer names, if any
-	ExpectedPeerNames interface{} `json:"expected_peer_names,omitempty" yaml:"expected_peer_names,omitempty" mapstructure:"expected_peer_names,omitempty"`
+	// For server-side validation: the expected peer names
+	ExpectedPeerNames []PeerName `json:"expected_peer_names" yaml:"expected_peer_names" mapstructure:"expected_peer_names"`
 
 	// The expected validation result
 	ExpectedResult interface{} `json:"expected_result" yaml:"expected_result" mapstructure:"expected_result"`
 
 	// A constraining list of extended key usages, either in well-known form or as
 	// OIDs
-	ExtendedKeyUsage interface{} `json:"extended_key_usage,omitempty" yaml:"extended_key_usage,omitempty" mapstructure:"extended_key_usage,omitempty"`
+	ExtendedKeyUsage []KnownEKUs `json:"extended_key_usage" yaml:"extended_key_usage" mapstructure:"extended_key_usage"`
 
-	// One or more human-readable tags that describe OPTIONAL functionality described
+	// Zero or more human-readable tags that describe OPTIONAL functionality described
 	// by this testcase. Implementers should use this to specify testcases for
 	// non-mandatory X.509 behavior (like certificate policy validation) or for
 	// 'pedantic' cases. Consumers that don't understand a given feature should skip
 	// tests that are marked with it.
-	Features interface{} `json:"features,omitempty" yaml:"features,omitempty" mapstructure:"features,omitempty"`
+	Features []Feature `json:"features,omitempty" yaml:"features,omitempty" mapstructure:"features,omitempty"`
 
 	// A short, unique identifier for this testcase
 	Id string `json:"id" yaml:"id" mapstructure:"id"`
 
 	// A constraining list of key usages
-	KeyUsage interface{} `json:"key_usage,omitempty" yaml:"key_usage,omitempty" mapstructure:"key_usage,omitempty"`
+	KeyUsage []KeyUsage `json:"key_usage" yaml:"key_usage" mapstructure:"key_usage"`
 
 	// The maximum chain-building depth
 	MaxChainDepth interface{} `json:"max_chain_depth,omitempty" yaml:"max_chain_depth,omitempty" mapstructure:"max_chain_depth,omitempty"`
@@ -144,7 +383,7 @@ type Testcase struct {
 	PeerCertificate string `json:"peer_certificate" yaml:"peer_certificate" mapstructure:"peer_certificate"`
 
 	// A list of acceptable signature algorithms to constrain against
-	SignatureAlgorithms interface{} `json:"signature_algorithms,omitempty" yaml:"signature_algorithms,omitempty" mapstructure:"signature_algorithms,omitempty"`
+	SignatureAlgorithms []SignatureAlgorithm `json:"signature_algorithms" yaml:"signature_algorithms" mapstructure:"signature_algorithms"`
 
 	// A list of PEM-encoded CA certificates to consider trusted
 	TrustedCerts []string `json:"trusted_certs" yaml:"trusted_certs" mapstructure:"trusted_certs"`
@@ -168,46 +407,29 @@ var enumValues_ExpectedResult = []interface{}{
 	"SUCCESS",
 	"FAILURE",
 }
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Testcase) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["description"]; !ok || v == nil {
-		return fmt.Errorf("field description in Testcase: required")
-	}
-	if v, ok := raw["expected_result"]; !ok || v == nil {
-		return fmt.Errorf("field expected_result in Testcase: required")
-	}
-	if v, ok := raw["id"]; !ok || v == nil {
-		return fmt.Errorf("field id in Testcase: required")
-	}
-	if v, ok := raw["peer_certificate"]; !ok || v == nil {
-		return fmt.Errorf("field peer_certificate in Testcase: required")
-	}
-	if v, ok := raw["trusted_certs"]; !ok || v == nil {
-		return fmt.Errorf("field trusted_certs in Testcase: required")
-	}
-	if v, ok := raw["untrusted_intermediates"]; !ok || v == nil {
-		return fmt.Errorf("field untrusted_intermediates in Testcase: required")
-	}
-	if v, ok := raw["validation_kind"]; !ok || v == nil {
-		return fmt.Errorf("field validation_kind in Testcase: required")
-	}
-	type Plain Testcase
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	if v, ok := raw["conflicts_with"]; !ok || v == nil {
-		plain.ConflictsWith = []string{}
-	}
-	*j = Testcase(plain)
-	return nil
+var enumValues_Feature = []interface{}{
+	"has-cert-policies",
+	"no-cert-policies",
+	"pedantic-public-suffix-wildcard",
+	"name-constraint-dn",
+	"pedantic-webpki",
+	"pedantic-webpki-eku",
+	"pedantic-serial-number",
+	"max-chain-depth",
+	"pedantic-rfc5280",
+	"rfc5280-incompatible-with-webpki",
 }
-
+var enumValues_KeyUsage = []interface{}{
+	"digitalSignature",
+	"contentCommitment",
+	"keyEncipherment",
+	"dataEncipherment",
+	"keyAgreement",
+	"keyCertSign",
+	"cRLSign",
+	"encipher_only",
+	"decipher_only",
+}
 var enumValues_KnownEKUs = []interface{}{
 	"anyExtendedKeyUsage",
 	"serverAuth",
@@ -217,67 +439,11 @@ var enumValues_KnownEKUs = []interface{}{
 	"timeStamping",
 	"OCSPSigning",
 }
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *KnownEKUs) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_KnownEKUs {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_KnownEKUs, v)
-	}
-	*j = KnownEKUs(v)
-	return nil
+var enumValues_PeerKind = []interface{}{
+	"RFC822",
+	"DNS",
+	"IP",
 }
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ExpectedResult) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_ExpectedResult {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_ExpectedResult, v)
-	}
-	*j = ExpectedResult(v)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_SignatureAlgorithm {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_SignatureAlgorithm, v)
-	}
-	*j = SignatureAlgorithm(v)
-	return nil
-}
-
 var enumValues_SignatureAlgorithm = []interface{}{
 	"RSA_WITH_MD5",
 	"RSA_WITH_SHA1",
@@ -310,161 +476,7 @@ var enumValues_SignatureAlgorithm = []interface{}{
 	"GOSTR3410_2012_WITH_3411_2012_256",
 	"GOSTR3410_2012_WITH_3411_2012_512",
 }
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *KeyUsage) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_KeyUsage {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_KeyUsage, v)
-	}
-	*j = KeyUsage(v)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PeerName) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["kind"]; !ok || v == nil {
-		return fmt.Errorf("field kind in PeerName: required")
-	}
-	if v, ok := raw["value"]; !ok || v == nil {
-		return fmt.Errorf("field value in PeerName: required")
-	}
-	type Plain PeerName
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = PeerName(plain)
-	return nil
-}
-
-var enumValues_KeyUsage = []interface{}{
-	"digitalSignature",
-	"contentCommitment",
-	"keyEncipherment",
-	"dataEncipherment",
-	"keyAgreement",
-	"keyCertSign",
-	"cRLSign",
-	"encipher_only",
-	"decipher_only",
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Feature) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_Feature {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_Feature, v)
-	}
-	*j = Feature(v)
-	return nil
-}
-
-var enumValues_Feature = []interface{}{
-	"has-cert-policies",
-	"no-cert-policies",
-	"pedantic-public-suffix-wildcard",
-	"name-constraint-dn",
-	"pedantic-webpki",
-	"pedantic-webpki-eku",
-	"pedantic-serial-number",
-	"max-chain-depth",
-	"pedantic-rfc5280",
-	"rfc5280-incompatible-with-webpki",
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *PeerKind) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_PeerKind {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_PeerKind, v)
-	}
-	*j = PeerKind(v)
-	return nil
-}
-
 var enumValues_ValidationKind = []interface{}{
 	"CLIENT",
 	"SERVER",
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ValidationKind) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_ValidationKind {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_ValidationKind, v)
-	}
-	*j = ValidationKind(v)
-	return nil
-}
-
-var enumValues_PeerKind = []interface{}{
-	"RFC822",
-	"DNS",
-	"IP",
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *Limbo) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["testcases"]; !ok || v == nil {
-		return fmt.Errorf("field testcases in Limbo: required")
-	}
-	if v, ok := raw["version"]; !ok || v == nil {
-		return fmt.Errorf("field version in Limbo: required")
-	}
-	type Plain Limbo
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = Limbo(plain)
-	return nil
 }

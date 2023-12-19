@@ -109,11 +109,9 @@ func concatPEMCerts(certs []string) []byte {
 func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	_ = spew.Dump
 
-	if testcase.Features != nil {
-		for _, feature := range testcase.Features.([]interface{}) {
-			if feature == "max-chain-depth" {
-				return resultSkipped, fmt.Errorf("max chain depth not supported")
-			}
+	for _, feature := range testcase.Features {
+		if feature == "max-chain-depth" {
+			return resultSkipped, fmt.Errorf("max chain depth not supported")
 		}
 	}
 
@@ -131,19 +129,15 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	}
 
 	// TODO: Support testcases that constrain signature algorthms.
-	if testcase.SignatureAlgorithms != nil {
-		var signatureAlgorithms []interface{} = testcase.SignatureAlgorithms.([]interface{})
-		if len(signatureAlgorithms) != 0 {
-			return resultSkipped, fmt.Errorf("signature algorithm checks not supported yet")
-		}
+	var signatureAlgorithms = testcase.SignatureAlgorithms
+	if len(signatureAlgorithms) != 0 {
+		return resultSkipped, fmt.Errorf("signature algorithm checks not supported yet")
 	}
 
 	// TODO: Support testcases that constrain key usages.
-	if testcase.KeyUsage != nil {
-		var keyUsage []interface{} = testcase.KeyUsage.([]interface{})
-		if len(keyUsage) != 0 {
-			return resultSkipped, fmt.Errorf("key usage checks not supported yet")
-		}
+	var keyUsage = testcase.KeyUsage
+	if len(keyUsage) != 0 {
+		return resultSkipped, fmt.Errorf("key usage checks not supported yet")
 	}
 
 	if testcase.MaxChainDepth != nil {
@@ -152,7 +146,6 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 
 	var ekus []x509.ExtKeyUsage
 	if testcase.ExtendedKeyUsage != nil {
-		var extendedKeyUsage []interface{} = testcase.ExtendedKeyUsage.([]interface{})
 		extKeyUsagesMap := map[KnownEKUs]x509.ExtKeyUsage{
 			KnownEKUsAnyExtendedKeyUsage: x509.ExtKeyUsageAny,
 			KnownEKUsClientAuth:          x509.ExtKeyUsageClientAuth,
@@ -163,8 +156,8 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 			KnownEKUsTimeStamping:        x509.ExtKeyUsageTimeStamping,
 		}
 
-		for _, elem := range extendedKeyUsage {
-			expected_eku := KnownEKUs(elem.(string))
+		for _, elem := range testcase.ExtendedKeyUsage {
+			expected_eku := KnownEKUs(elem)
 			ekus = append(ekus, extKeyUsagesMap[expected_eku])
 		}
 	}

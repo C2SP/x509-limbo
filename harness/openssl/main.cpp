@@ -96,17 +96,17 @@ json evaluate_testcase(const json &testcase)
         return skip(id, "non-SERVER testcases not supported yet");
     }
 
-    if (!testcase["signature_algorithms"].is_null())
+    if (!testcase["signature_algorithms"].array().empty())
     {
         return skip(id, "signature_algorithms not supported yet");
     }
 
-    if (!testcase["key_usage"].is_null())
+    if (!testcase["key_usage"].array().empty())
     {
         return skip(id, "key_usage not supported yet");
     }
 
-    if (!testcase["expected_peer_names"].is_null())
+    if (!testcase["expected_peer_names"].array().empty())
     {
         return skip(id, "expected_peer_names not supported yet");
     }
