@@ -27,7 +27,6 @@ LIMBO_JSON = _HERE.parent / "limbo.json"
 assert LIMBO_JSON.is_file()
 
 RESULTS = _HERE.parent / "results"
-assert RESULTS.is_dir()
 
 BASE_URL = "https://trailofbits.github.io/x509-limbo"
 
@@ -141,7 +140,10 @@ def _render_harness_results(
 
 
 limbo = Limbo.parse_file(LIMBO_JSON)
-limbo_results = [LimboResult.parse_file(f) for f in RESULTS.glob("*.json")]
+if RESULTS.is_dir():
+    limbo_results = [LimboResult.parse_file(f) for f in RESULTS.glob("*.json")]
+else:
+    limbo_results = []
 
 namespaces: dict[str, list[CollatedResult]] = defaultdict(list)
 for tc in limbo.testcases:
