@@ -142,17 +142,19 @@ if RESULTS.is_dir():
 else:
     limbo_results = []
 
+
+# Mapping: tc_id -> [(harness_id, result)]
+results_by_tc_id: dict[TestCaseID, list[tuple[str, TestcaseResult]]] = defaultdict(list)
+for limbo_result in limbo_results:
+    for result in limbo_result.results:
+        results_by_tc_id[result.id].append((limbo_result.harness, result))
+
+
 namespaces: dict[str, list[CollatedResult]] = defaultdict(list)
 for tc in limbo.testcases:
     namespace, _ = tc.id.split("::", 1)
 
-    tc_results_by_harness = []
-    for result in limbo_results:
-        harness = result.harness
-        tc_result = next(r for r in result.results if r.id == tc.id)
-        tc_results_by_harness.append((harness, tc_result))
-
-    collated = CollatedResult(tc=tc, results=tc_results_by_harness)
+    collated = CollatedResult(tc=tc, results=results_by_tc_id[tc.id])
     namespaces[namespace].append(collated)
 
 for namespace, results in namespaces.items():
