@@ -66,6 +66,13 @@ online-cases: $(NEEDS_VENV)
 testcases: $(NEEDS_VENV)
 	$(MAKE) run ARGS="compile --testcases testcases/ --force"
 
+.PHONY: build-harnesses
+build-harnesses:
+	$(MAKE) -C harness/gocryptox509
+	$(MAKE) -C harness/openssl
+	cargo build --bin rust-webpki-harness
+	cargo build --bin rust-rustls-harness
+
 .PHONY: test-go
 test-go:
 	$(MAKE) -C harness/gocryptox509
