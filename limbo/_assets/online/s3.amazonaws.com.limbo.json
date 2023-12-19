@@ -1,6 +1,7 @@
 {
   "id": "online::s3.amazonaws.com",
-  "features": null,
+  "conflicts_with": [],
+  "features": [],
   "description": "A valid chain for `s3.amazonaws.com`.",
   "validation_kind": "SERVER",
   "trusted_certs": [
@@ -11,14 +12,14 @@
   ],
   "peer_certificate": "-----BEGIN CERTIFICATE-----\nMIIIOzCCByOgAwIBAgIQDMnYcxFdn1+HZt0ULgDEwTANBgkqhkiG9w0BAQsFADA8\nMQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRwwGgYDVQQDExNBbWF6b24g\nUlNBIDIwNDggTTAxMB4XDTIzMTAxMDAwMDAwMFoXDTI0MDcxMDIzNTk1OVowGzEZ\nMBcGA1UEAxMQczMuYW1hem9uYXdzLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEP\nADCCAQoCggEBANbrGvFbxrAM6TKussVOuHpCNsZX1V+jR6TAfzrO8VQWqiz+DCq+\nLlGFT2is2kRxY+hv2NswgK+Ie4SUdypQDrJ+mKFadmM2UOqIcFepA4EIUESAXZHg\nlHJAv5460i6gp9Lh6imN3jGjC1Ax0rgrfBZA+uzIy8dorBEptIj/YpE4wD4WPHnk\nY+wCDfMZdm6b6hqsrOkbqBWHH2zSH8TWfnYRguGe3NkLpM4pBNa2lTb1GBeZtm/W\nTB3dEAaxcGCu+WQbicI6BxkbzklgxKTHZ2Lc3mL8P5Ca1yWQG3asdUxw0SIkCZVd\naCzQxqtLlXSxpe4xK2KjOfq2ZM+MZhq/tR0CAwEAAaOCBVgwggVUMB8GA1UdIwQY\nMBaAFIG4DmOKiRIY5fo7O1CVn+blkBOFMB0GA1UdDgQWBBQi0miDsNb3pJw4EouH\nAR3hoCAaqzCCAokGA1UdEQSCAoAwggJ8ghBzMy5hbWF6b25hd3MuY29tghIqLnMz\nLmFtYXpvbmF3cy5jb22CJiouczMuZHVhbHN0YWNrLnVzLWVhc3QtMS5hbWF6b25h\nd3MuY29tgiRzMy5kdWFsc3RhY2sudXMtZWFzdC0xLmFtYXpvbmF3cy5jb22CHCou\nczMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb22CGnMzLnVzLWVhc3QtMS5hbWF6b25h\nd3MuY29tgiQqLnMzLWNvbnRyb2wudXMtZWFzdC0xLmFtYXpvbmF3cy5jb22CInMz\nLWNvbnRyb2wudXMtZWFzdC0xLmFtYXpvbmF3cy5jb22CLiouczMtY29udHJvbC5k\ndWFsc3RhY2sudXMtZWFzdC0xLmFtYXpvbmF3cy5jb22CLHMzLWNvbnRyb2wuZHVh\nbHN0YWNrLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tgigqLnMzLWFjY2Vzc3BvaW50\nLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tgjIqLnMzLWFjY2Vzc3BvaW50LmR1YWxz\ndGFjay51cy1lYXN0LTEuYW1hem9uYXdzLmNvbYInKi5zMy1kZXByZWNhdGVkLnVz\nLWVhc3QtMS5hbWF6b25hd3MuY29tgiVzMy1kZXByZWNhdGVkLnVzLWVhc3QtMS5h\nbWF6b25hd3MuY29tghtzMy1leHRlcm5hbC0xLmFtYXpvbmF3cy5jb22CHSouczMt\nZXh0ZXJuYWwtMS5hbWF6b25hd3MuY29tghtzMy1leHRlcm5hbC0yLmFtYXpvbmF3\ncy5jb22CHSouczMtZXh0ZXJuYWwtMi5hbWF6b25hd3MuY29tMBMGA1UdIAQMMAow\nCAYGZ4EMAQIBMA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYI\nKwYBBQUHAwIwOwYDVR0fBDQwMjAwoC6gLIYqaHR0cDovL2NybC5yMm0wMS5hbWF6\nb250cnVzdC5jb20vcjJtMDEuY3JsMHUGCCsGAQUFBwEBBGkwZzAtBggrBgEFBQcw\nAYYhaHR0cDovL29jc3AucjJtMDEuYW1hem9udHJ1c3QuY29tMDYGCCsGAQUFBzAC\nhipodHRwOi8vY3J0LnIybTAxLmFtYXpvbnRydXN0LmNvbS9yMm0wMS5jZXIwDAYD\nVR0TAQH/BAIwADCCAX0GCisGAQQB1nkCBAIEggFtBIIBaQFnAHYA7s3QZNXbGs7F\nXLedtM0TojKHRny87N7DUUhZRnEftZsAAAGLG2S5PwAABAMARzBFAiEAxOJvK1tq\ngzf5d6NPN4PZui5PhQePCg1bH/fVMd7T5ekCIHeOglhFW5BC0TNeHY+cfUOvDONT\nDV4fAVcaWsBXErw9AHUASLDja9qmRzQP5WoC+p0w6xxSActW3SyB2bu/qznYhHMA\nAAGLG2S5LwAABAMARjBEAiBYu16xOFIzUE9aMrB1vrFkTsMC3veucw9k0Hv4qO2v\nXAIgTTMRV9sq+ytuTU53XdoKLF33qeUZHGqop7O7xoFEENMAdgDatr9rP7W2Ip+b\nwrtca+hwkXFsu1GEhTS9pD0wSNf7qwAAAYsbZLlmAAAEAwBHMEUCIQCD6n2r6DVx\nUMUgtfPRi3ieJdlObPzsrc0aGVhl6gCP5QIgbzkLqEOfJ7bozTgYzUO8ZDvAd0te\ncdpZv182ZEQ974wwDQYJKoZIhvcNAQELBQADggEBAHEAZnHOPS7CoRXWTqWbQu5V\n8x2uFNl5jjsbSH68xnviW24ShllvFyHH1iD2R3ov/3Ri8T8TJ0bA14u+3D/iPZk1\nBgX2/YdL/0/CptgISLhBtugBk2+MsRry6i7hhbf4/pIyL1uWHUeDuYrW882Xw1ul\nuD1wyC1z2CqXZWy0WL0zMV6Yfp/eFnCJ9tj0NoullHGhgk9RTU3qULwuAQmzMqS7\nXlhmgdzVPDq3s8qCawHDU6yDdT5FAO3SJ23Dj2efM7enBzq0jryfEZn9vTCRJfKI\nyCZT56FgMdEqvmQutAV5UCiL1acK8YU2zUQSxuWn+AyDivV4JSOYw8ho1yZrZZI=\n-----END CERTIFICATE-----\n",
   "validation_time": "2023-10-10T00:00:01+00:00",
-  "signature_algorithms": null,
-  "key_usage": null,
-  "extended_key_usage": null,
+  "signature_algorithms": [],
+  "key_usage": [],
+  "extended_key_usage": [],
   "expected_result": "SUCCESS",
   "expected_peer_name": {
     "kind": "DNS",
     "value": "s3.amazonaws.com"
   },
-  "expected_peer_names": null,
+  "expected_peer_names": [],
   "max_chain_depth": null
 }
