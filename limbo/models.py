@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StrictStr, StringConstraints, validator
+from pydantic import BaseModel, Field, StrictStr, StringConstraints, field_validator
 
 
 class ExpectedResult(str, Enum):
@@ -284,7 +284,8 @@ class Limbo(BaseModel):
     )
     testcases: list[Testcase] = Field(..., description="One or more testcases in this testsuite")
 
-    @validator("testcases")
+    @field_validator("testcases")
+    @classmethod
     def validate_testcases(cls, v: list[Testcase]) -> list[Testcase]:
         # Check that all IDs are unique.
         id_tc_map: dict[TestCaseID, Testcase] = {}
