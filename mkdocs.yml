@@ -8,12 +8,15 @@ theme:
   features:
     - navigation.expand
 plugins:
+  - search
   - gen-files:
       scripts:
         - site/render-testcases.py
 markdown_extensions:
   # Makes sure we render `<https://...>`-style links correctly.
   - pymdownx.magiclink
+  - toc:
+      permalink: 🔗
 extra_css:
   - style.css
 exclude_docs: |

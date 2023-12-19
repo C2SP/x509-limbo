@@ -6,23 +6,41 @@
 
 import re
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
 import mkdocs_gen_files
+from py_markdown_table.markdown_table import markdown_table
 
-from limbo.models import Limbo, Testcase, TestCaseID
+from limbo.models import (
+    ActualResult,
+    ExpectedResult,
+    Limbo,
+    LimboResult,
+    Testcase,
+    TestCaseID,
+    TestcaseResult,
+)
 
-LIMBO_JSON = Path(__file__).parent.parent / "limbo.json"
+_HERE = Path(__file__).parent
+
+LIMBO_JSON = _HERE.parent / "limbo.json"
 assert LIMBO_JSON.is_file()
+
+RESULTS = _HERE.parent / "results"
+
+BASE_URL = "https://trailofbits.github.io/x509-limbo"
 
 TESTCASE_TEMPLATE = """
 ## {tc_id}
 
 {description}
 
-| Expected result | Validation kind | Validation time | Features   | Conflicts   |
-| --------------- | --------------- | --------------- | ---------- | ----------- |
-| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} |
+| Expected result | Validation kind | Validation time | Features   | Conflicts   | Download |
+| --------------- | --------------- | --------------- | ---------- | ----------- | -------- |
+| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} | {pems}   |
+
+{harness_results}
 """
 
 
@@ -46,6 +64,12 @@ LINK_SUBSTITUTIONS = [
 ]
 
 
+@dataclass
+class CollatedResult:
+    tc: Testcase
+    results: list[tuple[str, TestcaseResult]]
+
+
 def _linkify(description: str) -> str:
     for pat, subst in LINK_SUBSTITUTIONS:
         description = re.sub(pat, subst, description)
@@ -55,7 +79,7 @@ def _linkify(description: str) -> str:
 def _testcase_url(testcase_id: TestCaseID) -> str:
     namespace, _ = testcase_id.split("::", 1)
     slug = testcase_id.replace("::", "")
-    return f"https://trailofbits.github.io/x509-limbo/testcases/{namespace}/#{slug}"
+    return f"{BASE_URL}/testcases/{namespace}/#{slug}"
 
 
 def _render_conflicts(tc: Testcase) -> str:
@@ -68,27 +92,89 @@ def _render_conflicts(tc: Testcase) -> str:
     return ", ".join(md_urls)
 
 
-limbo = Limbo.parse_file(LIMBO_JSON)
+def _tc_pem_bundle(tc: Testcase) -> str:
+    # NOTE: Don't bother generating or linking individual PEMs for
+    # the bettertls suite, since they're entirely auto-generated.
+    if tc.id.startswith("bettertls"):
+        return ""
 
-namespaces: dict[str, list[Testcase]] = defaultdict(list)
+    namespace, _ = tc.id.split("::", 1)
+    slug = tc.id.replace("::", "")
+
+    bundle = [tc.peer_certificate, *tc.untrusted_intermediates, *tc.trusted_certs]
+    with mkdocs_gen_files.open(f"testcases/{namespace}/assets/{slug}/bundle.pem", "w") as f:
+        print("\n".join(bundle), file=f)
+
+    return f"[PEM bundle]({BASE_URL}/testcases/{namespace}/assets/{slug}/bundle.pem)"
+
+
+def _result_emoji(expected: ExpectedResult, actual: ActualResult):
+    match expected.value, actual.value:
+        case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
+            return "✅"
+        case (_, "SKIPPED"):
+            return "🚧"
+        case _:
+            return f"❌ (unexpected {actual.value.lower()})"
+
+
+def _render_harness_results(
+    results: list[tuple[str, TestcaseResult]], expected: ExpectedResult
+) -> str:
+    if not results:
+        return ""
+
+    data = []
+    for harness, tc_result in results:
+        data.append(
+            {
+                "Harness": f"`{harness}`",
+                "Result": _result_emoji(expected, tc_result.actual_result),
+                "Context": f"`{tc_result.context}`" if tc_result.context else "N/A",
+            }
+        )
+    return markdown_table(data).set_params(quote=False, row_sep="markdown").get_markdown()
+
+
+limbo = Limbo.parse_file(LIMBO_JSON)
+if RESULTS.is_dir():
+    limbo_results = [LimboResult.parse_file(f) for f in RESULTS.glob("*.json")]
+else:
+    limbo_results = []
+
+
+# Mapping: tc_id -> [(harness_id, result)]
+results_by_tc_id: dict[TestCaseID, list[tuple[str, TestcaseResult]]] = defaultdict(list)
+for limbo_result in limbo_results:
+    for result in limbo_result.results:
+        results_by_tc_id[result.id].append((limbo_result.harness, result))
+
+
+namespaces: dict[str, list[CollatedResult]] = defaultdict(list)
 for tc in limbo.testcases:
     namespace, _ = tc.id.split("::", 1)
-    namespaces[namespace].append(tc)
 
-for namespace, tcs in namespaces.items():
+    collated = CollatedResult(tc=tc, results=results_by_tc_id[tc.id])
+    namespaces[namespace].append(collated)
+
+for namespace, results in namespaces.items():
     with mkdocs_gen_files.open(f"testcases/{namespace}.md", "w") as f:
         print(f"# {namespace}", file=f)
 
-        for tc in tcs:
+        for r in results:
             print(
                 TESTCASE_TEMPLATE.format(
-                    tc_id=tc.id,
-                    exp_result=tc.expected_result.value,
-                    val_kind=tc.validation_kind.value,
-                    val_time=tc.validation_time.isoformat() if tc.validation_time else "N/A",
-                    features=", ".join([f.value for f in tc.features]) if tc.features else "N/A",
-                    description=_linkify(tc.description.strip()),
-                    conflicts=_render_conflicts(tc),
+                    tc_id=r.tc.id,
+                    exp_result=r.tc.expected_result.value,
+                    val_kind=r.tc.validation_kind.value,
+                    val_time=r.tc.validation_time.isoformat() if r.tc.validation_time else "N/A",
+                    features=", ".join([f.value for f in r.tc.features])
+                    if r.tc.features
+                    else "N/A",
+                    description=_linkify(r.tc.description.strip()),
+                    conflicts=_render_conflicts(r.tc),
+                    pems=_tc_pem_bundle(r.tc),
+                    harness_results=_render_harness_results(r.results, r.tc.expected_result),
                 ),
                 file=f,
             )
