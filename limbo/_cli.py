@@ -141,6 +141,8 @@ def _compile(args: argparse.Namespace) -> None:
 
 
 def _harness(args: argparse.Namespace) -> None:
+    args.output.parent.mkdir(exist_ok=True)
+
     limbo_json = args.limbo.read_text()
     if args.include is not None or args.exclude is not None:
         testcases = Limbo.parse_raw(limbo_json).testcases
