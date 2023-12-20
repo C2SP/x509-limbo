@@ -1,10 +1,9 @@
-use std::{net::IpAddr, time::SystemTime};
-
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use limbo_harness_support::{
     load_limbo,
     models::{Feature, LimboResult, PeerKind, Testcase, TestcaseResult, ValidationKind},
 };
+use webpki::ring;
 
 fn main() {
     let limbo = load_limbo();
@@ -21,6 +20,11 @@ fn main() {
     };
 
     serde_json::to_writer_pretty(std::io::stdout(), &result).unwrap();
+}
+
+fn der_from_pem<B: AsRef<[u8]>>(bytes: B) -> webpki::types::CertificateDer<'static> {
+    let pem = pem::parse(bytes).expect("cert: PEM parse failed");
+    webpki::types::CertificateDer::from(pem.contents()).into_owned()
 }
 
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
@@ -43,57 +47,56 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::skip(tc, "key_usage not supported yet");
     }
 
-    let leaf_der = pem::parse(&tc.peer_certificate).expect("leaf cert: PEM parse failed");
-    let Ok(leaf) = webpki::EndEntityCert::try_from(leaf_der.contents()) else {
+    let leaf_der = der_from_pem(&tc.peer_certificate);
+    let Ok(leaf) = webpki::EndEntityCert::try_from(&leaf_der) else {
         return TestcaseResult::fail(tc, "leaf cert: X.509 parse failed");
     };
 
     let intermediates = tc
         .untrusted_intermediates
         .iter()
-        .map(|ic| pem::parse(ic).unwrap())
+        .map(|ic| der_from_pem(ic))
         .collect::<Vec<_>>();
 
     let trust_anchor_ders = tc
         .trusted_certs
         .iter()
-        .map(|ta| pem::parse(ta).unwrap())
+        .map(|ta| der_from_pem(ta))
         .collect::<Vec<_>>();
 
     let Ok(trust_anchors) = trust_anchor_ders
         .iter()
-        .map(|ta| webpki::TrustAnchor::try_from_cert_der(ta.contents()))
+        .map(|ta| webpki::anchor_from_trusted_cert(ta.into()))
         .collect::<Result<Vec<_>, _>>()
     else {
         return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
     };
 
-    let validation_time = webpki::Time::try_from(SystemTime::from(
-        tc.validation_time.unwrap_or(Utc::now().into()),
-    ))
-    .expect("SystemTime to webpki::Time conversion failed");
+    let validation_time = webpki::types::UnixTime::since_unix_epoch(
+        (tc.validation_time.unwrap_or(Utc::now().into()) - DateTime::UNIX_EPOCH)
+            .to_std()
+            .expect("invalid validation time!"),
+    );
 
     let sig_algs = &[
-        &webpki::ECDSA_P256_SHA256,
-        &webpki::ECDSA_P384_SHA384,
-        &webpki::RSA_PKCS1_2048_8192_SHA256,
-        &webpki::RSA_PKCS1_2048_8192_SHA384,
-        &webpki::RSA_PKCS1_2048_8192_SHA512,
-        &webpki::RSA_PSS_2048_8192_SHA256_LEGACY_KEY,
-        &webpki::RSA_PSS_2048_8192_SHA384_LEGACY_KEY,
-        &webpki::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
+        ring::ECDSA_P256_SHA256,
+        ring::ECDSA_P384_SHA384,
+        ring::RSA_PKCS1_2048_8192_SHA256,
+        ring::RSA_PKCS1_2048_8192_SHA384,
+        ring::RSA_PKCS1_2048_8192_SHA512,
+        ring::RSA_PSS_2048_8192_SHA256_LEGACY_KEY,
+        ring::RSA_PSS_2048_8192_SHA384_LEGACY_KEY,
+        ring::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
     ];
 
     if let Err(e) = leaf.verify_for_usage(
         sig_algs,
         &trust_anchors,
-        &intermediates
-            .iter()
-            .map(|ic| ic.contents())
-            .collect::<Vec<_>>(),
+        &intermediates[..],
         validation_time,
         webpki::KeyUsage::server_auth(),
-        &[],
+        None,
+        None,
     ) {
         return TestcaseResult::fail(tc, &e.to_string());
     }
@@ -101,8 +104,8 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
     let subject_name = match &tc.expected_peer_name {
         None => return TestcaseResult::skip(tc, "implementation requires peer names"),
         Some(pn) => match pn.kind {
-            PeerKind::Dns => webpki::SubjectNameRef::DnsName(
-                webpki::DnsNameRef::try_from_ascii_str(&pn.value)
+            PeerKind::Dns => webpki::types::ServerName::DnsName(
+                webpki::types::DnsName::try_from(pn.value.as_str())
                     .expect(&format!("invalid expected DNS name: {}", &pn.value)),
             ),
             PeerKind::Ip => {
@@ -110,18 +113,14 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
                 // so we need to round-trip through `std::net::IpAddr`. This in turn requires
                 // us to round-trip through `webpki::IpAddr` and perform a leak, since
                 // we have no outliving reference to borrow against.
-                let addr = pn.value.parse::<IpAddr>().unwrap();
-                let addr_leaked: &'static webpki::IpAddr = Box::leak(Box::new(addr.into()));
-
-                let addr_ref = webpki::IpAddrRef::from(addr_leaked);
-
-                webpki::SubjectNameRef::IpAddress(addr_ref)
+                let addr = pn.value.as_str().try_into().unwrap();
+                webpki::types::ServerName::IpAddress(addr)
             }
             _ => return TestcaseResult::skip(tc, "implementation requires DNS or IP peer names"),
         },
     };
 
-    if let Err(_) = leaf.verify_is_valid_for_subject_name(subject_name) {
+    if let Err(_) = leaf.verify_is_valid_for_subject_name(&subject_name) {
         TestcaseResult::fail(tc, "subject name validation failed")
     } else {
         TestcaseResult::success(tc)
