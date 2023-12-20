@@ -1262,18 +1262,21 @@ def nc_forbids_alternate_chain_san(builder: Builder) -> None:
     Produces the following **valid** graph:
 
     ```
-    EE +-> ICA' (SAN) -> No root to chain to
-       |-> ICA'' (no SAN) -> Root (NC that doesn't match Intermediate 1 SAN)
+    EE (SAN:X) +-> ICA_B' (SAN:Y) -> No root to chain to
+               |-> ICA_B'' (no SAN) -> ICA_A (NC forbids SAN:Y) -> Root
     ```
 
-    `ICA'` and `ICA''` are certificates for the same logical intermediate,
+    `ICA_B'` and `ICA_B''` are certificates for the same logical intermediate,
     but issued by different logical root CAs.
 
-    This graph allows validation through `EE -> ICA'' -> Root`.
+    This graph allows validation through `EE -> ICA_B'' -> Root`.
     """
 
     discarded_root = builder.root_ca(san=None)
-    trusted_root = builder.root_ca(
+    trusted_root = builder.root_ca(san=None)
+
+    ica_a = builder.intermediate_ca(
+        trusted_root,
         name_constraints=ext(
             x509.NameConstraints(
                 permitted_subtrees=[x509.DNSName("permitted.example.com")],
@@ -1285,7 +1288,7 @@ def nc_forbids_alternate_chain_san(builder: Builder) -> None:
     )
 
     ica_key = ec.generate_private_key(ec.SECP256R1())
-    ica_1 = builder.intermediate_ca(
+    ica_b_1 = builder.intermediate_ca(
         discarded_root,
         key=ica_key,
         subject=x509.Name.from_rfc4514_string("CN=an-intermediate"),
@@ -1293,15 +1296,15 @@ def nc_forbids_alternate_chain_san(builder: Builder) -> None:
             x509.SubjectAlternativeName([x509.DNSName("forbidden.example.com")]), critical=False
         ),
     )
-    ica_2 = builder.intermediate_ca(
-        trusted_root,
+    ica_b_2 = builder.intermediate_ca(
+        ica_a,
         key=ica_key,
         subject=x509.Name.from_rfc4514_string("CN=an-intermediate"),
         san=None,
     )
 
     leaf = builder.leaf_cert(
-        ica_1,
+        ica_b_1,
         subject=x509.Name.from_rfc4514_string("CN=permitted.example.com"),
         san=ext(
             x509.SubjectAlternativeName([x509.DNSName("permitted.example.com")]), critical=False
@@ -1311,7 +1314,7 @@ def nc_forbids_alternate_chain_san(builder: Builder) -> None:
     builder = (
         builder.server_validation()
         .trusted_certs(trusted_root)
-        .untrusted_intermediates(ica_1, ica_2)
+        .untrusted_intermediates(ica_a, ica_b_1, ica_b_2)
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="permitted.example.com"))
         .succeeds()
