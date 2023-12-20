@@ -3,7 +3,6 @@ RFC 5280 Name Constraints (NC) testcases.
 """
 
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
-from re import M
 
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
