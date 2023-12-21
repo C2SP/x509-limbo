@@ -1257,7 +1257,7 @@ def nc_permits_invalid_ip_san(builder: Builder) -> None:
 
 
 @testcase
-def nc_forbids_alternate_chain_san(builder: Builder) -> None:
+def nc_forbids_alternate_chain_ica(builder: Builder) -> None:
     """
     Produces the following **valid** graph:
 
@@ -1317,5 +1317,73 @@ def nc_forbids_alternate_chain_san(builder: Builder) -> None:
         .untrusted_intermediates(ica_a, ica_b_1, ica_b_2)
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="permitted.example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def nc_forbids_same_chain_ica(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    EE (SAN:X) +-> ICA_B' (SAN:Y) -> ICA_A (forbid: SAN:Y) -> RCA_A
+               |-> ICA_B'' (SAN:Z) -> RCA_B (no NC)
+    ```
+
+    `ICA_B'` and `ICA_B''` are certificates for the same logical intermediate,
+    but chained to different logical root CAs. Both root CAs are trusted,
+    but `ICA_B'` is issued through `ICA_A`, which forbids `ICA_B'`'s SAN.
+
+    This graph allows validation through `EE -> ICA_B'' -> RCA_B`
+    """
+
+    root_a = builder.root_ca(san=None)
+    root_b = builder.root_ca(san=None)
+
+    ica_a = builder.intermediate_ca(
+        root_a,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=None, excluded_subtrees=[x509.DNSName("forbidden.example.com")]
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+
+    ica_b_key = ec.generate_private_key(ec.SECP256R1())
+    ica_b_1 = builder.intermediate_ca(
+        ica_a,
+        key=ica_b_key,
+        subject=x509.Name.from_rfc4514_string("CN=an-intermediate"),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("forbidden.example.com")]), critical=False
+        ),
+    )
+    ica_b_2 = builder.intermediate_ca(
+        root_b,
+        key=ica_b_key,
+        subject=x509.Name.from_rfc4514_string("CN=an-intermediate"),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("unconstrained-ica.example.com")]),
+            critical=False,
+        ),
+    )
+
+    leaf = builder.leaf_cert(
+        ica_b_1,
+        subject=x509.Name.from_rfc4514_string("CN=unconstrained.example.com"),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("unconstrained.example.com")]), critical=False
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root_a, root_b)
+        .untrusted_intermediates(ica_a, ica_b_1, ica_b_2)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="unconstrained.example.com"))
         .succeeds()
     )
