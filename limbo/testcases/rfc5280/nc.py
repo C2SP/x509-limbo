@@ -5,6 +5,7 @@ RFC 5280 Name Constraints (NC) testcases.
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 
 from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import ext
 from limbo.models import Feature, PeerName
@@ -1252,4 +1253,69 @@ def nc_permits_invalid_ip_san(builder: Builder) -> None:
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="IP", value="192.0.2.1"))
         .fails()
+    )
+
+
+@testcase
+def nc_forbids_alternate_chain_san(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    EE (SAN:X) +-> ICA_B' (SAN:Y) -> No root to chain to
+               |-> ICA_B'' (no SAN) -> ICA_A (NC forbids SAN:Y) -> Root
+    ```
+
+    `ICA_B'` and `ICA_B''` are certificates for the same logical intermediate,
+    but issued by different logical root CAs.
+
+    This graph allows validation through `EE -> ICA_B'' -> Root`.
+    """
+
+    discarded_root = builder.root_ca(san=None)
+    trusted_root = builder.root_ca(san=None)
+
+    ica_a = builder.intermediate_ca(
+        trusted_root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("permitted.example.com")],
+                excluded_subtrees=[x509.DNSName("forbidden.example.com")],
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+
+    ica_key = ec.generate_private_key(ec.SECP256R1())
+    ica_b_1 = builder.intermediate_ca(
+        discarded_root,
+        key=ica_key,
+        subject=x509.Name.from_rfc4514_string("CN=an-intermediate"),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("forbidden.example.com")]), critical=False
+        ),
+    )
+    ica_b_2 = builder.intermediate_ca(
+        ica_a,
+        key=ica_key,
+        subject=x509.Name.from_rfc4514_string("CN=an-intermediate"),
+        san=None,
+    )
+
+    leaf = builder.leaf_cert(
+        ica_b_1,
+        subject=x509.Name.from_rfc4514_string("CN=permitted.example.com"),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("permitted.example.com")]), critical=False
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(trusted_root)
+        .untrusted_intermediates(ica_a, ica_b_1, ica_b_2)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="permitted.example.com"))
+        .succeeds()
     )
