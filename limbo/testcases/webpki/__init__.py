@@ -245,3 +245,32 @@ def ee_basicconstraints_ca(builder: Builder) -> None:
     builder.server_validation().trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def ca_as_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA
+    ```
+
+    The ICA is in leaf position, despite being a CA certificate,
+    which is explicitly forbidden under CABF 7.1.2.7.11 (`keyUsage.keyCertSign` must NOT be
+    permitted) and 7.1.2.7.8 (`basicConstraints.cA` MUST be false`).
+    """
+
+    root = builder.root_ca()
+    ica_leaf = builder.intermediate_ca(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("ca.example.com")]), critical=False)
+    )
+
+    builder = (
+        builder.conflicts_with("rfc5280::ca-as-leaf")
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(ica_leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="ca.example.com"))
+        .fails()
+    )

@@ -566,3 +566,32 @@ def mismatching_signature_algorithm(builder: Builder) -> None:
         .untrusted_intermediates(*chain)
         .expected_peer_name(PeerName(kind="DNS", value="cryptography.io"))
     ).fails()
+
+
+@testcase
+def ca_as_leaf(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> ICA
+    ```
+
+    The ICA is in leaf position, despite being a CA certificate. This
+    is permitted under RFC 5280, which makes no stipulations about CA/EE
+    state in the leaf position.
+    """
+
+    root = builder.root_ca()
+    ica_leaf = builder.intermediate_ca(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("ca.example.com")]), critical=False)
+    )
+
+    builder = (
+        builder.conflicts_with("webpki::ca-as-leaf")
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(ica_leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="ca.example.com"))
+        .succeeds()
+    )
