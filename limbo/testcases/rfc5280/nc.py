@@ -1327,7 +1327,7 @@ def nc_forbids_same_chain_ica(builder: Builder) -> None:
     Produces the following **valid** graph:
 
     ```
-    EE (SAN:X) +-> ICA_B' (SAN:Y) -> -> ICA_A (forbid: SAN:Y) -> RCA_A
+    EE (SAN:X) +-> ICA_B' (SAN:Y) -> ICA_A (forbid: SAN:Y) -> RCA_A
                |-> ICA_B'' (SAN:Z) -> RCA_B (no NC)
     ```
 
@@ -1335,7 +1335,7 @@ def nc_forbids_same_chain_ica(builder: Builder) -> None:
     but chained to different logical root CAs. Both root CAs are trusted,
     but `ICA_B'` is issued through `ICA_A`, which forbids `ICA_B'`'s SAN.
 
-    This graph allows validation through `EE -> ICA_B'' -> ICA_A -> -> RCA_B`
+    This graph allows validation through `EE -> ICA_B'' -> RCA_B`
     """
 
     root_a = builder.root_ca(san=None)
