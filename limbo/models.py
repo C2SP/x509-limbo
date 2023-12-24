@@ -147,6 +147,11 @@ class Feature(str, Enum):
     Feature tags for testcases.
     """
 
+    has_policy_constraints = "has-policy-constraints"
+    """
+    For implementations that explicitly support policy constraints and policy mapping.
+    """
+
     has_cert_policies = "has-cert-policies"
     """
     For implementations that explicitly support X.509 certificate policy extensions.
