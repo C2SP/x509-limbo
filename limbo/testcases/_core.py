@@ -45,7 +45,7 @@ class Builder:
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None,
         name_constraints: _Extension[x509.NameConstraints] | None,
-        extra_extension: _Extension[x509.UnrecognizedExtension] | None,
+        extra_extension: _Extension[x509.ExtensionType] | None,
         parent: CertificatePair | None,
     ) -> CertificatePair:
         if subject is None:
@@ -204,7 +204,7 @@ class Builder:
         aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
         ski: _Extension[x509.SubjectKeyIdentifier] | Literal[True] | None = True,
         name_constraints: _Extension[x509.NameConstraints] | None = None,
-        extra_extension: _Extension[x509.UnrecognizedExtension] | None = None,
+        extra_extension: _Extension[x509.ExtensionType] | None = None,
     ) -> CertificatePair:
         """
         An intermediate CA chained up to a root CA.
