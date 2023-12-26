@@ -7,6 +7,7 @@
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 
 import mkdocs_gen_files
@@ -43,6 +44,11 @@ TESTCASE_TEMPLATE = """
 {harness_results}
 """
 
+RESULT_TEMPLATE = """
+| Testcase  | Context   |
+| --------- | --------  |
+| {tc_link} | {context} |
+"""
 
 LINK_SUBSTITUTIONS = [
     # Rewrite `RFC XXXX A.B.C.D` into a section link.
@@ -69,6 +75,14 @@ class CollatedResult:
     tc: Testcase
     results: list[tuple[str, TestcaseResult]]
 
+    @cached_property
+    def divergent_results(self) -> list[tuple[str, TestcaseResult]]:
+        return [
+            (harness_id, tc_result)
+            for (harness_id, tc_result) in self.results
+            if tc_result.actual_result.value != self.tc.expected_result.value
+        ]
+
 
 def _linkify(description: str) -> str:
     for pat, subst in LINK_SUBSTITUTIONS:
@@ -80,6 +94,12 @@ def _testcase_url(testcase_id: TestCaseID) -> str:
     namespace, _ = testcase_id.split("::", 1)
     slug = testcase_id.replace("::", "")
     return f"{BASE_URL}/testcases/{namespace}/#{slug}"
+
+
+def _testcase_link(testcase_id: TestCaseID) -> str:
+    url = _testcase_url(testcase_id)
+
+    return f"[`{testcase_id}`]({url})"
 
 
 def _render_conflicts(tc: Testcase) -> str:
@@ -137,17 +157,21 @@ def _render_harness_results(
 
 
 limbo = Limbo.model_validate_json(LIMBO_JSON.read_text())
+tcs_by_id = {tc.id: tc for tc in limbo.testcases}
+
 if RESULTS.is_dir():
-    limbo_results = [LimboResult.model_validate_json(f.read_text()) for f in RESULTS.glob("*.json")]
+    harness_results = [
+        LimboResult.model_validate_json(f.read_text()) for f in RESULTS.glob("*.json")
+    ]
 else:
-    limbo_results = []
+    harness_results = []
 
 
 # Mapping: tc_id -> [(harness_id, result)]
 results_by_tc_id: dict[TestCaseID, list[tuple[str, TestcaseResult]]] = defaultdict(list)
-for limbo_result in limbo_results:
-    for result in limbo_result.results:
-        results_by_tc_id[result.id].append((limbo_result.harness, result))
+for harness_result in harness_results:
+    for testcase_result in harness_result.results:
+        results_by_tc_id[testcase_result.id].append((harness_result.harness, testcase_result))
 
 
 namespaces: dict[str, list[CollatedResult]] = defaultdict(list)
@@ -157,11 +181,11 @@ for tc in limbo.testcases:
     collated = CollatedResult(tc=tc, results=results_by_tc_id[tc.id])
     namespaces[namespace].append(collated)
 
-for namespace, results in namespaces.items():
+for namespace, tc_results in namespaces.items():
     with mkdocs_gen_files.open(f"testcases/{namespace}.md", "w") as f:
         print(f"# {namespace}", file=f)
 
-        for r in results:
+        for r in tc_results:
             print(
                 TESTCASE_TEMPLATE.format(
                     tc_id=r.tc.id,
@@ -178,3 +202,59 @@ for namespace, results in namespaces.items():
                 ),
                 file=f,
             )
+
+for harness_result in harness_results:
+    with mkdocs_gen_files.open(f"anomalous-results/{harness_result.harness}.md", "w") as f:
+        print(f"# {harness_result.harness}", file=f)
+
+        unexpected_failures: list[TestcaseResult] = []
+        unexpected_passes: list[TestcaseResult] = []
+        skipped_testcases: list[TestcaseResult] = []
+        for testcase_result in harness_result.results:
+            expected_result = tcs_by_id[testcase_result.id].expected_result
+
+            match (expected_result.value, testcase_result.actual_result.value):
+                case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
+                    continue
+                case ("SUCCESS", "FAILURE"):
+                    unexpected_failures.append(testcase_result)
+                case ("FAILURE", "SUCCESS"):
+                    unexpected_passes.append(testcase_result)
+                case (_, "SKIPPED"):
+                    skipped_testcases.append(testcase_result)
+
+        sections: dict[str, tuple[str, list[TestcaseResult]]] = {
+            "Unexpected verifications": (
+                "These testcases were expected to fail, but succeeded instead",
+                unexpected_passes,
+            ),
+            "Unexpected failures": (
+                "These testcases were expected to succeed, but failed instead",
+                unexpected_failures,
+            ),
+            "Skipped tests": (
+                "These testcases were skipped due to a harness or implementation limitation",
+                skipped_testcases,
+            ),
+        }
+
+        for header, (desc, tc_results) in sections.items():
+            # No anomalous results in this section; don't bother rendering it.
+            if not tc_results:
+                continue
+
+            print(f"## {header}", file=f)
+            print(f"{desc}\n", file=f)
+
+            table = [
+                {
+                    "Testcase": _testcase_link(tc_result.id),
+                    "Context": tc_result.context if tc_result.context else "N/A",
+                }
+                for tc_result in tc_results
+            ]
+            print(
+                markdown_table(table).set_params(quote=False, row_sep="markdown").get_markdown(),
+                file=f,
+            )
+            print("\n\n", file=f)
