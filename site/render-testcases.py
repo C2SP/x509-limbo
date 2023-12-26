@@ -44,12 +44,6 @@ TESTCASE_TEMPLATE = """
 {harness_results}
 """
 
-RESULT_TEMPLATE = """
-| Testcase  | Context   |
-| --------- | --------  |
-| {tc_link} | {context} |
-"""
-
 LINK_SUBSTITUTIONS = [
     # Rewrite `RFC XXXX A.B.C.D` into a section link.
     (
