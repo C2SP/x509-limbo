@@ -7,7 +7,6 @@
 import re
 from collections import defaultdict
 from dataclasses import dataclass
-from functools import cached_property
 from pathlib import Path
 
 import mkdocs_gen_files
@@ -68,14 +67,6 @@ LINK_SUBSTITUTIONS = [
 class CollatedResult:
     tc: Testcase
     results: list[tuple[str, TestcaseResult]]
-
-    @cached_property
-    def divergent_results(self) -> list[tuple[str, TestcaseResult]]:
-        return [
-            (harness_id, tc_result)
-            for (harness_id, tc_result) in self.results
-            if tc_result.actual_result.value != self.tc.expected_result.value
-        ]
 
 
 def _linkify(description: str) -> str:
