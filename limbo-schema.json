@@ -12,6 +12,7 @@
     "Feature": {
       "description": "Feature tags for testcases.",
       "enum": [
+        "has-policy-constraints",
         "has-cert-policies",
         "no-cert-policies",
         "pedantic-public-suffix-wildcard",

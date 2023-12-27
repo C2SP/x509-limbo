@@ -13,6 +13,7 @@ from limbo.testcases._core import Builder, testcase
 from .aki import *  # noqa: F403
 from .eku import *  # noqa: F403
 from .nc import *  # noqa: F403
+from .pc import *  # noqa: F403
 from .san import *  # noqa: F403
 from .serial import *  # noqa: F403
 from .ski import *  # noqa: F403
@@ -566,3 +567,61 @@ def mismatching_signature_algorithm(builder: Builder) -> None:
         .untrusted_intermediates(*chain)
         .expected_peer_name(PeerName(kind="DNS", value="cryptography.io"))
     ).fails()
+
+
+@testcase
+def ca_as_leaf(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> ICA
+    ```
+
+    The ICA is in leaf position, despite being a CA certificate. This
+    is permitted under RFC 5280, which makes no stipulations about CA/EE
+    state in the leaf position.
+    """
+
+    root = builder.root_ca()
+    ica_leaf = builder.intermediate_ca(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("ca.example.com")]), critical=False)
+    )
+
+    builder = (
+        builder.conflicts_with("webpki::ca-as-leaf")
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(ica_leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="ca.example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def ca_as_leaf_wrong_san(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA
+    ```
+
+    The ICA is in leaf position, despite being a CA certificate. This
+    is permitted under RFC 5280, which makes no stipulations about CA/EE
+    state in the leaf position. However, the ICA *also* has a different
+    SAN than expected, resulting in a failure.
+    """
+
+    root = builder.root_ca()
+    ica_leaf = builder.intermediate_ca(
+        root, san=ext(x509.SubjectAlternativeName([x509.DNSName("ca.example.com")]), critical=False)
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .peer_certificate(ica_leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="some-other-ca.example.com"))
+        .fails()
+    )

@@ -4,7 +4,15 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StrictStr, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    FieldSerializationInfo,
+    StrictStr,
+    StringConstraints,
+    field_serializer,
+    field_validator,
+)
 
 
 class ExpectedResult(str, Enum):
@@ -139,6 +147,11 @@ class Feature(str, Enum):
     Feature tags for testcases.
     """
 
+    has_policy_constraints = "has-policy-constraints"
+    """
+    For implementations that explicitly support policy constraints and policy mapping.
+    """
+
     has_cert_policies = "has-cert-policies"
     """
     For implementations that explicitly support X.509 certificate policy extensions.
@@ -266,6 +279,27 @@ class Testcase(BaseModel):
     )
 
     max_chain_depth: int | None = Field(None, description="The maximum chain-building depth")
+
+    @field_validator("validation_time")
+    @classmethod
+    def validate_validation_time(cls, v: datetime | None) -> datetime | None:
+        if v is not None:
+            # Times must be in UTC, must not have fractional seconds.
+            assert v.tzname() == "UTC"
+            assert v.microsecond == 0
+
+        return v
+
+    @field_serializer("validation_time")
+    def serialize_validation_time(
+        self, validation_time: datetime | None, _info: FieldSerializationInfo
+    ) -> str | None:
+        if validation_time is None:
+            return validation_time
+        # NOTE(ww): Explicitly serialize with `isoformat`, which expresses UTC
+        # with `+00:00`` instead of `Z`. This is needed for Python consumers below 3.11,
+        # which don't support `Z` in `fromisoformat()`.
+        return validation_time.isoformat(timespec="seconds")
 
 
 class Limbo(BaseModel):
