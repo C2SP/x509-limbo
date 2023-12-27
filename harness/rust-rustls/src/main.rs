@@ -109,10 +109,6 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
                     .expect(&format!("invalid expected DNS name: {}", &pn.value)),
             ),
             PeerKind::Ip => {
-                // Very dumb: rustls-webpki doesn't allow compressed IPv6 string representations,
-                // so we need to round-trip through `std::net::IpAddr`. This in turn requires
-                // us to round-trip through `webpki::IpAddr` and perform a leak, since
-                // we have no outliving reference to borrow against.
                 let addr = pn.value.as_str().try_into().unwrap();
                 webpki::types::ServerName::IpAddress(addr)
             }
