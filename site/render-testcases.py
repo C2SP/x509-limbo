@@ -46,7 +46,7 @@ TESTCASE_TEMPLATE = """
 LINK_SUBSTITUTIONS = [
     # Rewrite `RFC XXXX A.B.C.D` into a section link.
     (
-        r"(?<!\[)RFC (\d+) (\d(?:.\d)*)(?!\])",
+        r"(?<!\[)RFC (\d+) (\d+(?:.\d+)*)(?!\])",
         r"[\g<0>](https://datatracker.ietf.org/doc/html/rfc\g<1>#section-\g<2>)",
     ),
     # Rewrite bare `RFC XXXX` into an RFC link.
