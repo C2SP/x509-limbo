@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"slices"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -134,9 +135,14 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		return resultSkipped, fmt.Errorf("signature algorithm checks not supported yet")
 	}
 
-	// TODO: Support testcases that constrain key usages.
-	var keyUsage = testcase.KeyUsage
-	if len(keyUsage) != 0 {
+	// NOTE: We allow a digitialSignature keyUsage, but otherwise don't
+	// support anything due to Go's limited support for keyUsage.
+	// See: https://github.com/golang/go/issues/40100
+	var keyUsages = testcase.KeyUsage
+	hasDigitalSignature := slices.ContainsFunc(keyUsages, func(ku KeyUsage) bool {
+		return ku == KeyUsageDigitalSignature
+	})
+	if len(keyUsages) != 0 && !hasDigitalSignature {
 		return resultSkipped, fmt.Errorf("key usage checks not supported yet")
 	}
 
