@@ -5,6 +5,8 @@
 A suite of testvectors (and associated tooling) for X.509 certificate path
 validation.
 
+This project is maintained by [Trail of Bits](https://www.trailofbits.com/).
+
 ## How to use this repository
 
 This repository contains canned testcases for developing or testing
