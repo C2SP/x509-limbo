@@ -29,7 +29,7 @@ assert LIMBO_JSON.is_file()
 
 RESULTS = _HERE.parent / "results"
 
-BASE_URL = "https://trailofbits.github.io/x509-limbo"
+BASE_URL = "https://x509-limbo.com"
 
 TESTCASE_TEMPLATE = """
 ## {tc_id}
