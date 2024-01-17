@@ -43,9 +43,9 @@ dev = ["limbo[doc,test,lint,site]", "twine", "wheel", "build"]
 "limbo" = "limbo._cli:main"
 
 [project.urls]
-homepage = "https://github.com/trailofbits/x509-limbo"
-source = "https://github.com/trailofbits/x509-limbo/"
-issues = "https://github.com/trailofbits/x509-limbo/issues"
+homepage = "https://github.com/C2SP/x509-limbo"
+source = "https://github.com/C2SP/x509-limbo/"
+issues = "https://github.com/C2SP/x509-limbo/issues"
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]

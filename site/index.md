@@ -8,4 +8,4 @@ each testcase in the testsuite.
 
 See the [repository README] for more information.
 
-[repository README]: https://github.com/trailofbits/x509-limbo
+[repository README]: https://github.com/C2SP/x509-limbo
