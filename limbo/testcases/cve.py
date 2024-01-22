@@ -18,9 +18,9 @@ def cve_2024_0567(builder: Builder) -> None:
 
     Affects GnuTLS prior to 3.8.3.
 
-    Announcement: <https://lists.gnupg.org/pipermail/gnutls-help/2024-January/004841.html>
-
-    Patch: <https://gitlab.com/gnutls/gnutls/-/commit/9edbdaa84e38b1bfb53a7d72c1de44f8de373405>
+    * Announcement: <https://lists.gnupg.org/pipermail/gnutls-help/2024-January/004841.html>
+    * Patch: <https://gitlab.com/gnutls/gnutls/-/commit/9edbdaa84e38b1bfb53a7d72c1de44f8de373405>
+    * License: [LGPL 2.1 or later](https://gitlab.com/gnutls/gnutls/-/blob/master/LICENSE)
     """
 
     leaf = x509.load_pem_x509_certificate(
