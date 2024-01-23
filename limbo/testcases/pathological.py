@@ -28,7 +28,7 @@ def multiple_chains_expired_intermediate(builder: Builder) -> None:
     """
     root = builder.root_ca()
     root_two = builder.root_ca(issuer=x509.Name.from_rfc4514_string("CN=x509-limbo-root-2"))
-    ski = x509.SubjectKeyIdentifier.from_public_key(root.key.public_key())  # type: ignore[arg-type]
+    ski = x509.SubjectKeyIdentifier.from_public_key(root.key.public_key())
     expired_intermediate = builder.intermediate_ca(
         root_two,
         pathlen=1,

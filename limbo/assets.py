@@ -13,7 +13,7 @@ from typing import Generic, TypeVar
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
+from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPrivateKeyTypes
 from cryptography.x509 import ExtensionType
 
 # NOTE: We judiciously start on the second *after* the Unix epoch, since
@@ -47,7 +47,7 @@ class CertificatePair(Certificate):
     An X.509 certificate and its associated private key.
     """
 
-    key: PrivateKeyTypes
+    key: CertificateIssuerPrivateKeyTypes
 
     @cached_property
     def key_pem(self) -> str:
