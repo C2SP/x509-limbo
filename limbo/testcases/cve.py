@@ -2,11 +2,12 @@
 Public CVE testcases.
 """
 
-from textwrap import dedent
 
 from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 
-from limbo.assets import Certificate
+from limbo.assets import EPOCH, ONE_THOUSAND_YEARS_OF_TORMENT, CertificatePair, ext
 from limbo.models import PeerKind, PeerName
 from limbo.testcases._core import Builder, testcase
 
@@ -16,154 +17,268 @@ def cve_2024_0567(builder: Builder) -> None:
     """
     Tests CVE-2024-0567.
 
+    Produces the following **valid** trust graph:
+
+    ```
+    leaf -> A1 -> (A <-> B <-> C) -> Root A
+    ```
+
+    In other words: `leaf` is signed by intermediate `A1`, which in turn is signed
+    by `A`, which is mutually cross-signed by CAs `B` and `C`. This naively results
+    in a cycle, which can be resolved because `A` is also present as a self-signed
+    root in the trusted set.
+
+    `B` and `C` also have subordinate CAs (`B1` and `C1`), but these do not factor
+    into the constructed chain.
+
     Affects GnuTLS prior to 3.8.3.
 
     * Announcement: <https://lists.gnupg.org/pipermail/gnutls-help/2024-January/004841.html>
     * Patch: <https://gitlab.com/gnutls/gnutls/-/commit/9edbdaa84e38b1bfb53a7d72c1de44f8de373405>
-    * License: [LGPL 2.1 or later](https://gitlab.com/gnutls/gnutls/-/blob/master/LICENSE)
+
+    This testcase is an independent recreation of the testcase in the patch, for CABF
+    conformance.
     """
 
-    leaf = x509.load_pem_x509_certificate(
-        dedent(
-            """
-            /* server (signed by A1) */
-            -----BEGIN CERTIFICATE-----
-            MIIBqDCCAVqgAwIBAgIUejlil+8DBffazcnMNwyOOP6yCCowBQYDK2VwMBoxGDAW
-            BgNVBAMTD0ludGVybWVkaWF0ZSBBMTAgFw0yNDAxMTEwNjI3MjJaGA85OTk5MTIz
-            MTIzNTk1OVowNzEbMBkGA1UEChMSR251VExTIHRlc3Qgc2VydmVyMRgwFgYDVQQD
-            Ew90ZXN0LmdudXRscy5vcmcwKjAFBgMrZXADIQA1ZVS0PcNeTPQMZ+FuVz82AHrj
-            qL5hWEpCDgpG4M4fxaOBkjCBjzAMBgNVHRMBAf8EAjAAMBoGA1UdEQQTMBGCD3Rl
-            c3QuZ251dGxzLm9yZzATBgNVHSUEDDAKBggrBgEFBQcDATAOBgNVHQ8BAf8EBAMC
-            B4AwHQYDVR0OBBYEFGtEUv+JSt+zPoO3lu0IiObZVoiNMB8GA1UdIwQYMBaAFPnY
-            v6Pw0IvKSqIlb6ewHyEAmTA3MAUGAytlcANBAAS2lyc87kH/aOvNKzPjqDwUYxPA
-            CfYjyaKea2d0DZLBM5+Bjnj/4aWwTKgVTJzWhLJcLtaSdVHrXqjr9NhEhQ0=
-            -----END CERTIFICATE-----
-            """
-        ).encode()
+    # Self-signed Root A
+    root = builder.root_ca(subject=x509.Name.from_rfc4514_string("CN=Root A"))
+    key_a = root.key
+
+    # Keys for CAs B and C
+    key_b = ec.generate_private_key(ec.SECP256R1())
+    key_c = ec.generate_private_key(ec.SECP256R1())
+
+    basic_constraints = x509.BasicConstraints(ca=True, path_length=None)
+    key_usage = x509.KeyUsage(
+        digital_signature=False,
+        key_cert_sign=True,
+        content_commitment=False,
+        key_encipherment=False,
+        data_encipherment=False,
+        key_agreement=False,
+        crl_sign=False,
+        encipher_only=False,
+        decipher_only=False,
     )
 
-    intermediates = x509.load_pem_x509_certificates(
-        dedent(
-            """
-            /* A1 (signed by A) */
-            -----BEGIN CERTIFICATE-----
-            MIIBUjCCAQSgAwIBAgIUe/R+NVp04e74ySw2qgI6KZgFR20wBQYDK2VwMBExDzAN
-            BgNVBAMTBlJvb3QgQTAgFw0yNDAxMTEwNjI1MDFaGA85OTk5MTIzMTIzNTk1OVow
-            GjEYMBYGA1UEAxMPSW50ZXJtZWRpYXRlIEExMCowBQYDK2VwAyEAlkTNqwz973sy
-            u3whMjSiUMs77CZu5YA7Gi5KcakExrKjYzBhMA8GA1UdEwEB/wQFMAMBAf8wDgYD
-            VR0PAQH/BAQDAgIEMB0GA1UdDgQWBBT52L+j8NCLykqiJW+nsB8hAJkwNzAfBgNV
-            HSMEGDAWgBRbYgOkRGsd3Z74+CauX4htzLg0lzAFBgMrZXADQQBM0NBaFVPd3cTJ
-            DSaZNT34fsHuJk4eagpn8mBxKQpghq4s8Ap+nYtp2KiXjcizss53PeLXVnkfyLi0
-            TLVBHvUJ
-            -----END CERTIFICATE-----
-            /* A (signed by B) */
-            -----BEGIN CERTIFICATE-----
-            MIIBSDCB+6ADAgECAhQtdJpg+qlPcLoRW8iiztJUD4xNvDAFBgMrZXAwETEPMA0G
-            A1UEAxMGUm9vdCBCMCAXDTI0MDExMTA2MTk1OVoYDzk5OTkxMjMxMjM1OTU5WjAR
-            MQ8wDQYDVQQDEwZSb290IEEwKjAFBgMrZXADIQA0vDYyg3tgotSETL1Wq2hBs32p
-            WbnINkmOSNmOiZlGHKNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-            AgQwHQYDVR0OBBYEFFtiA6REax3dnvj4Jq5fiG3MuDSXMB8GA1UdIwQYMBaAFJFA
-            s2rg6j8w9AKItRnOOOjG2FG6MAUGAytlcANBAPv674p9ek5GjRcRfVQhgN+kQlHU
-            u774wL3Vx3fWA1E7+WchdMzcHrPoa5OKtKmxjIKUTO4SeDZL/AVpvulrWwk=
-            -----END CERTIFICATE-----
-            /* A (signed by C) */
-            -----BEGIN CERTIFICATE-----
-            MIIBSDCB+6ADAgECAhReNpCiVn7eFDUox3mvM5qE942AVzAFBgMrZXAwETEPMA0G
-            A1UEAxMGUm9vdCBDMCAXDTI0MDExMTA2MjEyMVoYDzk5OTkxMjMxMjM1OTU5WjAR
-            MQ8wDQYDVQQDEwZSb290IEIwKjAFBgMrZXADIQAYX92hS97OGKbMzwrD7ReVifwM
-            3iz5tnfQHWQSkvvYMKNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-            AgQwHQYDVR0OBBYEFJFAs2rg6j8w9AKItRnOOOjG2FG6MB8GA1UdIwQYMBaAFEh/
-            XKjIuMeEavX5QVoy39Q+GhnwMAUGAytlcANBAIwghH3gelXty8qtoTGIEJb0+EBv
-            BH4YOUh7TamxjxkjvvIhDA7ZdheofFb7NrklJco7KBcTATUSOvxakYRP9Q8=
-            -----END CERTIFICATE-----
-            /* B1 (signed by B) */
-            -----BEGIN CERTIFICATE-----
-            MIIBUjCCAQSgAwIBAgIUfpmrVDc1XBA5/7QYMyGBuB9mTtUwBQYDK2VwMBExDzAN
-            BgNVBAMTBlJvb3QgQjAgFw0yNDAxMTEwNjI1MjdaGA85OTk5MTIzMTIzNTk1OVow
-            GjEYMBYGA1UEAxMPSW50ZXJtZWRpYXRlIEIxMCowBQYDK2VwAyEAh6ZTuJWsweVB
-            a5fsye5iq89kWDC2Y/Hlc0htLmjzMP+jYzBhMA8GA1UdEwEB/wQFMAMBAf8wDgYD
-            VR0PAQH/BAQDAgIEMB0GA1UdDgQWBBTMQu37PKyLjKfPODZgxYCaayff+jAfBgNV
-            HSMEGDAWgBSRQLNq4Oo/MPQCiLUZzjjoxthRujAFBgMrZXADQQBblmguY+lnYvOK
-            rAZJnqpEUGfm1tIFyu3rnlE7WOVcXRXMIoNApLH2iHIipQjlvNWuSBFBTC1qdewh
-            /e+0cgQB
-            -----END CERTIFICATE-----
-            /* B (signed by A) */
-            -----BEGIN CERTIFICATE-----
-            MIIBSDCB+6ADAgECAhRpEm+dWNX6DMZh/nottkFfFFrXXDAFBgMrZXAwETEPMA0G
-            A1UEAxMGUm9vdCBBMCAXDTI0MDExMTA2MTcyNloYDzk5OTkxMjMxMjM1OTU5WjAR
-            MQ8wDQYDVQQDEwZSb290IEIwKjAFBgMrZXADIQAYX92hS97OGKbMzwrD7ReVifwM
-            3iz5tnfQHWQSkvvYMKNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-            AgQwHQYDVR0OBBYEFJFAs2rg6j8w9AKItRnOOOjG2FG6MB8GA1UdIwQYMBaAFFti
-            A6REax3dnvj4Jq5fiG3MuDSXMAUGAytlcANBAFvmcK3Ida5ViVYDzxKVLPcPsCHe
-            3hxz99lBrerJC9iJSvRYTJoPBvjTxDYnBn5EFrQYMrUED+6i71lmGXNU9gs=
-            -----END CERTIFICATE-----
-            /* B (signed by C) */
-            -----BEGIN CERTIFICATE-----
-            MIIBSDCB+6ADAgECAhReNpCiVn7eFDUox3mvM5qE942AVzAFBgMrZXAwETEPMA0G
-            A1UEAxMGUm9vdCBDMCAXDTI0MDExMTA2MjEyMVoYDzk5OTkxMjMxMjM1OTU5WjAR
-            MQ8wDQYDVQQDEwZSb290IEIwKjAFBgMrZXADIQAYX92hS97OGKbMzwrD7ReVifwM
-            3iz5tnfQHWQSkvvYMKNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-            AgQwHQYDVR0OBBYEFJFAs2rg6j8w9AKItRnOOOjG2FG6MB8GA1UdIwQYMBaAFEh/
-            XKjIuMeEavX5QVoy39Q+GhnwMAUGAytlcANBAIwghH3gelXty8qtoTGIEJb0+EBv
-            BH4YOUh7TamxjxkjvvIhDA7ZdheofFb7NrklJco7KBcTATUSOvxakYRP9Q8=
-            -----END CERTIFICATE-----
-            /* C1 (signed by C) */
-            -----BEGIN CERTIFICATE-----
-            MIIBUjCCAQSgAwIBAgIUSKsfY1wD3eD2VmaaK1wt5naPckMwBQYDK2VwMBExDzAN
-            BgNVBAMTBlJvb3QgQzAgFw0yNDAxMTEwNjI1NDdaGA85OTk5MTIzMTIzNTk1OVow
-            GjEYMBYGA1UEAxMPSW50ZXJtZWRpYXRlIEMxMCowBQYDK2VwAyEA/t7i1chZlKkV
-            qxJOrmmyATn8XnpK+nV/iT4OMHSHfAyjYzBhMA8GA1UdEwEB/wQFMAMBAf8wDgYD
-            VR0PAQH/BAQDAgIEMB0GA1UdDgQWBBRmpF3JjoP3NiBzE5J5ANT0bvfRmjAfBgNV
-            HSMEGDAWgBRIf1yoyLjHhGr1+UFaMt/UPhoZ8DAFBgMrZXADQQAeRBXv6WCTOp0G
-            3wgd8bbEGrrILfpi+qH7aj/MywgkPIlppDYRQ3jL6ASd+So/408dlE0DV9DXKBi0
-            725XUUYO
-            -----END CERTIFICATE-----
-            /* C (signed by A) */
-            -----BEGIN CERTIFICATE-----
-            MIIBSDCB+6ADAgECAhRvbZv3SRTjDOiAbyFWHH4y0yMZkjAFBgMrZXAwETEPMA0G
-            A1UEAxMGUm9vdCBBMCAXDTI0MDExMTA2MTg1MVoYDzk5OTkxMjMxMjM1OTU5WjAR
-            MQ8wDQYDVQQDEwZSb290IEMwKjAFBgMrZXADIQDxm6Ubhsa0gSa1vBCIO5e+qZEH
-            8Oocz+buNHfIJbh5NaNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-            AgQwHQYDVR0OBBYEFEh/XKjIuMeEavX5QVoy39Q+GhnwMB8GA1UdIwQYMBaAFFti
-            A6REax3dnvj4Jq5fiG3MuDSXMAUGAytlcANBAPl+SyiOfXJnjSWx8hFMhJ7w92mn
-            tkGifCFHBpUhYcBIMeMtLw0RBLXqaaN0EKlTFimiEkLClsU7DKYrpEEJegs=
-            -----END CERTIFICATE-----
-            /* C (signed by B) */
-            -----BEGIN CERTIFICATE-----
-            MIIBSDCB+6ADAgECAhQU1OJWRVOLrGrgJiLwexd1/MwKkTAFBgMrZXAwETEPMA0G
-            A1UEAxMGUm9vdCBCMCAXDTI0MDExMTA2MjAzMFoYDzk5OTkxMjMxMjM1OTU5WjAR
-            MQ8wDQYDVQQDEwZSb290IEMwKjAFBgMrZXADIQDxm6Ubhsa0gSa1vBCIO5e+qZEH
-            8Oocz+buNHfIJbh5NaNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-            AgQwHQYDVR0OBBYEFEh/XKjIuMeEavX5QVoy39Q+GhnwMB8GA1UdIwQYMBaAFJFA
-            s2rg6j8w9AKItRnOOOjG2FG6MAUGAytlcANBALXeyuj8vj6Q8j4l17VzZwmJl0gN
-            bCGoKMl0J/0NiN/fQRIsdbwQDh0RUN/RN3I6DTtB20ER6f3VdnzAh8nXkQ4=
-            -----END CERTIFICATE-----
-            """
-        ).encode()
-    )
+    # Intermediate A1, signed by Root A
+    key_a1 = ec.generate_private_key(ec.SECP256R1())
+    intermediate_a1_by_a = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Intermediate A1"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root A"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_a.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_a1.public_key()), critical=False
+        )
+        .public_key(key_a1.public_key())
+    ).sign(key_a, algorithm=hashes.SHA256())
+    intermediate_a1_by_a_pair = CertificatePair(intermediate_a1_by_a, key_a1)
 
-    root = x509.load_pem_x509_certificate(
-        dedent(
-            """
-            /* A (self-signed) */
-            -----BEGIN CERTIFICATE-----
-            MIIBJzCB2qADAgECAhQs1Ur+gzPs1ISxs3Tbs700q0CZcjAFBgMrZXAwETEPMA0G
-            A1UEAxMGUm9vdCBBMCAXDTI0MDExMTA2MTYwMFoYDzk5OTkxMjMxMjM1OTU5WjAR
-            MQ8wDQYDVQQDEwZSb290IEEwKjAFBgMrZXADIQA0vDYyg3tgotSETL1Wq2hBs32p
-            WbnINkmOSNmOiZlGHKNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-            AgQwHQYDVR0OBBYEFFtiA6REax3dnvj4Jq5fiG3MuDSXMAUGAytlcANBAHrVv7E9
-            5scuOVCH9gNRRm8Z9SUoLakRHAPnySdg6z/kI3vOgA/OM7reArpnW8l1H2FapgpL
-            bDeZ2XJH+BdVFwg=
-            -----END CERTIFICATE-----
-            """
-        ).encode()
+    # Root A, signed by Root B
+    root_a_by_b = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Root A"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root B"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_b.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_a.public_key()), critical=False
+        )
+        .public_key(key_a.public_key())
+    ).sign(key_b, algorithm=hashes.SHA256())
+    a_by_b_pair = CertificatePair(root_a_by_b, key_a)
+
+    # Root A, signed by Root C
+    root_a_by_c = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Root A"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root C"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_c.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_a.public_key()), critical=False
+        )
+        .public_key(key_a.public_key())
+    ).sign(key_c, algorithm=hashes.SHA256())
+    a_by_c_pair = CertificatePair(root_a_by_c, key_a)
+
+    # Intermediate B1, signed by Root B
+    key_b1 = ec.generate_private_key(ec.SECP256R1())
+    intermediate_b1_by_b = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Intermediate B1"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root B"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_b.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_b1.public_key()), critical=False
+        )
+        .public_key(key_b1.public_key())
+    ).sign(key_b, algorithm=hashes.SHA256())
+    intermediate_b1_by_b_pair = CertificatePair(intermediate_b1_by_b, key_b1)
+
+    # Root B, signed by Root A
+    root_b_by_a = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Root B"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root A"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_a.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_b.public_key()), critical=False
+        )
+        .public_key(key_b.public_key())
+    ).sign(key_a, algorithm=hashes.SHA256())
+    b_by_a_pair = CertificatePair(root_b_by_a, key_b)
+
+    # Root B, signed by Root C
+    root_b_by_c = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Root B"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root C"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_c.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_b.public_key()), critical=False
+        )
+        .public_key(key_b.public_key())
+    ).sign(key_c, algorithm=hashes.SHA256())
+    b_by_c_pair = CertificatePair(root_b_by_c, key_b)
+
+    # Intermediate C1, signed by Root C
+    key_c1 = ec.generate_private_key(ec.SECP256R1())
+    intermediate_c1_by_c = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Intermediate C1"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root C"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_c.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_c1.public_key()), critical=False
+        )
+        .public_key(key_c1.public_key())
+    ).sign(key_c, algorithm=hashes.SHA256())
+    intermediate_c1_by_c_pair = CertificatePair(intermediate_c1_by_c, key_c1)
+
+    # Root C, signed by Root A
+    root_c_by_a = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Root C"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root A"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_a.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_c.public_key()), critical=False
+        )
+        .public_key(key_c.public_key())
+    ).sign(key_a, algorithm=hashes.SHA256())
+    c_by_a_pair = CertificatePair(root_c_by_a, key_c)
+
+    # Root C, signed by Root B
+    root_c_by_b = (
+        x509.CertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(EPOCH)
+        .not_valid_after(ONE_THOUSAND_YEARS_OF_TORMENT)
+        .subject_name(x509.Name.from_rfc4514_string("CN=Root C"))
+        .issuer_name(x509.Name.from_rfc4514_string("CN=Root B"))
+        .add_extension(basic_constraints, critical=True)
+        .add_extension(key_usage, critical=False)
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key_b.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(key_c.public_key()), critical=False
+        )
+        .public_key(key_c.public_key())
+    ).sign(key_b, algorithm=hashes.SHA256())
+    c_by_b_pair = CertificatePair(root_c_by_b, key_c)
+
+    intermediates = [
+        intermediate_a1_by_a_pair,
+        a_by_b_pair,
+        a_by_c_pair,
+        intermediate_b1_by_b_pair,
+        b_by_a_pair,
+        b_by_c_pair,
+        intermediate_c1_by_c_pair,
+        c_by_a_pair,
+        c_by_b_pair,
+    ]
+
+    # Leaf cve-2024-0567.example.com, signed by Intermediate A1
+    leaf = builder.leaf_cert(
+        intermediate_a1_by_a_pair,
+        subject=None,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("cve-2024-0567.example.com")]), critical=True
+        ),
     )
 
     builder = (
         builder.server_validation()
-        .trusted_certs(Certificate(root))
-        .untrusted_intermediates(*[Certificate(c) for c in intermediates])
-        .peer_certificate(Certificate(leaf))
-        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="test.gnutls.org"))
+        .trusted_certs(root)
+        .untrusted_intermediates(*intermediates)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="cve-2024-0567.example.com"))
         .succeeds()
     )

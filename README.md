@@ -55,6 +55,3 @@ version 2.0.
 This repository additionally contains testcases that are generated from
 the [BetterTLS](https://github.com/Netflix/bettertls) project, which
 is also licensed under the Apache License, version 2.0.
-
-The `cve` namespace contains tests adapted from individual projects.
-Each testcase license is included in its documentation.
