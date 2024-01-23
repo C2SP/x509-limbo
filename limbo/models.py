@@ -271,11 +271,11 @@ class Testcase(BaseModel):
     expected_result: ExpectedResult = Field(..., description="The expected validation result")
 
     expected_peer_name: PeerName | None = Field(
-        None, description="For client-side validation: the expected peer name, if any"
+        None, description="For server (i.e. client-side) validation: the expected peer name, if any"
     )
 
     expected_peer_names: list[PeerName] = Field(
-        ..., description="For server-side validation: the expected peer names"
+        ..., description="For client (i.e. server-side) validation: the expected peer names"
     )
 
     max_chain_depth: int | None = Field(None, description="The maximum chain-building depth")

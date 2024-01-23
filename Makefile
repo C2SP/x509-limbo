@@ -93,8 +93,12 @@ test-rustls-webpki:
 	@cargo build --bin rust-rustls-harness
 	$(MAKE) run ARGS="harness ./target/debug/rust-rustls-harness --output ./results/rustls-webpki.json"
 
+.PHONY: test-gnutls
+test-gnutls:
+	$(MAKE) run ARGS="harness ./harness/gnutls/test-gnutls --output ./results/gnutls.json"
+
 .PHONY: test
-test: test-go test-openssl test-rust-webpki test-rustls-webpki
+test: test-go test-openssl test-rust-webpki test-rustls-webpki test-gnutls
 
 .PHONY: site
 site: $(NEEDS_VENV)
