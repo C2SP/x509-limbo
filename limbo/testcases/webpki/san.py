@@ -353,7 +353,7 @@ def san_critical_with_nonempty_subject(builder: Builder) -> None:
     ```
 
     The EE cert includes a critical subjectAlternativeName extension, which
-    is forbidden under CABF:
+    is forbidden under CABF when the subject is non-empty:
 
     > If the subject field of the certificate is an empty SEQUENCE, this
     > extension MUST be marked critical, as specified in RFC 5280,

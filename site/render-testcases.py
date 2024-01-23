@@ -60,6 +60,11 @@ LINK_SUBSTITUTIONS = [
         r"(?<!\[)CABF(?!\])",
         r"[\g<0>](https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.1.pdf)",
     ),
+    # Rewrite `CVE-YYYY-ABCDEF` into a NIST NVD link.
+    (
+        r"(?<!\[)CVE-(\d{4})-(\d+(?:.\d+)*)(?!\])",
+        r"[\g<0>](https://nvd.nist.gov/vuln/detail/CVE-\g<1>-\g<2>)",
+    ),
 ]
 
 
