@@ -29,7 +29,7 @@ assert LIMBO_JSON.is_file()
 
 RESULTS = _HERE.parent / "results"
 
-BASE_URL = "https://x509-limbo.com"
+BASE_URL = mkdocs_gen_files.config["site_url"]
 
 TESTCASE_TEMPLATE = """
 ## {tc_id}
@@ -215,15 +215,15 @@ for harness_result in harness_results:
 
         sections: dict[str, tuple[str, list[TestcaseResult]]] = {
             "Unexpected verifications": (
-                "These testcases were expected to fail, but succeeded instead",
+                "These testcases were expected to fail, but succeeded instead.",
                 unexpected_passes,
             ),
             "Unexpected failures": (
-                "These testcases were expected to succeed, but failed instead",
+                "These testcases were expected to succeed, but failed instead.",
                 unexpected_failures,
             ),
             "Skipped tests": (
-                "These testcases were skipped due to a harness or implementation limitation",
+                "These testcases were skipped due to a harness or implementation limitation.",
                 skipped_testcases,
             ),
         }
