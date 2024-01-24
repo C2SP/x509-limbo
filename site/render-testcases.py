@@ -220,15 +220,15 @@ for harness_result in harness_results:
 
         sections: dict[str, tuple[str, list[TestcaseResult]]] = {
             "Unexpected verifications": (
-                "These testcases were expected to fail, but succeeded instead",
+                "These testcases were expected to fail, but succeeded instead.",
                 unexpected_passes,
             ),
             "Unexpected failures": (
-                "These testcases were expected to succeed, but failed instead",
+                "These testcases were expected to succeed, but failed instead.",
                 unexpected_failures,
             ),
             "Skipped tests": (
-                "These testcases were skipped due to a harness or implementation limitation",
+                "These testcases were skipped due to a harness or implementation limitation.",
                 skipped_testcases,
             ),
         }
