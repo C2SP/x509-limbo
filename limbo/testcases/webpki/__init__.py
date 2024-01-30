@@ -5,7 +5,7 @@ Web PKI (CABF) profile tests.
 from datetime import datetime
 
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import dsa, ec
+from cryptography.hazmat.primitives.asymmetric import dsa, ec, rsa
 
 from limbo.assets import ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KeyUsage, PeerName
@@ -187,6 +187,53 @@ def forbidden_signature_algorithm_in_leaf(builder: Builder) -> None:
     # in any certificates under CABF, but path validation logically
     # does not require checking the EE's key.
     builder = builder.server_validation().features([Feature.pedantic_webpki])
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_weak_rsa_key(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root cert is signed with and conveys an RSA-1024 key, which is
+    below the security margin (2048) required under CABF 6.1.5.
+    """
+
+    root_key = rsa.generate_private_key(65537, 1024)
+    root = builder.root_ca(key=root_key)
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_rsa_key_not_divisable_by_8(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root cert is signed with and conveys an RSA-2052 key, which is
+    above the security margin (2048) but not divisible by 8, as is required
+    under CABF 6.1.5.
+    """
+
+    root_key = rsa.generate_private_key(65537, 2052)
+    root = builder.root_ca(key=root_key)
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
