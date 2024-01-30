@@ -205,7 +205,7 @@ def forbidden_weak_rsa_key(builder: Builder) -> None:
     below the security margin (2048) required under CABF 6.1.5.
     """
 
-    root_key = rsa.generate_private_key(65537, 1024)
+    root_key = rsa.generate_private_key(public_exponent=65537, key_size=1024)
     root = builder.root_ca(key=root_key)
     leaf = builder.leaf_cert(root)
 
@@ -229,7 +229,7 @@ def forbidden_rsa_key_not_divisable_by_8(builder: Builder) -> None:
     under CABF 6.1.5.
     """
 
-    root_key = rsa.generate_private_key(65537, 2052)
+    root_key = rsa.generate_private_key(public_exponent=65537, key_size=2052)
     root = builder.root_ca(key=root_key)
     leaf = builder.leaf_cert(root)
 
