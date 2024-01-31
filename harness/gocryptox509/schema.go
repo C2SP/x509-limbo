@@ -21,8 +21,8 @@ const FeatureNoCertPolicies Feature = "no-cert-policies"
 const FeaturePedanticPublicSuffixWildcard Feature = "pedantic-public-suffix-wildcard"
 const FeaturePedanticRfc5280 Feature = "pedantic-rfc5280"
 const FeaturePedanticSerialNumber Feature = "pedantic-serial-number"
-const FeaturePedanticWebpki Feature = "pedantic-webpki"
 const FeaturePedanticWebpkiEku Feature = "pedantic-webpki-eku"
+const FeaturePedanticWebpkiSubscriberKey Feature = "pedantic-webpki-subscriber-key"
 const FeatureRfc5280IncompatibleWithWebpki Feature = "rfc5280-incompatible-with-webpki"
 
 type KeyUsage string
@@ -175,7 +175,7 @@ var enumValues_Feature = []interface{}{
 	"no-cert-policies",
 	"pedantic-public-suffix-wildcard",
 	"name-constraint-dn",
-	"pedantic-webpki",
+	"pedantic-webpki-subscriber-key",
 	"pedantic-webpki-eku",
 	"pedantic-serial-number",
 	"max-chain-depth",
