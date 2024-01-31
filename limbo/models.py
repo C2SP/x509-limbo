@@ -176,7 +176,7 @@ class Feature(str, Enum):
 
     pedantic_webpki_subscriber_key = "pedantic-webpki-subscriber-key"
     """
-    Like `pedantic_webpki`, but specifically for "pedantic" handling of subscriber key types.
+    Tests that exercise "pedantic" handling of subscriber key types under CABF.
 
     Many CABF validators don't enforce the key requirements on subscriber (i.e. leaf, EE)
     certificates. However, the language in CABF 7.1.2.7 implies that subscriber certificates
@@ -185,7 +185,7 @@ class Feature(str, Enum):
 
     pedantic_webpki_eku = "pedantic-webpki-eku"
     """
-    Like `pedantic_webpki`, but specifically for "pedantic" EKU handling under CABF.
+    Tests that exercise "pedantic" EKU handling under CABF.
     """
 
     pedantic_serial_number = "pedantic-serial-number"
