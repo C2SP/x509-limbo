@@ -174,14 +174,18 @@ class Feature(str, Enum):
     For implementations that do not support name constraints for Distinguished Names (temporary).
     """
 
-    pedantic_webpki = "pedantic-webpki"
+    pedantic_webpki_subscriber_key = "pedantic-webpki-subscriber-key"
     """
-    Tests that exercise "pedantic" corners of the CABF profile.
+    Like `pedantic_webpki`, but specifically for "pedantic" handling of subscriber key types.
+
+    Many CABF validators don't enforce the key requirements on subscriber (i.e. leaf, EE)
+    certificates. However, the language in CABF 7.1.2.7 implies that subscriber certificates
+    obey the same `subjectPublicKeyInfo` rules as CAs, as defined in CABF 7.1.3.1.
     """
 
     pedantic_webpki_eku = "pedantic-webpki-eku"
     """
-    Like `pedantic_webpkif`, but specifically for "pedantic" EKU handling under CABF.
+    Like `pedantic_webpki`, but specifically for "pedantic" EKU handling under CABF.
     """
 
     pedantic_serial_number = "pedantic-serial-number"

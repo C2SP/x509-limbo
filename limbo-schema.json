@@ -17,7 +17,7 @@
         "no-cert-policies",
         "pedantic-public-suffix-wildcard",
         "name-constraint-dn",
-        "pedantic-webpki",
+        "pedantic-webpki-subscriber-key",
         "pedantic-webpki-eku",
         "pedantic-serial-number",
         "max-chain-depth",
