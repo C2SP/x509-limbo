@@ -372,6 +372,7 @@ class Builder:
         self._trusted_certs: list[str] = []
         self._untrusted_intermediates: list[str] = []
         self._peer_certificate: str | None = None
+        self._peer_certificate_key: str | None = None
         self._validation_time: datetime | None = None
         self._signature_algorithms: list[SignatureAlgorithm] = []
         self._key_usage: list[KeyUsage] = []
@@ -406,8 +407,11 @@ class Builder:
         self._untrusted_intermediates = [c.cert_pem for c in certs]
         return self
 
-    def peer_certificate(self, cert: Certificate) -> Self:
+    def peer_certificate(self, cert: Certificate | CertificatePair) -> Self:
         self._peer_certificate = cert.cert_pem
+
+        if isinstance(cert, CertificatePair):
+            self._peer_certificate_key = cert.key_pem
         return self
 
     def validation_time(self, time: datetime) -> Self:
@@ -456,6 +460,7 @@ class Builder:
             trusted_certs=self._trusted_certs,
             untrusted_intermediates=self._untrusted_intermediates,
             peer_certificate=self._peer_certificate,
+            peer_certificate_key=self._peer_certificate_key,
             validation_time=self._validation_time,
             signature_algorithms=self._signature_algorithms,
             key_usage=self._key_usage,
