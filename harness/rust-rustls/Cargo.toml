@@ -8,4 +8,4 @@ limbo-harness-support = { path = "../../harness-support/rust" }
 chrono = "0.4.33"
 pem = "3.0.3"
 serde_json = "1.0.113"
-rustls-webpki = { version = "0.102.1", features = ["std"] }
+rustls-webpki = { version = "0.102.2", features = ["std"] }
