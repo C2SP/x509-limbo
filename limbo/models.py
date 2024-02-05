@@ -256,7 +256,7 @@ class Testcase(BaseModel):
     peer_certificate: StrictStr = Field(..., description="The PEM-encoded peer (EE) certificate")
 
     peer_certificate_key: StrictStr | None = Field(
-        ...,
+        None,
         description="The PEM-encoded private key for the peer certificate, if present",
     )
 
