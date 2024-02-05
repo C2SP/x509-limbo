@@ -144,6 +144,9 @@ type Testcase struct {
 	// The PEM-encoded peer (EE) certificate
 	PeerCertificate string `json:"peer_certificate" yaml:"peer_certificate" mapstructure:"peer_certificate"`
 
+	// The PEM-encoded private key for the peer certificate, if present
+	PeerCertificateKey interface{} `json:"peer_certificate_key,omitempty" yaml:"peer_certificate_key,omitempty" mapstructure:"peer_certificate_key,omitempty"`
+
 	// A list of acceptable signature algorithms to constrain against
 	SignatureAlgorithms []SignatureAlgorithm `json:"signature_algorithms" yaml:"signature_algorithms" mapstructure:"signature_algorithms"`
 

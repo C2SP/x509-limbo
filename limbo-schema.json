@@ -223,6 +223,7 @@
               "type": "null"
             }
           ],
+          "default": null,
           "description": "The PEM-encoded private key for the peer certificate, if present",
           "title": "Peer Certificate Key"
         },
@@ -313,7 +314,6 @@
         "trusted_certs",
         "untrusted_intermediates",
         "peer_certificate",
-        "peer_certificate_key",
         "signature_algorithms",
         "key_usage",
         "extended_key_usage",
