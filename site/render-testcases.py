@@ -4,6 +4,7 @@
 # TODO(ww): Use some kind of Markdown builder API here, rather than
 # smashing strings together.
 
+import json
 import re
 from collections import defaultdict
 from dataclasses import dataclass
@@ -248,3 +249,8 @@ for harness_result in harness_results:
                 file=f,
             )
             print("\n\n", file=f)
+
+# Create an unofficial JSON API for the latest results.
+with mkdocs_gen_files.open("_api/all-results.json", "w") as f:
+    result_dicts = [hr.model_dump(mode="json", by_alias=True) for hr in harness_results]
+    json.dump(result_dicts, f)
