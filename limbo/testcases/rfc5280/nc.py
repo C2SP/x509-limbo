@@ -1390,7 +1390,7 @@ def nc_forbids_same_chain_ica(builder: Builder) -> None:
 
 
 @testcase
-def nc_permits_email_exact(builder: Builder):
+def nc_permits_email_exact(builder: Builder) -> None:
     """
     Produces the following **valid** graph:
 
