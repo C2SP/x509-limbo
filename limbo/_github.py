@@ -74,10 +74,14 @@ def label(*, add: list[str], remove: list[str]) -> None:
 
     for label in remove:
         logger.info(f"removing label:{label} from {repo} #{number}")
-        requests.delete(
+        resp = requests.delete(
             f"{url}/{label}",
             headers={
                 "Authorization": f"Bearer {github_token()}",
                 "X-GitHub-Api-Version": "2022-11-28",
             },
-        ).raise_for_status()
+        )
+
+        # 404 is expected if the label doesn't exist
+        if resp.status_code != 404:
+            resp.raise_for_status()
