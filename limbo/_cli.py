@@ -195,7 +195,7 @@ def _regression(args: argparse.Namespace) -> None:
 
 
 def _render_regressions(
-    all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]]
+    all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]],
 ) -> str:
     rendered = ""
 
