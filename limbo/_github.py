@@ -95,5 +95,5 @@ def workflow_url() -> str:
     return f"{url}/{repo}/actions/runs/{run_id}"
 
 
-def step_summary(contents: str):
+def step_summary(contents: str) -> None:
     Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text(contents)
