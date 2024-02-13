@@ -9,6 +9,7 @@ jobs:
     permissions:
       # Needed for regression comment generation.
       issues: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4

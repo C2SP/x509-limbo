@@ -41,7 +41,7 @@ def comment(msg: str) -> None:
     requests.post(
         url,
         headers={
-            "Authorization": f"token {github_token()}",
+            "Authorization": f"Bearer {github_token()}",
             "X-GitHub-Api-Version": "2022-11-28",
         },
         json={"body": msg},
