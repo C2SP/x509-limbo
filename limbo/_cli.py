@@ -201,7 +201,15 @@ def _render_regressions(
 
     for harness, regressions in all_regressions.items():
         # Sample up to 10 regressions per harness.
-        regressions = random.sample(regressions, min(len(regressions), 10))
+        # Filter the bettertls suite by default, since it's huge.
+        # But re-include if we can't sample enough.
+        regressions_without_bettertls = [
+            r for r in regressions if not r[0].startswith("bettertls::")
+        ]
+        if len(regressions_without_bettertls) > 10:
+            regressions = regressions_without_bettertls
+        else:
+            regressions = random.sample(regressions, min(len(regressions), 10))
 
         rendered += f"## {harness}\n\n"
         for tc, prev, curr in regressions:
