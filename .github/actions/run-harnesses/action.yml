@@ -15,10 +15,8 @@ runs:
     - uses: actions/cache/restore@v4
       id: restore-cache
       with:
-        # Our cache key is a combination of the limbo.json's contents,
-        # along with all harness contents (since harness changes can
-        # result in testcase result changes).
-        key: limbo-harness-results-${{ hashFiles('limbo.json') }}-${{ hashFiles('harness/**') }}
+        # TODO: Fix the cache key here.
+        key: limbo-harness-results-${{ hashFiles('limbo.json') }}
         path: results
 
     - uses: actions/setup-python@v5
@@ -46,5 +44,5 @@ runs:
     - uses: actions/cache/save@v4
       if: steps.restore-cache.outputs.cache-hit != 'true'
       with:
-        key: limbo-harness-results-${{ hashFiles('limbo.json') }}-${{ hashFiles('harness/**') }}
+        key: limbo-harness-results-${{ hashFiles('limbo.json') }}
         path: results
