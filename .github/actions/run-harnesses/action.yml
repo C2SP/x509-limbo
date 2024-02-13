@@ -12,11 +12,22 @@ runs:
     # This action assumes that actions/checkout has run, leaving limbo.json
     # in place for the cache check.
 
+    # NOTE: We generate the cache key upfront like this because the `harness/`
+    # subdirectory is not static: a cache miss means that builds will happen
+    # under it, changing its hash between the action's start and end.
+    - name: Compute cache key
+      id: compute-cache-key
+      shell: bash
+      run: |
+        echo "HARNESS_CACHE_KEY=limbo-harness-${LIMBO_HASH}-${HARNESS_HASH}" >> "${GITHUB_OUTPUT}"
+      env:
+        LIMBO_HASH: ${{ hashFiles('limbo.json') }}
+        HARNESS_HASH: ${{ hashFiles('harness/**') }}
+
     - uses: actions/cache/restore@v4
       id: restore-cache
       with:
-        # TODO: Fix the cache key here.
-        key: limbo-harness-results-${{ hashFiles('limbo.json') }}
+        key: ${{ steps.compute-cache-key.outputs.HARNESS_CACHE_KEY }}
         path: results
 
     - uses: actions/setup-go@v5
@@ -37,5 +48,5 @@ runs:
     - uses: actions/cache/save@v4
       if: steps.restore-cache.outputs.cache-hit != 'true'
       with:
-        key: limbo-harness-results-${{ hashFiles('limbo.json') }}
+        key: ${{ steps.compute-cache-key.outputs.HARNESS_CACHE_KEY }}
         path: results
