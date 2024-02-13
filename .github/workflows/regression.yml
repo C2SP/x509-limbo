@@ -6,6 +6,9 @@ on:
 jobs:
   regressions:
     runs-on: ubuntu-latest
+    permissions:
+      # Needed for regression comment generation.
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
