@@ -181,6 +181,6 @@ def _regression(args: argparse.Namespace) -> None:
 
     if os.getenv("GITHUB_ACTIONS"):
         if regressions:
-            _github.comment("Regressions found!")
+            _github.comment("Regressions found!", labels=[":skull: regressions"])
         else:
-            _github.comment("No regressions :thumbsup:")
+            _github.comment("No regressions :thumbsup:", labels=[":see_no_evil: no-regressions"])

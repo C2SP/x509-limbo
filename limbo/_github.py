@@ -27,7 +27,7 @@ def github_event() -> dict[str, Any]:
     return json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())  # type: ignore[no-any-return]
 
 
-def comment(msg: str) -> None:
+def comment(msg: str, *, labels: list[str] = []) -> None:
     event = github_event()
     if "pull_request" not in event:
         raise ValueError("wrong GitHub event: need pull_request")
@@ -46,3 +46,16 @@ def comment(msg: str) -> None:
         },
         json={"body": msg},
     ).raise_for_status()
+
+    if labels:
+        logger.info(f"adding labels to {repo} #{number}: {labels}")
+        url = f"https://api.github.com/repos/{repo}/issues/{number}/labels"
+
+        requests.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {github_token()}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            json={"labels": labels},
+        )
