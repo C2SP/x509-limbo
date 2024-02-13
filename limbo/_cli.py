@@ -14,7 +14,7 @@ import requests
 from pydantic import TypeAdapter
 from pydantic.json_schema import models_json_schema
 
-from limbo import _github, testcases
+from limbo import _github, _markdown, testcases
 from limbo.testcases import bettertls, online
 
 from . import __version__
@@ -213,7 +213,7 @@ def _render_regressions(
 
         rendered += f"## {harness}\n\n"
         for tc, prev, curr in regressions:
-            rendered += f"* `{tc}` went from {prev.value} to {curr.value}\n"
+            rendered += f"* {_markdown.testcase_link(tc)} went from {prev.value} to {curr.value}\n"
         rendered += "\n"
 
     return rendered
