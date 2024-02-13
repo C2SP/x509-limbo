@@ -205,7 +205,7 @@ def _render_regressions(
 
         rendered += f"## {harness}\n\n"
         for tc, prev, curr in regressions:
-            rendered += f"* `{tc}` went from {prev} to {curr}\n"
+            rendered += f"* `{tc}` went from {prev.value} to {curr.value}\n"
         rendered += "\n"
 
     return rendered
