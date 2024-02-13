@@ -183,4 +183,4 @@ def _regression(args: argparse.Namespace) -> None:
         if regressions:
             _github.comment("Regressions found!")
         else:
-            _github.comment("No regressions!")
+            _github.comment("No regressions :thumbsup:")
