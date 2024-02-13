@@ -4,6 +4,7 @@ import fnmatch
 import json
 import logging
 import os
+import random
 import subprocess
 import sys
 from collections import defaultdict
@@ -181,11 +182,30 @@ def _regression(args: argparse.Namespace) -> None:
 
     if os.getenv("GITHUB_ACTIONS"):
         if regressions:
+            _github.step_summary(_render_regressions(regressions))
             _github.comment(
                 ":suspect: Regressions found. Review these changes "
-                "**very carefully** before continuing!"
+                "**very carefully** before continuing!\n\n"
+                f"Sampled regressions: {_github.workflow_url()}"
             )
             _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
         else:
             _github.comment(":shipit: No regressions found.")
             _github.label(add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL])
+
+
+def _render_regressions(
+    all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]]
+) -> str:
+    rendered = ""
+
+    for harness, regressions in all_regressions.items():
+        # Sample up to 10 regressions per harness.
+        regressions = random.sample(regressions, min(len(regressions), 10))
+
+        rendered += f"## {harness}\n\n"
+        for tc, prev, curr in regressions:
+            rendered += f"* `{tc}` went from {prev} to {curr}\n"
+        rendered += "\n"
+
+    return rendered

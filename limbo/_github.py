@@ -85,3 +85,15 @@ def label(*, add: list[str], remove: list[str]) -> None:
         # 404 is expected if the label doesn't exist
         if resp.status_code != 404:
             resp.raise_for_status()
+
+
+@cache
+def workflow_url() -> str:
+    url = os.getenv("GITHUB_SERVER_URL")
+    repo = os.getenv("GITHUB_REPOSITORY")
+    run_id = os.getenv("GITHUB_RUN_ID")
+    return f"{url}/{repo}/actions/runs/{run_id}"
+
+
+def step_summary(contents: str):
+    Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text(contents)
