@@ -33,12 +33,6 @@ jobs:
           cache: "pip"
           cache-dependency-path: pyproject.toml
 
-      - name: retrieve results
-        uses: actions/download-artifact@v4
-        with:
-          name: results
-          path: results
-
       - name: build site
         run: make site
 
