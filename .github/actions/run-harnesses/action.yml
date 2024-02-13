@@ -1,5 +1,9 @@
 name: run harnesses
 description: Run x509-limbo's in-repo harnesses and cache their results
+outputs:
+  cache-hit:
+    description: "Whether or not the cache was hit"
+    value: "${{ steps.restore-cache.outputs.cache-hit }}"
 
 runs:
   using: composite
@@ -11,7 +15,10 @@ runs:
     - uses: actions/cache/restore@v4
       id: restore-cache
       with:
-        key: limbo-harness-results-${{ hashFiles('limbo.json') }}
+        # Our cache key is a combination of the limbo.json's contents,
+        # along with all harness contents (since harness changes can
+        # result in testcase result changes).
+        key: limbo-harness-results-${{ hashFiles('limbo.json') }}-${{ hashFiles('harness/**') }}
         path: results
 
     - uses: actions/setup-python@v5
@@ -39,5 +46,5 @@ runs:
     - uses: actions/cache/save@v4
       if: steps.restore-cache.outputs.cache-hit != 'true'
       with:
-        key: limbo-harness-results-${{ hashFiles('limbo.json') }}
+        key: limbo-harness-results-${{ hashFiles('limbo.json') }}-${{ hashFiles('harness/**') }}
         path: results

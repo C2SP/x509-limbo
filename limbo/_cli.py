@@ -6,15 +6,18 @@ import logging
 import os
 import subprocess
 import sys
+from collections import defaultdict
 from pathlib import Path
 
+import requests
+from pydantic import TypeAdapter
 from pydantic.json_schema import models_json_schema
 
-from limbo import testcases
+from limbo import _github, testcases
 from limbo.testcases import bettertls, online
 
 from . import __version__
-from .models import Limbo
+from .models import ActualResult, Limbo, LimboResult
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -83,6 +86,19 @@ def main() -> None:
     harness.add_argument("harness", type=str, help="The harness to execute")
     harness.set_defaults(func=_harness)
 
+    # `limbo regression`
+    regression = subparsers.add_parser(
+        "regression", help="Run regression checks against the last result set"
+    )
+    regression.add_argument(
+        "--current",
+        type=Path,
+        default=Path("results"),
+        metavar="DIR",
+        help="The current results to check against",
+    )
+    regression.set_defaults(func=_regression)
+
     args = parser.parse_args()
     args.func(args)
 
@@ -133,3 +149,37 @@ def _harness(args: argparse.Namespace) -> None:
         args.output.write_text(result.stdout)
     except subprocess.CalledProcessError as e:
         print(e.stderr, file=sys.stderr)
+
+
+def _regression(args: argparse.Namespace) -> None:
+    previous_results = TypeAdapter(list[LimboResult]).validate_python(
+        requests.get("https://x509-limbo.com/_api/all-results.json").json()
+    )
+
+    current_results: list[LimboResult] = []
+    for result in args.current.glob("*.json"):
+        current_results.append(LimboResult.model_validate_json(result.read_text()))
+
+    # mapping of harness -> [(testcase-id, previous-result, current-result)]
+    regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]] = defaultdict(list)
+    for previous_result in previous_results:
+        current_result = next(
+            (r for r in current_results if r.harness == previous_result.harness), None
+        )
+        if not current_result:
+            continue
+
+        previous_by_id = {r.id: r for r in previous_result.results}
+        current_by_id = {r.id: r for r in current_result.results}
+
+        common_testcases = previous_by_id.keys() & current_by_id.keys()
+        for tc in common_testcases:
+            if previous_by_id[tc].actual_result != current_by_id[tc].actual_result:
+                regressions[previous_result.harness].append(
+                    (tc, previous_by_id[tc].actual_result, current_by_id[tc].actual_result)
+                )
+
+    if regressions:
+        _github.comment("Regressions found!")
+    else:
+        _github.comment("No regressions!")

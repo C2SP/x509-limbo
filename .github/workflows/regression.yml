@@ -1,0 +1,23 @@
+name: Testcase regression detection
+
+on:
+  pull_request:
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/run-harnesses
+        id: run-harnesses
+
+      - name: run regression checks
+        # A cache hit means that neither limbo.json nor any of the harnesses
+        # have changed, so there's no value in checking for regressions.
+        if: "!${{ steps.run-harnesses.outputs.cache-hit }}"
+        run: make run ARGS="regression"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
