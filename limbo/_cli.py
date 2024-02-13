@@ -206,8 +206,8 @@ def _render_regressions(
         regressions_without_bettertls = [
             r for r in regressions if not r[0].startswith("bettertls::")
         ]
-        if len(regressions_without_bettertls) > 10:
-            regressions = regressions_without_bettertls
+        if len(regressions_without_bettertls) >= 10:
+            regressions = random.sample(regressions_without_bettertls, 10)
         else:
             regressions = random.sample(regressions, min(len(regressions), 10))
 
