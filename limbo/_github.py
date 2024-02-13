@@ -6,12 +6,15 @@ with a sufficiently permissioned `GITHUB_TOKEN`.
 """
 
 import json
+import logging
 import os
 from functools import cache
 from pathlib import Path
 from typing import Any
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 @cache
@@ -21,7 +24,7 @@ def github_token() -> str:
 
 @cache
 def github_event() -> dict[str, Any]:
-    return json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+    return json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())  # type: ignore[no-any-return]
 
 
 def comment(msg: str) -> None:
@@ -33,6 +36,8 @@ def comment(msg: str) -> None:
     repo = event["repository"]["full_name"]
     url = f"https://api.github.com/repos/{repo}/issues/{number}/comments"
 
+    logger.info(f"leaving a comment on {repo} #{number}")
+
     requests.post(
         url,
         headers={
@@ -40,4 +45,4 @@ def comment(msg: str) -> None:
             "X-GitHub-Api-Version": "2022-11-28",
         },
         json={"body": msg},
-    )
+    ).raise_for_status()

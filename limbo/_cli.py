@@ -179,7 +179,8 @@ def _regression(args: argparse.Namespace) -> None:
                     (tc, previous_by_id[tc].actual_result, current_by_id[tc].actual_result)
                 )
 
-    if regressions:
-        _github.comment("Regressions found!")
-    else:
-        _github.comment("No regressions!")
+    if os.getenv("GITHUB_ACTIONS"):
+        if regressions:
+            _github.comment("Regressions found!")
+        else:
+            _github.comment("No regressions!")

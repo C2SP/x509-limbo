@@ -29,6 +29,7 @@ lint = [
     "mypy >= 1.0",
     "types-pyyaml",
     "types-pyOpenSSL",
+    "types-requests",
 ]
 doc = []
 test = []
