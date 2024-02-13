@@ -19,13 +19,6 @@ runs:
         key: limbo-harness-results-${{ hashFiles('limbo.json') }}
         path: results
 
-    - uses: actions/setup-python@v5
-      if: steps.restore-cache.outputs.cache-hit != 'true'
-      with:
-        python-version: ">=3.12"
-        cache: "pip"
-        cache-dependency-path: pyproject.toml
-
     - uses: actions/setup-go@v5
       if: steps.restore-cache.outputs.cache-hit != 'true'
       with:
