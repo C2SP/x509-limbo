@@ -100,7 +100,7 @@ def has_label(label: str) -> bool:
     resp.raise_for_status()
 
     labels = resp.json()
-    return any(l["name"] == label for l in labels)
+    return any(lbl["name"] == label for lbl in labels)
 
 
 @cache
