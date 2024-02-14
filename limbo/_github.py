@@ -87,6 +87,22 @@ def label(*, add: list[str], remove: list[str]) -> None:
             resp.raise_for_status()
 
 
+def has_label(label: str) -> bool:
+    event = github_event()
+    if "pull_request" not in event:
+        raise ValueError("wrong GitHub event: need pull_request")
+
+    number = event["number"]
+    repo = event["repository"]["full_name"]
+    url = f"https://api.github.com/repos/{repo}/issues/{number}/labels"
+
+    resp = requests.get(url)
+    resp.raise_for_status()
+
+    labels = resp.json()
+    return any(l["name"] == label for l in labels)
+
+
 @cache
 def workflow_url() -> str:
     url = os.getenv("GITHUB_SERVER_URL")

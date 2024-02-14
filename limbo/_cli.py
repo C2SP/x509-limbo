@@ -190,8 +190,12 @@ def _regression(args: argparse.Namespace) -> None:
             )
             _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
         else:
-            _github.comment(":shipit: No regressions found.")
-            _github.label(add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL])
+            # Avoid spamming the user with "no regression" comments.
+            if not _github.has_label(_github.NO_REGRESSIONS_LABEL):
+                _github.comment(":shipit: No regressions found.")
+                _github.label(
+                    add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL]
+                )
 
 
 def _render_regressions(
