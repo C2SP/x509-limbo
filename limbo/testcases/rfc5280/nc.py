@@ -1397,6 +1397,9 @@ def nc_permits_email_exact(builder: Builder) -> None:
     ```
     root -> ICA (permit: foo@example.com) -> EE (SAN: foo@example.com)
     ```
+
+    Per RFC 5280 4.2.1.10 an email name constraint may specify a particular mailbox,
+    like in this graph.
     """
 
     root = builder.root_ca()
@@ -1405,6 +1408,45 @@ def nc_permits_email_exact(builder: Builder) -> None:
         name_constraints=ext(
             x509.NameConstraints(
                 permitted_subtrees=[x509.RFC822Name("foo@example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(x509.SubjectAlternativeName([x509.RFC822Name("foo@example.com")]), critical=False),
+    )
+
+    builder = (
+        builder.client_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_names(PeerName(kind="RFC822", value="foo@example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def nc_permits_email_domain(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    root -> ICA (permit: example.com) -> EE (SAN: foo@example.com)
+    ```
+
+    Per RFC 5280 4.2.1.10 an email name constraint may specify a host name to
+    constrain all inboxes on that host.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name("example.com")], excluded_subtrees=None
             ),
             critical=True,
         ),
