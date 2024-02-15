@@ -13,6 +13,7 @@ from pathlib import Path
 import mkdocs_gen_files
 from py_markdown_table.markdown_table import markdown_table
 
+from limbo._markdown import testcase_link, testcase_url
 from limbo.models import (
     ActualResult,
     ExpectedResult,
@@ -81,23 +82,11 @@ def _linkify(description: str) -> str:
     return description
 
 
-def _testcase_url(testcase_id: TestCaseID) -> str:
-    namespace, _ = testcase_id.split("::", 1)
-    slug = testcase_id.replace("::", "")
-    return f"{BASE_URL}/testcases/{namespace}/#{slug}"
-
-
-def _testcase_link(testcase_id: TestCaseID) -> str:
-    url = _testcase_url(testcase_id)
-
-    return f"[`{testcase_id}`]({url})"
-
-
 def _render_conflicts(tc: Testcase) -> str:
     if not tc.conflicts_with:
         return "N/A"
 
-    urls = [_testcase_url(id_) for id_ in tc.conflicts_with]
+    urls = [testcase_url(id_) for id_ in tc.conflicts_with]
     md_urls = [f"[`{id_}`]({url})" for (id_, url) in zip(tc.conflicts_with, urls)]
 
     return ", ".join(md_urls)
@@ -239,7 +228,7 @@ for harness_result in harness_results:
 
             table = [
                 {
-                    "Testcase": _testcase_link(tc_result.id),
+                    "Testcase": testcase_link(tc_result.id),
                     "Context": tc_result.context if tc_result.context else "N/A",
                 }
                 for tc_result in tc_results

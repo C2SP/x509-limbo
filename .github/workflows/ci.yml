@@ -63,7 +63,7 @@ jobs:
           go-version: ">=1.20.5"
 
       - name: check that harnesses build
-        run: make build-harnesses
+        run: make build-harnesses -j
 
   all-checks-pass:
     if: always()
