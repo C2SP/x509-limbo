@@ -217,7 +217,8 @@ def _regression(args: argparse.Namespace) -> None:
                 )
 
         if new_results:
-            _github.comment(f"New testcases: {", ".join(new_results.keys())}")
+            new_testcases = _markdown.template("new-testcases.md")
+            _github.comment(new_testcases.render(new_results=new_results))
 
 
 def _render_regressions(
