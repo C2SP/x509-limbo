@@ -4,7 +4,6 @@ Markdown helpers.
 
 from jinja2 import Environment, PackageLoader, Template, select_autoescape
 
-from limbo.assets import ASSETS_PATH
 from limbo.models import TestCaseID
 
 BASE_URL = "https://x509-limbo.com"
@@ -13,7 +12,7 @@ env = Environment(
     trim_blocks=True,
     lstrip_blocks=True,
     autoescape=select_autoescape(),
-    loader=PackageLoader(ASSETS_PATH, "templates"),
+    loader=PackageLoader("limbo._assets", "templates"),
 )
 
 
