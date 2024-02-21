@@ -191,7 +191,7 @@ def _regression(args: argparse.Namespace) -> None:
     # Assumption: all previous results have the same set of testcase IDs
     previous_tc_ids = {r.id for r in previous_results[0].results}
     # mapping of testcase-id -> [(harness, expected, actual, context)]
-    new_results: dict[TestCaseID, list[tuple[str, str, str, str]]] = defaultdict(list)
+    new_results: dict[TestCaseID, list[tuple[str, str, str, str | None]]] = defaultdict(list)
     for current_result in current_results:
         new_tc_ids = current_result.by_id.keys() - previous_tc_ids
         for new_tc_id in new_tc_ids:
@@ -205,11 +205,8 @@ def _regression(args: argparse.Namespace) -> None:
     if os.getenv("GITHUB_ACTIONS"):
         if regressions:
             _github.step_summary(_render_regressions(regressions))
-            _github.comment(
-                ":suspect: Regressions found. Review these changes "
-                "**very carefully** before continuing!\n\n"
-                f"Sampled regressions: {_github.workflow_url()}"
-            )
+            template = _markdown.template("regressions.md")
+            _github.comment(template.render(regressions_url=_github.workflow_url()))
             _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
         else:
             # Avoid spamming the user with "no regression" comments.
@@ -220,8 +217,8 @@ def _regression(args: argparse.Namespace) -> None:
                 )
 
         if new_results:
-            new_testcases = _markdown.template("new-testcases.md")
-            _github.comment(new_testcases.render(new_results=new_results))
+            template = _markdown.template("new-testcases.md")
+            _github.comment(template.render(new_results=new_results))
 
 
 def _render_regressions(
