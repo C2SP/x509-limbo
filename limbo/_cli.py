@@ -18,7 +18,7 @@ from limbo import _github, _markdown, testcases
 from limbo.testcases import bettertls, online
 
 from . import __version__
-from .models import ActualResult, Limbo, LimboResult
+from .models import ActualResult, Limbo, LimboResult, TestCaseID
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -90,6 +90,13 @@ def main() -> None:
     # `limbo regression`
     regression = subparsers.add_parser(
         "regression", help="Run regression checks against the last result set"
+    )
+    regression.add_argument(
+        "--limbo",
+        type=Path,
+        default=Path("limbo.json"),
+        metavar="FILE",
+        help="The limbo testcase suite to load from",
     )
     regression.add_argument(
         "--current",
@@ -170,8 +177,8 @@ def _regression(args: argparse.Namespace) -> None:
         if not current_result:
             continue
 
-        previous_by_id = {r.id: r for r in previous_result.results}
-        current_by_id = {r.id: r for r in current_result.results}
+        previous_by_id = previous_result.by_id
+        current_by_id = current_result.by_id
 
         common_testcases = previous_by_id.keys() & current_by_id.keys()
         for tc in common_testcases:
@@ -179,6 +186,18 @@ def _regression(args: argparse.Namespace) -> None:
                 regressions[previous_result.harness].append(
                     (tc, previous_by_id[tc].actual_result, current_by_id[tc].actual_result)
                 )
+
+    limbo = Limbo.model_validate_json(args.limbo.read_text())
+    # Assumption: all previous results have the same set of testcase IDs
+    previous_tc_ids = {r.id for r in previous_results[0].results}
+    # mapping of testcase-id -> [(harness, expected, actual)]
+    new_results: dict[TestCaseID, list[tuple[str, str, str]]] = defaultdict(list)
+    for current_result in current_results:
+        new_tc_ids = current_result.by_id.keys() - previous_tc_ids
+        for new_tc_id in new_tc_ids:
+            actual_result = current_result.by_id[new_tc_id].actual_result.value
+            expected_result = limbo.by_id[new_tc_id].expected_result.value
+            new_results[new_tc_id].append((current_result.harness, expected_result, actual_result))
 
     if os.getenv("GITHUB_ACTIONS"):
         if regressions:
@@ -196,6 +215,9 @@ def _regression(args: argparse.Namespace) -> None:
                 _github.label(
                     add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL]
                 )
+
+        if new_results:
+            _github.comment(f"New testcases: {", ".join(new_results.keys())}")
 
 
 def _render_regressions(
