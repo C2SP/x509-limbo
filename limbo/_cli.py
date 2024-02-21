@@ -206,7 +206,9 @@ def _regression(args: argparse.Namespace) -> None:
         if regressions:
             _github.step_summary(_render_regressions(regressions))
             template = _markdown.template("regressions.md")
-            _github.comment(template.render(regressions_url=_github.workflow_url()))
+            _github.comment(
+                template.render(regressions_url=_github.workflow_url()), update="@@regressions@@"
+            )
             _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
         else:
             # Avoid spamming the user with "no regression" comments.
@@ -218,7 +220,7 @@ def _regression(args: argparse.Namespace) -> None:
 
         if new_results:
             template = _markdown.template("new-testcases.md")
-            _github.comment(template.render(new_results=new_results))
+            _github.comment(template.render(new_results=new_results), update="@@new-testcases@@")
 
 
 def _render_regressions(
