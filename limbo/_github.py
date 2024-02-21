@@ -32,6 +32,11 @@ def github_event() -> dict[str, Any]:
 
 
 def comment(msg: str, *, update: str | None = None) -> None:
+    """
+    Create or update a comment.
+
+    If `update` is given, first attempt to update a comment that contains the given string.
+    """
     event = github_event()
     if "pull_request" not in event:
         raise ValueError("wrong GitHub event: need pull_request")
@@ -97,7 +102,8 @@ def find_comment(token: str) -> int | None:
     comments = resp.json()
     for comment in comments:
         if token in comment["body"]:
-            return comment["id"]
+            return comment["id"]  # type: ignore[no-any-return]
+    return None
 
 
 def label(*, add: list[str], remove: list[str]) -> None:
