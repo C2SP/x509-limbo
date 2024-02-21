@@ -191,7 +191,7 @@ def _regression(args: argparse.Namespace) -> None:
     # Assumption: all previous results have the same set of testcase IDs
     previous_tc_ids = {r.id for r in previous_results[0].results}
     # mapping of testcase-id -> [(harness, expected, actual, context)]
-    new_results: dict[TestCaseID, list[tuple[str, str, str]]] = defaultdict(list)
+    new_results: dict[TestCaseID, list[tuple[str, str, str, str]]] = defaultdict(list)
     for current_result in current_results:
         new_tc_ids = current_result.by_id.keys() - previous_tc_ids
         for new_tc_id in new_tc_ids:
