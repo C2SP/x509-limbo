@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import EPOCH, ONE_THOUSAND_YEARS_OF_TORMENT, CertificatePair, ext
+from limbo.models import Feature, PeerName
 from limbo.testcases._core import Builder, testcase
 
 
@@ -290,5 +291,49 @@ def intermediate_cycle_same_logical_ca(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica_1_pair, ica_2_pair)
         .peer_certificate(leaf)
+        .fails()
+    )
+
+
+@testcase
+def nc_dos_1(builder: Builder) -> None:
+    """
+    Produces the following chain:
+
+    ```
+    root [many constraints] -> EE [many names]
+    ```
+
+    The root CA contains over 1000 permits and excludes name constraints, which
+    are checked against the EE's 512 SANs. This is typically rejected by
+    implementations due to quadratic blowup.
+
+    This testcase is a reproduction of OpenSSL's `(many-names1.pem, many-constraints.pem)`
+    testcase, via <https://github.com/openssl/openssl/pull/4393>.
+    """
+    # Permit t{0-512}.test, as well as blanket permit all subdomains of .test
+    permitteds = [x509.DNSName(f"t{i}.test") for i in range(513)]
+    permitteds.append(x509.DNSName(".test"))
+
+    # Forbid x{0-512}.test.
+    excludeds = [x509.DNSName(f"x{i}.test") for i in range(513)]
+
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(permitted_subtrees=permitteds, excluded_subtrees=excludeds),
+            critical=True,
+        ),
+    )
+
+    leaf = builder.leaf_cert(
+        root, subject=x509.Name([]), san=ext(x509.SubjectAlternativeName(permitteds), critical=True)
+    )
+
+    builder = (
+        builder.server_validation()
+        .features([Feature.denial_of_service])
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="t0.test"))
         .fails()
     )

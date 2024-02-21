@@ -209,6 +209,11 @@ class Feature(str, Enum):
     Tests where RFC 5280's prescription is stronger than the Web PKI's.
     """
 
+    denial_of_service = "denial-of-service"
+    """
+    Tests that exercise DoS resiliency.
+    """
+
 
 class ValidationKind(str, Enum):
     """
