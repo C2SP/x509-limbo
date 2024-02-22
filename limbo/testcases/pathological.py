@@ -325,13 +325,11 @@ def nc_dos_1(builder: Builder) -> None:
         ),
     )
 
-    subjects = [f"E=t{i}@test" for i in range(513)]
-    subjects.append("CN=t0.test")
+    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(513)]
+    subjects.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, "t0.test"))
     leaf = builder.leaf_cert(
         root,
-        subject=x509.Name.from_rfc4514_string(
-            ",".join(subjects), attr_name_overrides={"E": x509.NameOID.EMAIL_ADDRESS}
-        ),
+        subject=x509.Name(subjects),
         san=ext(x509.SubjectAlternativeName(permitteds), critical=True),
     )
 
@@ -420,13 +418,11 @@ def nc_dos_3(builder: Builder) -> None:
         ),
     )
 
-    subjects = [f"E=t{i}@test" for i in range(1025)]
-    subjects.append("CN=t0.test")
+    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(1025)]
+    subjects.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, "t0.test"))
     leaf = builder.leaf_cert(
         root,
-        subject=x509.Name.from_rfc4514_string(
-            ",".join(subjects), attr_name_overrides={"E": x509.NameOID.EMAIL_ADDRESS}
-        ),
+        subject=x509.Name(subjects),
         san=None,
     )
 
