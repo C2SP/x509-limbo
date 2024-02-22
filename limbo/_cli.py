@@ -84,7 +84,7 @@ def main() -> None:
         type=str,
         help="Exclude any testcases matching the given fnmatch(2)-style pattern",
     )
-    harness.add_argument("harness", type=str, help="The harness to execute")
+    harness.add_argument("harness", help="The harness to execute", nargs="+")
     harness.set_defaults(func=_harness)
 
     # `limbo regression`
@@ -145,7 +145,7 @@ def _harness(args: argparse.Namespace) -> None:
 
     try:
         result = subprocess.run(
-            [args.harness], input=limbo_json, encoding="utf-8", capture_output=True, check=True
+            args.harness, input=limbo_json, encoding="utf-8", capture_output=True, check=True
         )
         args.output.write_text(result.stdout)
     except subprocess.CalledProcessError as e:
