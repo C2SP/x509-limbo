@@ -190,16 +190,17 @@ def _regression(args: argparse.Namespace) -> None:
     limbo = Limbo.model_validate_json(args.limbo.read_text())
     # Assumption: all previous results have the same set of testcase IDs
     previous_tc_ids = {r.id for r in previous_results[0].results}
-    # mapping of testcase-id -> [(harness, expected, actual, context)]
-    new_results: dict[TestCaseID, list[tuple[str, str, str, str | None]]] = defaultdict(list)
+    # mapping of harness -> [(testcase-id, expected, actual, content)]
+    new_results: dict[str, list[tuple[str, str, str, str | None]]] = defaultdict(list)
     for current_result in current_results:
         new_tc_ids = current_result.by_id.keys() - previous_tc_ids
         for new_tc_id in new_tc_ids:
             actual_result = current_result.by_id[new_tc_id].actual_result.value
             context = current_result.by_id[new_tc_id].context
             expected_result = limbo.by_id[new_tc_id].expected_result.value
-            new_results[new_tc_id].append(
-                (current_result.harness, expected_result, actual_result, context)
+
+            new_results[current_result.harness].append(
+                (new_tc_id, expected_result, actual_result, context)
             )
 
     if os.getenv("GITHUB_ACTIONS"):
