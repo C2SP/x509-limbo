@@ -1,4 +1,4 @@
-FROM ghcr.io/woodruffw/openssl-dockerfiles/openssl-1.1.1:latest
+FROM ghcr.io/woodruffw/openssl-dockerfiles/openssl-3.1:latest
 
 WORKDIR /tmp/harness
 
