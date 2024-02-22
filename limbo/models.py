@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from functools import cached_property
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -209,6 +210,11 @@ class Feature(str, Enum):
     Tests where RFC 5280's prescription is stronger than the Web PKI's.
     """
 
+    denial_of_service = "denial-of-service"
+    """
+    Tests that exercise DoS resiliency.
+    """
+
 
 class ValidationKind(str, Enum):
     """
@@ -345,6 +351,13 @@ class Limbo(BaseModel):
 
         return v
 
+    @cached_property
+    def by_id(self) -> dict[TestCaseID, Testcase]:
+        """
+        Returns a cached mapping of every testcase, keyed by its ID.
+        """
+        return {tc.id: tc for tc in self.testcases}
+
 
 class TestcaseResult(BaseModel):
     """
@@ -382,3 +395,10 @@ class LimboResult(BaseModel):
     results: list[TestcaseResult] = Field(
         ..., description="One or more results for testcase evaluations"
     )
+
+    @cached_property
+    def by_id(self) -> dict[TestCaseID, TestcaseResult]:
+        """
+        Returns a cached mapping of every testcase result, keyed by its ID.
+        """
+        return {r.id: r for r in self.results}

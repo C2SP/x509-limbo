@@ -92,6 +92,13 @@ def main() -> None:
         "regression", help="Run regression checks against the last result set"
     )
     regression.add_argument(
+        "--limbo",
+        type=Path,
+        default=Path("limbo.json"),
+        metavar="FILE",
+        help="The limbo testcase suite to load from",
+    )
+    regression.add_argument(
         "--current",
         type=Path,
         default=Path("results"),
@@ -170,8 +177,8 @@ def _regression(args: argparse.Namespace) -> None:
         if not current_result:
             continue
 
-        previous_by_id = {r.id: r for r in previous_result.results}
-        current_by_id = {r.id: r for r in current_result.results}
+        previous_by_id = previous_result.by_id
+        current_by_id = current_result.by_id
 
         common_testcases = previous_by_id.keys() & current_by_id.keys()
         for tc in common_testcases:
@@ -180,13 +187,28 @@ def _regression(args: argparse.Namespace) -> None:
                     (tc, previous_by_id[tc].actual_result, current_by_id[tc].actual_result)
                 )
 
+    limbo = Limbo.model_validate_json(args.limbo.read_text())
+    # Assumption: all previous results have the same set of testcase IDs
+    previous_tc_ids = {r.id for r in previous_results[0].results}
+    # mapping of harness -> [(testcase-id, expected, actual, content)]
+    new_results: dict[str, list[tuple[str, str, str, str | None]]] = defaultdict(list)
+    for current_result in current_results:
+        new_tc_ids = current_result.by_id.keys() - previous_tc_ids
+        for new_tc_id in new_tc_ids:
+            actual_result = current_result.by_id[new_tc_id].actual_result.value
+            context = current_result.by_id[new_tc_id].context
+            expected_result = limbo.by_id[new_tc_id].expected_result.value
+
+            new_results[current_result.harness].append(
+                (new_tc_id, expected_result, actual_result, context)
+            )
+
     if os.getenv("GITHUB_ACTIONS"):
         if regressions:
             _github.step_summary(_render_regressions(regressions))
+            template = _markdown.template("regressions.md")
             _github.comment(
-                ":suspect: Regressions found. Review these changes "
-                "**very carefully** before continuing!\n\n"
-                f"Sampled regressions: {_github.workflow_url()}"
+                template.render(regressions_url=_github.workflow_url()), update="@@regressions@@"
             )
             _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
         else:
@@ -196,6 +218,10 @@ def _regression(args: argparse.Namespace) -> None:
                 _github.label(
                     add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL]
                 )
+
+        if new_results:
+            template = _markdown.template("new-testcases.md")
+            _github.comment(template.render(new_results=new_results), update="@@new-testcases@@")
 
 
 def _render_regressions(

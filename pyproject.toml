@@ -18,6 +18,7 @@ dependencies = [
     "pyOpenSSL",
     "certifi",
     "requests ~= 2.31",
+    "Jinja2",
 ]
 requires-python = ">=3.11"
 
