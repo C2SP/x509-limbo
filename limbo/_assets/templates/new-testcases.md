@@ -11,7 +11,7 @@ There are new testcases in this change.
 | Testcase | Expected Result | Actual Result | Context |
 | -------- | --------------- | ------------- | ------- |
 {% for (tc_id, expected, actual, context) in results %}
-| `{{ tc_id }}` | {{ harness }} | {{ expected }} | {{ actual }} | {{ context }} |
+| `{{ tc_id }}` | {{ expected }} | {{ actual }} | {{ context }} |
 {% endfor %}
 
 {% endfor %}
