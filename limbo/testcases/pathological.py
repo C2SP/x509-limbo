@@ -305,7 +305,7 @@ def nc_dos_1(builder: Builder) -> None:
     ```
 
     The root CA contains over 1000 permits and excludes name constraints, which
-    are checked against the EE's 512 SANs. This is typically rejected by
+    are checked against the EE's 513 SANs and 514 subjects. This is typically rejected by
     implementations due to quadratic blowup, but is technically valid.
 
     This testcase is a reproduction of OpenSSL's `(many-names1.pem, many-constraints.pem)`
@@ -325,8 +325,14 @@ def nc_dos_1(builder: Builder) -> None:
         ),
     )
 
+    subjects = [f"E=t{i}@test" for i in range(513)]
+    subjects.append("CN=t0.test")
     leaf = builder.leaf_cert(
-        root, subject=x509.Name([]), san=ext(x509.SubjectAlternativeName(permitteds), critical=True)
+        root,
+        subject=x509.Name.from_rfc4514_string(
+            ",".join(subjects), attr_name_overrides={"E": x509.NameOID.EMAIL_ADDRESS}
+        ),
+        san=ext(x509.SubjectAlternativeName(permitteds), critical=True),
     )
 
     builder = (
