@@ -18,7 +18,7 @@ from limbo import _github, _markdown, testcases
 from limbo.testcases import bettertls, online
 
 from . import __version__
-from .models import ActualResult, Limbo, LimboResult, TestCaseID
+from .models import ActualResult, Limbo, LimboResult
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
