@@ -304,17 +304,16 @@ def nc_dos_1(builder: Builder) -> None:
     root [many constraints] -> EE [many names]
     ```
 
-    The root CA contains over 1000 permits and excludes name constraints, which
-    are checked against the EE's 513 SANs and 514 subjects. This is typically rejected by
+    The root CA contains 2048 permits and excludes name constraints, which
+    are checked against the EE's 2048 SANs and 2048 subjects. This is typically rejected by
     implementations due to quadratic blowup, but is technically valid.
 
-    This testcase is a reproduction of OpenSSL's `(many-names1.pem, many-constraints.pem)`
+    This testcase is extended from OpenSSL's `(many-names1.pem, many-constraints.pem)`
     testcase, via <https://github.com/openssl/openssl/pull/4393>.
     """
-    sans = [x509.DNSName(f"t{i}.test") for i in range(513)]
+    sans = [x509.DNSName(f"t{i}.test") for i in range(2048)]
 
-    # Forbid x{0-512}.test.
-    excludeds = [x509.DNSName(f"x{i}.test") for i in range(513)]
+    excludes = [x509.DNSName(f"x{i}.test") for i in range(2048)]
 
     root = builder.root_ca(
         name_constraints=ext(
@@ -324,13 +323,13 @@ def nc_dos_1(builder: Builder) -> None:
                 # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
                 # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
                 permitted_subtrees=[*sans, x509.DNSName("test")],
-                excluded_subtrees=excludeds,
+                excluded_subtrees=excludes,
             ),
             critical=True,
         ),
     )
 
-    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(513)]
+    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(2048)]
     subjects.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, "t0.test"))
     leaf = builder.leaf_cert(
         root,
@@ -357,31 +356,31 @@ def nc_dos_2(builder: Builder) -> None:
     root [many constraints] -> EE [many names]
     ```
 
-    The root CA contains over 1000 permits and excludes name constraints, which
-    are checked against the EE's 1025 SANs. This is typically rejected by
+    The root CA contains over 2048 permits and excludes name constraints, which
+    are checked against the EE's 2048 SANs. This is typically rejected by
     implementations due to quadratic blowup, but is technically valid.
 
-    This testcase is a reproduction of OpenSSL's `(many-names2.pem, many-constraints.pem)`
+    This testcase is extended from OpenSSL's `(many-names2.pem, many-constraints.pem)`
     testcase, via <https://github.com/openssl/openssl/pull/4393>.
     """
-    # Permit t{0-512}.test, as well as blanket permit all subdomains of test
+    # Permit t{0..2048}.test, as well as blanket permit all subdomains of test
     # NOTE: This behavior is slightly different from the original OpenSSL test:
     # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
     # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
-    permitteds = [x509.DNSName(f"t{i}.test") for i in range(513)]
-    permitteds.append(x509.DNSName("test"))
+    permits = [x509.DNSName(f"t{i}.test") for i in range(2048)]
+    permits.append(x509.DNSName("test"))
 
-    # Forbid x{0-512}.test.
-    excludeds = [x509.DNSName(f"x{i}.test") for i in range(513)]
+    # Forbid x{0..2048}.test.
+    excludes = [x509.DNSName(f"x{i}.test") for i in range(2048)]
 
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints(permitted_subtrees=permitteds, excluded_subtrees=excludeds),
+            x509.NameConstraints(permitted_subtrees=permits, excluded_subtrees=excludes),
             critical=True,
         ),
     )
 
-    sans = [x509.DNSName(f"t{i}.test") for i in range(1025)]
+    sans = [x509.DNSName(f"t{i}.test") for i in range(2048)]
     leaf = builder.leaf_cert(
         root, subject=x509.Name([]), san=ext(x509.SubjectAlternativeName(sans), critical=True)
     )
@@ -405,28 +404,31 @@ def nc_dos_3(builder: Builder) -> None:
     root [many constraints] -> EE [many names]
     ```
 
-    The root CA contains over 1000 permits and excludes name constraints, which
-    are checked against the EE's 1025 subjects (**not** SANS). This is typically
+    The root CA contains over 2048 permits and excludes name constraints, which
+    are checked against the EE's 2048 subjects (**not** SANS). This is typically
     rejected by implementations due to quadratic blowup, but is technically valid.
 
     This testcase is a reproduction of OpenSSL's `(many-names3.pem, many-constraints.pem)`
     testcase, via <https://github.com/openssl/openssl/pull/4393>.
     """
-    # Permit t{0-512}.test, as well as blanket permit all subdomains of .test
-    permitteds = [x509.DNSName(f"t{i}.test") for i in range(513)]
-    permitteds.append(x509.DNSName(".test"))
+    # Permit t{0..2048}.test, as well as blanket permit all subdomains of test
+    # NOTE: This behavior is slightly different from the original OpenSSL test:
+    # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
+    # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
+    permits = [x509.DNSName(f"t{i}.test") for i in range(2048)]
+    permits.append(x509.DNSName("test"))
 
-    # Forbid x{0-512}.test.
-    excludeds = [x509.DNSName(f"x{i}.test") for i in range(513)]
+    # Forbid x{0..2048}.test.
+    excludes = [x509.DNSName(f"x{i}.test") for i in range(2048)]
 
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints(permitted_subtrees=permitteds, excluded_subtrees=excludeds),
+            x509.NameConstraints(permitted_subtrees=permits, excluded_subtrees=excludes),
             critical=True,
         ),
     )
 
-    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(1025)]
+    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(2048)]
     subjects.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, "t0.test"))
     leaf = builder.leaf_cert(
         root,
