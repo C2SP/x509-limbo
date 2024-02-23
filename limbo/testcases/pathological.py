@@ -330,7 +330,7 @@ def nc_dos_1(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         root,
         subject=x509.Name(subjects),
-        san=ext(x509.SubjectAlternativeName(permitteds), critical=True),
+        san=ext(x509.SubjectAlternativeName(permitteds), critical=False),
     )
 
     builder = (
