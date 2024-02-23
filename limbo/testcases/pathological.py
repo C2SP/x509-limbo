@@ -412,9 +412,12 @@ def nc_dos_3(builder: Builder) -> None:
     This testcase is a reproduction of OpenSSL's `(many-names3.pem, many-constraints.pem)`
     testcase, via <https://github.com/openssl/openssl/pull/4393>.
     """
-    # Permit t{0-512}.test, as well as blanket permit all subdomains of .test
+    # Permit t{0-512}.test, as well as blanket permit all subdomains of test
+    # NOTE: This behavior is slightly different from the original OpenSSL test:
+    # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
+    # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
     permitteds = [x509.DNSName(f"t{i}.test") for i in range(513)]
-    permitteds.append(x509.DNSName(".test"))
+    permitteds.append(x509.DNSName("test"))
 
     # Forbid x{0-512}.test.
     excludeds = [x509.DNSName(f"x{i}.test") for i in range(513)]
@@ -438,6 +441,59 @@ def nc_dos_3(builder: Builder) -> None:
         builder.server_validation()
         .features([Feature.denial_of_service])
         .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="t0.test"))
+        .fails()
+    )
+
+
+@testcase
+def nc_dos_4(builder: Builder) -> None:
+    """
+    Produces the following pathological chain:
+
+    ```
+    root [many constraints] -> ICA [many constraints] -> EE [many names]
+    ```
+
+    Both the root and intermediate contain 2048 permits and excludes constraints
+    (1024 of each), which are checked against the EE's 1024 SANs. This is typically
+    rejected by implementations due to quadratic blowup, but is technically valid.
+
+    This testcase is intended to be an "overkill" version of the other NC DoS cases.
+    """
+
+    root_permits = [x509.DNSName(f"t{i}.test") for i in range(1024)]
+    root_excludes = [x509.DNSName(f"rx{i}.test") for i in range(1024)]
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(permitted_subtrees=root_permits, excluded_subtrees=root_excludes),
+            critical=True,
+        ),
+        san=None,
+    )
+
+    ica_permits = [x509.DNSName(f"t{i}.test") for i in range(1024)]
+    ica_excludes = [x509.DNSName(f"ix{i}.test") for i in range(1024)]
+    ica = builder.intermediate_ca(
+        root,
+        san=None,
+        name_constraints=ext(
+            x509.NameConstraints(permitted_subtrees=ica_permits, excluded_subtrees=ica_excludes),
+            critical=True,
+        ),
+    )
+
+    leaf_sans = [x509.DNSName("t{i}.test") for i in range(1024)]
+    leaf = builder.leaf_cert(
+        ica, subject=x509.Name([]), san=ext(x509.SubjectAlternativeName(leaf_sans), critical=True)
+    )
+
+    builder = (
+        builder.server_validation()
+        .features([Feature.denial_of_service])
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="t0.test"))
         .fails()
