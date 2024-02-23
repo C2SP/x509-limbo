@@ -319,7 +319,10 @@ def nc_dos_1(builder: Builder) -> None:
     root = builder.root_ca(
         name_constraints=ext(
             x509.NameConstraints(
-                # Permit t{0-512}.test, as well as blanket permit all subdomains of .test
+                # Permit t{0-512}.test, as well as blanket permit all subdomains of test
+                # NOTE: This behavior is slightly different from the original OpenSSL test:
+                # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
+                # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
                 permitted_subtrees=[*sans, x509.DNSName(".test")],
                 excluded_subtrees=excludeds,
             ),
@@ -361,9 +364,12 @@ def nc_dos_2(builder: Builder) -> None:
     This testcase is a reproduction of OpenSSL's `(many-names2.pem, many-constraints.pem)`
     testcase, via <https://github.com/openssl/openssl/pull/4393>.
     """
-    # Permit t{0-512}.test, as well as blanket permit all subdomains of .test
+    # Permit t{0-512}.test, as well as blanket permit all subdomains of test
+    # NOTE: This behavior is slightly different from the original OpenSSL test:
+    # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
+    # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
     permitteds = [x509.DNSName(f"t{i}.test") for i in range(513)]
-    permitteds.append(x509.DNSName(".test"))
+    permitteds.append(x509.DNSName("test"))
 
     # Forbid x{0-512}.test.
     excludeds = [x509.DNSName(f"x{i}.test") for i in range(513)]
