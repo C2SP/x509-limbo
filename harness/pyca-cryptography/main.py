@@ -141,7 +141,7 @@ def main():
     print(
         LimboResult(
             version=1, harness=f"pyca-cryptography-{pyca_version}", results=results
-        ).model_dump_json()
+        ).model_dump_json(indent=2)
     )
 
 

@@ -323,7 +323,7 @@ def nc_dos_1(builder: Builder) -> None:
                 # NOTE: This behavior is slightly different from the original OpenSSL test:
                 # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
                 # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
-                permitted_subtrees=[*sans, x509.DNSName(".test")],
+                permitted_subtrees=[*sans, x509.DNSName("test")],
                 excluded_subtrees=excludeds,
             ),
             critical=True,
