@@ -312,15 +312,17 @@ def nc_dos_1(builder: Builder) -> None:
     testcase, via <https://github.com/openssl/openssl/pull/4393>.
     """
     # Permit t{0-512}.test, as well as blanket permit all subdomains of .test
-    permitteds = [x509.DNSName(f"t{i}.test") for i in range(513)]
-    permitteds.append(x509.DNSName(".test"))
+    sans = [x509.DNSName(f"t{i}.test") for i in range(513)]
 
     # Forbid x{0-512}.test.
     excludeds = [x509.DNSName(f"x{i}.test") for i in range(513)]
 
     root = builder.root_ca(
         name_constraints=ext(
-            x509.NameConstraints(permitted_subtrees=permitteds, excluded_subtrees=excludeds),
+            x509.NameConstraints(
+                permitted_subtrees=[*sans, x509.DNSName(".test")],
+                excluded_subtrees=excludeds,
+            ),
             critical=True,
         ),
     )
@@ -330,7 +332,7 @@ def nc_dos_1(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         root,
         subject=x509.Name(subjects),
-        san=ext(x509.SubjectAlternativeName(permitteds), critical=False),
+        san=ext(x509.SubjectAlternativeName(sans), critical=False),
     )
 
     builder = (

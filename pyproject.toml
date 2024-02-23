@@ -13,7 +13,7 @@ authors = [
 ]
 dependencies = [
     "pydantic ~= 2.4",
-    "cryptography",
+    "cryptography ~= 42.0",
     "pyyaml ~= 6.0",
     "pyOpenSSL",
     "certifi",
