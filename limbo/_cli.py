@@ -169,7 +169,7 @@ def _regression(args: argparse.Namespace) -> None:
         current_results.append(LimboResult.model_validate_json(result.read_text()))
 
     # mapping of harness -> [(testcase-id, previous-result, current-result)]
-    regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]] = defaultdict(list)
+    all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]] = defaultdict(list)
     for previous_result in previous_results:
         current_result = next(
             (r for r in current_results if r.harness == previous_result.harness), None
@@ -183,7 +183,7 @@ def _regression(args: argparse.Namespace) -> None:
         common_testcases = previous_by_id.keys() & current_by_id.keys()
         for tc in common_testcases:
             if previous_by_id[tc].actual_result != current_by_id[tc].actual_result:
-                regressions[previous_result.harness].append(
+                all_regressions[previous_result.harness].append(
                     (tc, previous_by_id[tc].actual_result, current_by_id[tc].actual_result)
                 )
 
@@ -204,8 +204,15 @@ def _regression(args: argparse.Namespace) -> None:
             )
 
     if os.getenv("GITHUB_ACTIONS"):
-        if regressions:
-            _github.step_summary(_render_regressions(regressions))
+        if all_regressions:
+            sampled_regressions = _sample_regressions(all_regressions)
+
+            template = _markdown.template("sampled-regressions.md")
+            _github.step_summary(
+                template.render(
+                    sampled_regressions=sampled_regressions, testcase_link=_markdown.testcase_link
+                )
+            )
             template = _markdown.template("regressions.md")
             _github.comment(
                 template.render(regressions_url=_github.workflow_url()), update="@@regressions@@"
@@ -224,11 +231,10 @@ def _regression(args: argparse.Namespace) -> None:
             _github.comment(template.render(new_results=new_results), update="@@new-testcases@@")
 
 
-def _render_regressions(
+def _sample_regressions(
     all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]],
 ) -> str:
-    rendered = ""
-
+    sampled = {}
     for harness, regressions in all_regressions.items():
         # Sample up to 10 regressions per harness.
         # Filter the bettertls suite by default, since it's huge.
@@ -241,9 +247,6 @@ def _render_regressions(
         else:
             regressions = random.sample(regressions, min(len(regressions), 10))
 
-        rendered += f"## {harness}\n\n"
-        for tc, prev, curr in regressions:
-            rendered += f"* {_markdown.testcase_link(tc)} went from {prev.value} to {curr.value}\n"
-        rendered += "\n"
+        sampled[harness] = regressions
 
-    return rendered
+    return sampled
