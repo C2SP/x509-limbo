@@ -233,7 +233,7 @@ def _regression(args: argparse.Namespace) -> None:
 
 def _sample_regressions(
     all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]],
-) -> str:
+) -> dict[str, list[tuple[str, ActualResult, ActualResult]]]:
     sampled = {}
     for harness, regressions in all_regressions.items():
         # Sample up to 10 regressions per harness.
