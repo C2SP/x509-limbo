@@ -4,6 +4,6 @@
 ## {{ harness }}
 
 {% for tc, prev, curr in regressions %}
-* {{ testcase_link(tc) }} went from {{ prev.value }} to {{ curr.value }}
+* {{ testcase_link(tc) }}: {{ prev.value }} &rarr; {{ curr.value }}
 {% endfor %}
 {% endfor%}
