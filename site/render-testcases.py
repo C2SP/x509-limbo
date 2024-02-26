@@ -13,7 +13,7 @@ from pathlib import Path
 import mkdocs_gen_files
 from py_markdown_table.markdown_table import markdown_table
 
-from limbo._markdown import testcase_link, testcase_url
+from limbo._markdown import template, testcase_link, testcase_url
 from limbo.models import (
     ActualResult,
     ExpectedResult,
@@ -32,18 +32,6 @@ assert LIMBO_JSON.is_file()
 RESULTS = _HERE.parent / "results"
 
 BASE_URL = mkdocs_gen_files.config["site_url"]
-
-TESTCASE_TEMPLATE = """
-## {tc_id}
-
-{description}
-
-| Expected result | Validation kind | Validation time | Features   | Conflicts   | Download |
-| --------------- | --------------- | --------------- | ---------- | ----------- | -------- |
-| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} | {pems}   |
-
-{harness_results}
-"""
 
 LINK_SUBSTITUTIONS = [
     # Rewrite `RFC XXXX A.B.C.D` into a section link.
@@ -137,7 +125,6 @@ def _render_harness_results(
 
 
 limbo = Limbo.model_validate_json(LIMBO_JSON.read_text())
-tcs_by_id = {tc.id: tc for tc in limbo.testcases}
 
 if RESULTS.is_dir():
     harness_results = [
@@ -166,8 +153,9 @@ for namespace, tc_results in namespaces.items():
         print(f"# {namespace}", file=f)
 
         for r in tc_results:
+            testcase_template = template("testcase.md")
             print(
-                TESTCASE_TEMPLATE.format(
+                testcase_template.render(
                     tc_id=r.tc.id,
                     exp_result=r.tc.expected_result.value,
                     val_kind=r.tc.validation_kind.value,
@@ -191,7 +179,12 @@ for harness_result in harness_results:
         unexpected_passes: list[TestcaseResult] = []
         skipped_testcases: list[TestcaseResult] = []
         for testcase_result in harness_result.results:
-            expected_result = tcs_by_id[testcase_result.id].expected_result
+            try:
+                # The local results might be newer than the latest test suite,
+                # so skip anything that doesn't have a corresponding testcase.
+                expected_result = limbo.by_id[testcase_result.id].expected_result
+            except KeyError:
+                continue
 
             match (expected_result.value, testcase_result.actual_result.value):
                 case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
