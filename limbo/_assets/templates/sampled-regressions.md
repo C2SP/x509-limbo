@@ -1,6 +1,6 @@
 <!-- @@sampled-regressions@@ -->
 
-{% for harness, regressions in sampled_regressions %}
+{% for harness, regressions in sampled_regressions.items() %}
 ## {{ harness }}
 
 {% for tc, prev, cur in regressions %}
