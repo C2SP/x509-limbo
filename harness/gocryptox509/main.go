@@ -215,7 +215,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		if err != nil {
 			actual = resultFailure
 		} else {
-			actual = resultFailure
+			actual = resultSuccess
 		}
 
 		if expected != actual {
