@@ -80,8 +80,11 @@ test-go:
 
 .PHONY: test-openssl
 test-openssl:
-	$(MAKE) -C harness/openssl
-	$(MAKE) run ARGS="harness ./harness/openssl/main --output ./results/openssl.json"
+	$(MAKE) -C harness/openssl openssl-1.1.1 openssl-3.0 openssl-3.1 openssl-3.2
+	$(MAKE) run ARGS="harness --output ./results/openssl-1.1.1.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-1.1.1"
+	$(MAKE) run ARGS="harness --output ./results/openssl-3.0.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.0"
+	$(MAKE) run ARGS="harness --output ./results/openssl-3.1.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.1"
+	$(MAKE) run ARGS="harness --output ./results/openssl-3.2.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.2"
 
 .PHONY: test-rust-webpki
 test-rust-webpki:
@@ -93,8 +96,12 @@ test-rustls-webpki:
 	@cargo build --bin rust-rustls-harness
 	$(MAKE) run ARGS="harness ./target/debug/rust-rustls-harness --output ./results/rustls-webpki.json"
 
+.PHONY: test-pyca-cryptography
+test-pyca-cryptography: $(NEEDS_VENV)
+	$(MAKE) run ARGS="harness --output ./results/pyca-cryptography.json -- ./$(VENV_BIN)/python ./harness/pyca-cryptography/main.py"
+
 .PHONY: test
-test: test-go test-openssl test-rust-webpki test-rustls-webpki
+test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography
 
 .PHONY: site
 site: $(NEEDS_VENV)

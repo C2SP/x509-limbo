@@ -2,9 +2,18 @@
 Markdown helpers.
 """
 
+from jinja2 import Environment, PackageLoader, Template, select_autoescape
+
 from limbo.models import TestCaseID
 
 BASE_URL = "https://x509-limbo.com"
+
+env = Environment(
+    trim_blocks=True,
+    lstrip_blocks=True,
+    autoescape=select_autoescape(),
+    loader=PackageLoader("limbo._assets", "templates"),
+)
 
 
 def testcase_url(testcase_id: TestCaseID) -> str:
@@ -17,3 +26,7 @@ def testcase_link(testcase_id: TestCaseID) -> str:
     url = testcase_url(testcase_id)
 
     return f"[`{testcase_id}`]({url})"
+
+
+def template(name: str) -> Template:
+    return env.get_template(name)

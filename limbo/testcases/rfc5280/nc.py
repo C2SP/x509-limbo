@@ -770,7 +770,7 @@ def excluded_different_constraint_type(builder: Builder) -> None:
 
 
 @testcase
-def invalid_dnsname(builder: Builder) -> None:
+def invalid_dnsname_wildcard(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -778,7 +778,7 @@ def invalid_dnsname(builder: Builder) -> None:
     root -> leaf
     ```
 
-    The root contains a NameConstraints extension with a malformed dNSName
+    The root contains a Name Constraints extension with a malformed dNSName
     (uses a wildcard pattern, which is not permitted under RFC 5280).
     """
 
@@ -787,6 +787,41 @@ def invalid_dnsname(builder: Builder) -> None:
         permitted_subtrees=[x509.DNSName("unrelated.cryptography.io")], excluded_subtrees=None
     )
     name_constraints._permitted_subtrees = [x509.DNSName("*.example.com")]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.example.com")]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="foo.example.com")
+    ).fails()
+
+
+@testcase
+def invalid_dnsname_leading_period(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a Name Constraint extension with a malformed DNS name
+    (uses a leading period, which is not permitted under RFC 5280 4.2.1.10).
+
+    This is widely (incorrectly) accepted by implementations due to OpenSSL
+    accepting it and due to misreadings of RFC 5280, which allows a leading
+    period in *URI* constraints but not DNS constraints.
+    """
+
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("unrelated.cryptography.io")], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.DNSName(".example.com")]
 
     root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
     leaf = builder.leaf_cert(
