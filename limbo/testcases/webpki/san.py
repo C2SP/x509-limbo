@@ -2,6 +2,8 @@
 Subject Alternative Name (SAN)-specific Web PKI tests.
 """
 
+import ipaddress
+
 from cryptography import x509
 
 from limbo.assets import ext
@@ -10,9 +12,9 @@ from limbo.testcases._core import Builder, testcase
 
 
 @testcase
-def exact_san(builder: Builder) -> None:
+def exact_dns_san(builder: Builder) -> None:
     """
-    Produces a chain with an EE cert.
+    Produces a chain with a valid EE cert for `example.com`.
 
     This EE cert contains a Subject Alternative Name with the dNSName "example.com".
     This should verify successfully against the domain "example.com", per
@@ -29,6 +31,29 @@ def exact_san(builder: Builder) -> None:
         builder.trusted_certs(root)
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+    ).succeeds()
+
+
+@testcase
+def exact_localhost_ip_san(builder: Builder) -> None:
+    """
+    Produces a chain with a valid EE cert, for IP 127.0.0.1, i.e. localhost.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="IP", value="127.0.0.1"))
     ).succeeds()
 
 
