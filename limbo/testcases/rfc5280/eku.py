@@ -2,7 +2,6 @@
 RFC5280 Extended Key Usage (EKU) tests.
 """
 
-
 from cryptography import x509
 
 from limbo.assets import ext
