@@ -442,8 +442,8 @@ class Builder:
         self._expected_peer_name = name
         return self
 
-    def expected_peer_names(self, names: list[PeerName]) -> Self:
-        self._expected_peer_names = names
+    def expected_peer_names(self, *names: PeerName) -> Self:
+        self._expected_peer_names = list(names)
         return self
 
     def max_chain_depth(self, max_chain_depth: int) -> Self:
