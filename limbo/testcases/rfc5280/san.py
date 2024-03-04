@@ -2,7 +2,6 @@
 RFC 5280 Subject Alternative Name (SAN) testcases.
 """
 
-
 from cryptography import x509
 
 from limbo.assets import ext
