@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 chrono = { version = "0.4.34", features = ["serde"] }
-regress = "0.8.0"
+regress = "0.9.0"
 # TODO: Replace with upstream once merged:
 # https://github.com/Marwes/schemafy/pull/76
 # schemafy = { git = "https://github.com/woodruffw-forks/schemafy", rev = "de28e87" }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
-typify = "0.0.15"
+typify = "0.0.16"
