@@ -2,7 +2,6 @@
 RFC 5280 validity testcases.
 """
 
-
 from datetime import datetime
 
 from limbo.testcases._core import Builder, testcase

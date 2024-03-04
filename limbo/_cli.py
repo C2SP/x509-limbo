@@ -107,6 +107,29 @@ def main() -> None:
     )
     regression.set_defaults(func=_regression)
 
+    # `limbo extract`
+    extract = subparsers.add_parser("extract", help="Extract a single testcase from the test-suite")
+    extract.add_argument(
+        "--limbo",
+        type=Path,
+        default=Path("limbo.json"),
+        metavar="FILE",
+        help="The limbo testcase suite to load from",
+    )
+    extract.add_argument(
+        "--output",
+        type=str,
+        metavar="FILE",
+        help=(
+            "The filename to write the extracted testcase to. "
+            "By default, {id}.json will be written; use - for stdout"
+        ),
+    )
+    extract.add_argument(
+        "id", type=str, metavar="TESTCASE-ID", help="The testcase to extract, by ID"
+    )
+    extract.set_defaults(func=_extract)
+
     args = parser.parse_args()
     args.func(args)
 
@@ -250,3 +273,22 @@ def _sample_regressions(
         sampled[harness] = regressions
 
     return sampled
+
+
+def _extract(args: argparse.Namespace) -> None:
+    limbo = Limbo.model_validate_json(args.limbo.read_text())
+
+    try:
+        testcase = limbo.by_id[args.id]
+    except KeyError:
+        logger.error(f"no such testcase: {args.id}")
+        sys.exit(1)
+
+    output = args.output
+    if not output:
+        output = f"{args.id}.json"
+
+    if args.output == "-":
+        print(testcase.model_dump_json(indent=2), file=sys.stdout)
+    else:
+        Path(output).write_text(testcase.model_dump_json(indent=2))
