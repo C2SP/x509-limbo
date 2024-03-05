@@ -625,3 +625,30 @@ def ca_as_leaf_wrong_san(builder: Builder) -> None:
         .expected_peer_name(PeerName(kind="DNS", value="some-other-ca.example.com"))
         .fails()
     )
+
+
+@testcase
+def root_and_intermediate_swapped(builder: Builder) -> None:
+    """
+    Produces the following valid chain:
+
+    ```
+    root -> ICA -> EE
+    ```
+
+    The configuration puts the ICA in the trusted set, meaning that validation
+    should ignore (and not fail on) the root in the untrusted intermediate set.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(root)
+    leaf = builder.leaf_cert(ica)
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(ica)
+        .untrusted_intermediates(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .succeeds()
+    )
