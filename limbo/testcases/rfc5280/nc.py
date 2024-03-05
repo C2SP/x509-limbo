@@ -900,6 +900,41 @@ def invalid_ipv6_address(builder: Builder) -> None:
 
 
 @testcase
+def invalid_email_address(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a `NameConstraints` extension with a malformed
+    RFC822 name constraint (wildcard pattern, which is not allowed in email NCs).
+    """
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.RFC822Name("fake@example.com")], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.RFC822Name("*@example.com")]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.RFC822Name("example@example.com")]), critical=False
+        ),
+    )
+
+    builder = (
+        builder.client_validation()
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_names(PeerName(kind="RFC822", value="example@example.com"))
+        .fails()
+    )
+
+
+@testcase
 def not_allowed_in_ee_noncritical(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
@@ -1287,6 +1322,59 @@ def nc_permits_invalid_ip_san(builder: Builder) -> None:
         .untrusted_intermediates(intermediate)
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="IP", value="192.0.2.1"))
+        .fails()
+    )
+
+
+@testcase
+def nc_permits_invalid_email_san(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA (NC: example.com) -> EE (SAN: invalid@address@example.com)
+    ```
+
+    The ICA contains a NC that permits any email inbox on `example.com`,
+    but the EE's SAN is malformed (containing a malformed email address).
+    This should fail per RFC 5280, since all names MUST be located within the
+    permitted namespace.
+    """
+
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name("example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(
+        intermediate,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [
+                    x509.RFC822Name("good@example.com"),
+                    x509.RFC822Name("alsogood@example.com"),
+                    x509.RFC822Name._init_without_validation("invalid@address@example.com"),
+                ]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.client_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
+        .expected_peer_names(
+            PeerName(kind="RFC822", value="good@example.com"),
+            PeerName(kind="RFC822", value="alsogood@example.com"),
+        )
         .fails()
     )
 
