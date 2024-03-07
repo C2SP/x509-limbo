@@ -909,13 +909,16 @@ def invalid_email_address(builder: Builder) -> None:
     ```
 
     The root contains a `NameConstraints` extension with a malformed
-    RFC822 name constraint (wildcard pattern, which is not allowed in email NCs).
+    RFC822 name constraint (`invalid@invalid@example.com`, which is not
+    a valid email address).
     """
     # NOTE: Set `_permitted_subtrees` directly to avoid validation.
     name_constraints = x509.NameConstraints(
         permitted_subtrees=[x509.RFC822Name("fake@example.com")], excluded_subtrees=None
     )
-    name_constraints._permitted_subtrees = [x509.RFC822Name("*@example.com")]
+    name_constraints._permitted_subtrees = [
+        x509.RFC822Name._init_without_validation("invalid@invalid@example.com")
+    ]
 
     root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
     leaf = builder.leaf_cert(
