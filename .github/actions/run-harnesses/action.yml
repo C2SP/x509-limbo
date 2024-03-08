@@ -19,10 +19,9 @@ runs:
       id: compute-cache-key
       shell: bash
       run: |
-        echo "HARNESS_CACHE_KEY=limbo-harness-${LIMBO_HASH}-${HARNESS_HASH}" >> "${GITHUB_OUTPUT}"
+        echo "HARNESS_CACHE_KEY=limbo-harness-${LIMBO_CACHE_KEY}" >> "${GITHUB_OUTPUT}"
       env:
-        LIMBO_HASH: ${{ hashFiles('limbo.json') }}
-        HARNESS_HASH: ${{ hashFiles('harness/**') }}
+        LIMBO_CACHE_KEY: ${{ hashFiles('Makefile', 'limbo.json', 'harness/**') }}
 
     - uses: actions/cache/restore@v4
       id: restore-cache
