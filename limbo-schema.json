@@ -38,8 +38,8 @@
         "keyAgreement",
         "keyCertSign",
         "cRLSign",
-        "encipher_only",
-        "decipher_only"
+        "encipherOnly",
+        "decipherOnly"
       ],
       "title": "KeyUsage",
       "type": "string"

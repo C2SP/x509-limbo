@@ -26,7 +26,7 @@ func (j *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-const KeyUsageDecipherOnly KeyUsage = "decipher_only"
+const KeyUsageDecipherOnly KeyUsage = "decipherOnly"
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *ExpectedResult) UnmarshalJSON(b []byte) error {
@@ -328,7 +328,7 @@ const SignatureAlgorithmECDSAWITHSHA224 SignatureAlgorithm = "ECDSA_WITH_SHA224"
 type KnownEKUs string
 
 const SignatureAlgorithmDSAWITHSHA256 SignatureAlgorithm = "DSA_WITH_SHA256"
-const KeyUsageEncipherOnly KeyUsage = "encipher_only"
+const KeyUsageEncipherOnly KeyUsage = "encipherOnly"
 const SignatureAlgorithmECDSAWITHSHA3224 SignatureAlgorithm = "ECDSA_WITH_SHA3_224"
 const SignatureAlgorithmECDSAWITHSHA3256 SignatureAlgorithm = "ECDSA_WITH_SHA3_256"
 const SignatureAlgorithmECDSAWITHSHA3384 SignatureAlgorithm = "ECDSA_WITH_SHA3_384"
@@ -438,8 +438,8 @@ var enumValues_KeyUsage = []interface{}{
 	"keyAgreement",
 	"keyCertSign",
 	"cRLSign",
-	"encipher_only",
-	"decipher_only",
+	"encipherOnly",
+	"decipherOnly",
 }
 var enumValues_KnownEKUs = []interface{}{
 	"anyExtendedKeyUsage",

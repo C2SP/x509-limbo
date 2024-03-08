@@ -108,8 +108,8 @@ class KeyUsage(str, Enum):
     key_agreement = "keyAgreement"
     key_cert_sign = "keyCertSign"
     crl_sign = "cRLSign"
-    encipher_only = "encipher_only"
-    decipher_only = "decipher_only"
+    encipher_only = "encipherOnly"
+    decipher_only = "decipherOnly"
 
 
 class KnownEKUs(str, Enum):
