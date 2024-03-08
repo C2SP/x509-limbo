@@ -105,7 +105,7 @@ test-certvalidator: $(NEEDS_VENV)
 	$(MAKE) run ARGS="harness --output ./results/certvalidator.json -- ./$(VENV_BIN)/python ./harness/certvalidator/main.py"
 
 .PHONY: test
-test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography
+test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator
 
 .PHONY: site
 site: $(NEEDS_VENV)
