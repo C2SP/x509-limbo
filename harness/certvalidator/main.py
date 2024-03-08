@@ -1,5 +1,4 @@
 import sys
-from cgi import test
 from concurrent.futures import ThreadPoolExecutor
 
 from certvalidator import CertificateValidator, ValidationContext
@@ -8,8 +7,6 @@ from certvalidator.validate import validate_usage
 
 from limbo.models import (
     ActualResult,
-    KeyUsage,
-    KnownEKUs,
     Limbo,
     LimboResult,
     Testcase,
