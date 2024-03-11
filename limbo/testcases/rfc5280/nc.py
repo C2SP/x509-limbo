@@ -1649,3 +1649,53 @@ def nc_forbids_othername(builder: Builder) -> None:
         .expected_peer_name(PeerName(kind="DNS", value="example.com"))
         .fails()
     )
+
+
+@testcase
+def nc_forbids_othername_noop(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    root -> ICA (forbid: ON) -> EE (SAN: no ON)
+    ```
+
+    RFC 5280 does not specify the handling other OtherName constraints,
+    but does specify that implementations are only required to evaluate constraints
+    for names that actually appear on the validation path.
+
+    In this case, ICA contains an OtherName Name Constraint but no actual SANs
+    on the path contain any OtherName subjects, making the chain valid.
+    """
+
+    private_on_oid = x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.3")
+    der_null = b"\x05\x00"
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.OtherName(private_on_oid, der_null)],
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .succeeds()
+    )
