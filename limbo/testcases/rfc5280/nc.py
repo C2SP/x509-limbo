@@ -1591,3 +1591,61 @@ def nc_permits_email_domain(builder: Builder) -> None:
         .expected_peer_names(PeerName(kind="RFC822", value="foo@example.com"))
         .succeeds()
     )
+
+
+@testcase
+def nc_forbids_othername(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (forbid: ON) -> EE (SAN: ON)
+    ```
+
+    RFC 5280 does not specify the handling other OtherName constraints,
+    but does specify that implementations must either process (and
+    therefore recognize) all constraints or outright reject the certificate.
+
+    > If a name constraints extension that is marked as critical
+    > imposes constraints on a particular name form, and an instance of
+    > that name form appears in the subject field or subjectAltName
+    > extension of a subsequent certificate, then the application MUST
+    > either process the constraint or reject the certificate.
+
+    This testcase contains an ICA with a private OtherName (meaning the
+    implementation will not recognize it), and therefore must reject the chain.
+    """
+
+    private_on_oid = x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.3")
+    der_null = b"\x05\x00"
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.OtherName(private_on_oid, der_null)],
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DNSName("example.com"), x509.OtherName(private_on_oid, der_null)]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
