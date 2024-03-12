@@ -18,6 +18,39 @@ from .san import *  # noqa: F403
 
 
 @testcase
+def explicit_curve(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    Both root and EE convey EC keys using the "explicit" curve encoding,
+    which is forbidden under CABF 7.1.3.1.2:
+
+    > The CA SHALL indicate an ECDSA key using the id‐ecPublicKey
+    > (OID: 1.2.840.10045.2.1) algorithm identifier. The parameters MUST use
+    > the namedCurve encoding.
+    """
+
+    root_pem = ASSETS_PATH / "explicit_curve_ca.pem"
+    leaf_pem = ASSETS_PATH / "explicit_curve_leaf.pem"
+
+    root = Certificate(x509.load_pem_x509_certificate(root_pem.read_bytes()))
+    leaf = Certificate(x509.load_pem_x509_certificate(leaf_pem.read_bytes()))
+
+    builder = (
+        builder.server_validation()
+        .validation_time(datetime.fromisoformat("2024-03-13T00:00:00Z"))
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
+
+
+@testcase
 def cryptographydotio_chain(builder: Builder) -> None:
     """
     Verifies against a saved copy of `cryptography.io`'s chain. This should

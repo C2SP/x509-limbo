@@ -9,4 +9,12 @@ openssl ecparam \
     -param_enc explicit \
     -noout \
     -outform PEM \
-    -out ../explicit_curve.key
+    -out ../explicit_curve_ca.key
+
+openssl ecparam \
+    -name prime256v1 \
+    -genkey \
+    -param_enc explicit \
+    -noout \
+    -outform PEM \
+    -out ../explicit_curve_leaf.key
