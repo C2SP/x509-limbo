@@ -8,7 +8,7 @@ from typing import Callable, Literal, Self
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
+from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPrivateKeyTypes
 
 from limbo.assets import (
     EPOCH,
@@ -38,7 +38,7 @@ class Builder:
         serial: int | None,
         not_before: datetime,
         not_after: datetime,
-        key: PrivateKeyTypes | None,
+        key: CertificateIssuerPrivateKeyTypes | None,
         basic_constraints: _Extension[x509.BasicConstraints] | None,
         key_usage: _Extension[x509.KeyUsage] | None,
         san: _Extension[x509.SubjectAlternativeName] | Literal[True] | None,
@@ -60,7 +60,7 @@ class Builder:
         builder = x509.CertificateBuilder(
             issuer_name=issuer,
             subject_name=subject,
-            public_key=key.public_key(),  # type: ignore[arg-type]
+            public_key=key.public_key(),
             serial_number=serial,
             not_valid_before=not_before,
             not_valid_after=not_after,
@@ -93,9 +93,7 @@ class Builder:
             )
         elif aki:
             builder = builder.add_extension(
-                x509.AuthorityKeyIdentifier.from_issuer_public_key(
-                    key.public_key()  # type: ignore[arg-type]
-                ),
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()),
                 critical=False,
             )
 
@@ -103,9 +101,7 @@ class Builder:
             builder = builder.add_extension(ski.ext, critical=ski.critical)
         elif ski:
             builder = builder.add_extension(
-                x509.SubjectKeyIdentifier.from_public_key(
-                    key.public_key()  # type: ignore[arg-type]
-                ),
+                x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
                 critical=False,
             )
 
@@ -118,9 +114,9 @@ class Builder:
             builder = builder.add_extension(extra_extension.ext, critical=extra_extension.critical)
 
         if parent:
-            cert = builder.sign(parent.key, algorithm=hashes.SHA256())  # type: ignore[arg-type]
+            cert = builder.sign(parent.key, algorithm=hashes.SHA256())
         else:
-            cert = builder.sign(key, algorithm=hashes.SHA256())  # type: ignore[arg-type]
+            cert = builder.sign(key, algorithm=hashes.SHA256())
 
         return CertificatePair(cert, key)
 
@@ -132,7 +128,7 @@ class Builder:
         serial: int | None = None,
         not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
-        key: PrivateKeyTypes | None = None,
+        key: CertificateIssuerPrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | None = ext(
             x509.BasicConstraints(ca=True, path_length=None),
             critical=True,
@@ -184,7 +180,7 @@ class Builder:
         serial: int | None = None,
         not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
-        key: PrivateKeyTypes | None = None,
+        key: CertificateIssuerPrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = True,
         key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
@@ -259,7 +255,7 @@ class Builder:
         serial: int | None = None,
         not_before: datetime = EPOCH,
         not_after: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
-        key: PrivateKeyTypes | None = None,
+        key: CertificateIssuerPrivateKeyTypes | None = None,
         basic_constraints: _Extension[x509.BasicConstraints] | Literal[True] | None = None,
         key_usage: _Extension[x509.KeyUsage] | None = ext(
             x509.KeyUsage(
@@ -308,9 +304,9 @@ class Builder:
         builder = builder.issuer_name(issuer)
         builder = builder.not_valid_before(not_before)
         builder = builder.not_valid_after(not_after)
-        builder = builder.public_key(key.public_key())  # type: ignore[arg-type]
+        builder = builder.public_key(key.public_key())
         builder = builder.add_extension(
-            x509.SubjectKeyIdentifier.from_public_key(key.public_key()),  # type: ignore[arg-type]
+            x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
             critical=False,
         )
 
@@ -328,9 +324,7 @@ class Builder:
             builder = builder.add_extension(aki.ext, critical=aki.critical)
         elif aki:
             builder = builder.add_extension(
-                x509.AuthorityKeyIdentifier.from_issuer_public_key(
-                    parent.key.public_key()  # type: ignore[arg-type]
-                ),
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(parent.key.public_key()),
                 critical=False,
             )
 
@@ -363,7 +357,7 @@ class Builder:
                 builder._extensions = []
 
         certificate = builder.sign(
-            private_key=parent.key,  # type: ignore[arg-type]
+            private_key=parent.key,
             algorithm=hashes.SHA256(),
         )
 
@@ -378,6 +372,7 @@ class Builder:
         self._trusted_certs: list[str] = []
         self._untrusted_intermediates: list[str] = []
         self._peer_certificate: str | None = None
+        self._peer_certificate_key: str | None = None
         self._validation_time: datetime | None = None
         self._signature_algorithms: list[SignatureAlgorithm] = []
         self._key_usage: list[KeyUsage] = []
@@ -412,8 +407,11 @@ class Builder:
         self._untrusted_intermediates = [c.cert_pem for c in certs]
         return self
 
-    def peer_certificate(self, cert: Certificate) -> Self:
+    def peer_certificate(self, cert: Certificate | CertificatePair) -> Self:
         self._peer_certificate = cert.cert_pem
+
+        if isinstance(cert, CertificatePair):
+            self._peer_certificate_key = cert.key_pem
         return self
 
     def validation_time(self, time: datetime) -> Self:
@@ -444,8 +442,8 @@ class Builder:
         self._expected_peer_name = name
         return self
 
-    def expected_peer_names(self, names: list[PeerName]) -> Self:
-        self._expected_peer_names = names
+    def expected_peer_names(self, *names: PeerName) -> Self:
+        self._expected_peer_names = list(names)
         return self
 
     def max_chain_depth(self, max_chain_depth: int) -> Self:
@@ -462,6 +460,7 @@ class Builder:
             trusted_certs=self._trusted_certs,
             untrusted_intermediates=self._untrusted_intermediates,
             peer_certificate=self._peer_certificate,
+            peer_certificate_key=self._peer_certificate_key,
             validation_time=self._validation_time,
             signature_algorithms=self._signature_algorithms,
             key_usage=self._key_usage,

@@ -1,8 +1,9 @@
 site_name: x509-limbo
 site_description: x509-limbo
-site_url: https://x509-limbo.com/
+site_url: https://x509-limbo.com
 docs_dir: site
 site_dir: site_html
+dev_addr: "127.0.0.1:8000"
 theme:
   name: material
   features:

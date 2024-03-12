@@ -770,7 +770,7 @@ def excluded_different_constraint_type(builder: Builder) -> None:
 
 
 @testcase
-def invalid_dnsname(builder: Builder) -> None:
+def invalid_dnsname_wildcard(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -778,7 +778,7 @@ def invalid_dnsname(builder: Builder) -> None:
     root -> leaf
     ```
 
-    The root contains a NameConstraints extension with a malformed dNSName
+    The root contains a Name Constraints extension with a malformed dNSName
     (uses a wildcard pattern, which is not permitted under RFC 5280).
     """
 
@@ -787,6 +787,41 @@ def invalid_dnsname(builder: Builder) -> None:
         permitted_subtrees=[x509.DNSName("unrelated.cryptography.io")], excluded_subtrees=None
     )
     name_constraints._permitted_subtrees = [x509.DNSName("*.example.com")]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo.example.com")]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="foo.example.com")
+    ).fails()
+
+
+@testcase
+def invalid_dnsname_leading_period(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a Name Constraint extension with a malformed DNS name
+    (uses a leading period, which is not permitted under RFC 5280 4.2.1.10).
+
+    This is widely (incorrectly) accepted by implementations due to OpenSSL
+    accepting it and due to misreadings of RFC 5280, which allows a leading
+    period in *URI* constraints but not DNS constraints.
+    """
+
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("unrelated.cryptography.io")], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [x509.DNSName(".example.com")]
 
     root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
     leaf = builder.leaf_cert(
@@ -862,6 +897,44 @@ def invalid_ipv6_address(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="IP", value="::1")
     ).fails()
+
+
+@testcase
+def invalid_email_address(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> leaf
+    ```
+
+    The root contains a `NameConstraints` extension with a malformed
+    RFC822 name constraint (`invalid@invalid@example.com`, which is not
+    a valid email address).
+    """
+    # NOTE: Set `_permitted_subtrees` directly to avoid validation.
+    name_constraints = x509.NameConstraints(
+        permitted_subtrees=[x509.RFC822Name("fake@example.com")], excluded_subtrees=None
+    )
+    name_constraints._permitted_subtrees = [
+        x509.RFC822Name._init_without_validation("invalid@invalid@example.com")
+    ]
+
+    root = builder.root_ca(name_constraints=ext(name_constraints, critical=True))
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.RFC822Name("example@example.com")]), critical=False
+        ),
+    )
+
+    builder = (
+        builder.client_validation()
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_names(PeerName(kind="RFC822", value="example@example.com"))
+        .fails()
+    )
 
 
 @testcase
@@ -1257,6 +1330,59 @@ def nc_permits_invalid_ip_san(builder: Builder) -> None:
 
 
 @testcase
+def nc_permits_invalid_email_san(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA (NC: example.com) -> EE (SAN: invalid@address@example.com)
+    ```
+
+    The ICA contains a NC that permits any email inbox on `example.com`,
+    but the EE's SAN is malformed (containing a malformed email address).
+    This should fail per RFC 5280, since all names MUST be located within the
+    permitted namespace.
+    """
+
+    root = builder.root_ca()
+    intermediate = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name("example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(
+        intermediate,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [
+                    x509.RFC822Name("good@example.com"),
+                    x509.RFC822Name("alsogood@example.com"),
+                    x509.RFC822Name._init_without_validation("invalid@address@example.com"),
+                ]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.client_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(intermediate)
+        .peer_certificate(leaf)
+        .expected_peer_names(
+            PeerName(kind="RFC822", value="good@example.com"),
+            PeerName(kind="RFC822", value="alsogood@example.com"),
+        )
+        .fails()
+    )
+
+
+@testcase
 def nc_forbids_alternate_chain_ica(builder: Builder) -> None:
     """
     Produces the following **valid** graph:
@@ -1385,5 +1511,191 @@ def nc_forbids_same_chain_ica(builder: Builder) -> None:
         .untrusted_intermediates(ica_a, ica_b_1, ica_b_2)
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="unconstrained.example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def nc_permits_email_exact(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    root -> ICA (permit: foo@example.com) -> EE (SAN: foo@example.com)
+    ```
+
+    Per RFC 5280 4.2.1.10 an email name constraint may specify a particular mailbox,
+    like in this graph.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name("foo@example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(x509.SubjectAlternativeName([x509.RFC822Name("foo@example.com")]), critical=False),
+    )
+
+    builder = (
+        builder.client_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_names(PeerName(kind="RFC822", value="foo@example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def nc_permits_email_domain(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    root -> ICA (permit: example.com) -> EE (SAN: foo@example.com)
+    ```
+
+    Per RFC 5280 4.2.1.10 an email name constraint may specify a host name to
+    constrain all inboxes on that host.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(x509.SubjectAlternativeName([x509.RFC822Name("foo@example.com")]), critical=False),
+    )
+
+    builder = (
+        builder.client_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_names(PeerName(kind="RFC822", value="foo@example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def nc_forbids_othername(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (forbid: ON) -> EE (SAN: ON)
+    ```
+
+    RFC 5280 does not specify the handling other OtherName constraints,
+    but does specify that implementations must either process (and
+    therefore recognize) all constraints or outright reject the certificate.
+
+    > If a name constraints extension that is marked as critical
+    > imposes constraints on a particular name form, and an instance of
+    > that name form appears in the subject field or subjectAltName
+    > extension of a subsequent certificate, then the application MUST
+    > either process the constraint or reject the certificate.
+
+    This testcase contains an ICA with a private OtherName (meaning the
+    implementation will not recognize it), and therefore must reject the chain.
+    """
+
+    private_on_oid = x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.3")
+    der_null = b"\x05\x00"
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.OtherName(private_on_oid, der_null)],
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DNSName("example.com"), x509.OtherName(private_on_oid, der_null)]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
+
+
+@testcase
+def nc_forbids_othername_noop(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    root -> ICA (forbid: ON) -> EE (SAN: no ON)
+    ```
+
+    RFC 5280 does not specify the handling other OtherName constraints,
+    but does specify that implementations are only required to evaluate constraints
+    for names that actually appear on the validation path.
+
+    In this case, ICA contains an OtherName Name Constraint but no actual SANs
+    on the path contain any OtherName subjects, making the chain valid.
+    """
+
+    private_on_oid = x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.3")
+    der_null = b"\x05\x00"
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.OtherName(private_on_oid, der_null)],
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("example.com")]),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
         .succeeds()
     )
