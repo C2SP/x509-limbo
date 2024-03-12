@@ -20,6 +20,9 @@ markdown_extensions:
       permalink: 🔗
 extra_css:
   - style.css
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - js/tablesort.js
 exclude_docs: |
   render-testcases.py
 validation:
