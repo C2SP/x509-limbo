@@ -47,6 +47,7 @@ openssl x509 \
     -signkey ../explicit_curve_ca.key \
     -days 365 \
     -req -in ../explicit_curve_ca.csr \
+    -copy_extensions=copyall \
     -out ../explicit_curve_ca.pem
 
 # Leaf CSR
@@ -63,6 +64,7 @@ openssl req \
 openssl x509 \
     -days 365 \
     -req -in ../explicit_curve_leaf.csr \
+    -copy_extensions=copyall \
     -CA ../explicit_curve_ca.pem \
     -CAkey ../explicit_curve_ca.key \
     -out ../explicit_curve_leaf.pem
