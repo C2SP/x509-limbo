@@ -926,6 +926,10 @@ def invalid_email_address(builder: Builder) -> None:
         san=ext(
             x509.SubjectAlternativeName([x509.RFC822Name("example@example.com")]), critical=False
         ),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
@@ -1367,6 +1371,10 @@ def nc_permits_invalid_email_san(builder: Builder) -> None:
             ),
             critical=False,
         ),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
@@ -1542,6 +1550,10 @@ def nc_permits_email_exact(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         ica,
         san=ext(x509.SubjectAlternativeName([x509.RFC822Name("foo@example.com")]), critical=False),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
@@ -1581,6 +1593,10 @@ def nc_permits_email_domain(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         ica,
         san=ext(x509.SubjectAlternativeName([x509.RFC822Name("foo@example.com")]), critical=False),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
