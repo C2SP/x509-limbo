@@ -8,7 +8,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import ext
-from limbo.models import Feature, PeerName
+from limbo.models import Feature, KnownEKUs, PeerName
 from limbo.testcases._core import Builder, testcase
 
 
@@ -926,10 +926,15 @@ def invalid_email_address(builder: Builder) -> None:
         san=ext(
             x509.SubjectAlternativeName([x509.RFC822Name("example@example.com")]), critical=False
         ),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
         builder.client_validation()
+        .extended_key_usage([KnownEKUs.client_auth])
         .trusted_certs(root)
         .peer_certificate(leaf)
         .expected_peer_names(PeerName(kind="RFC822", value="example@example.com"))
@@ -1367,10 +1372,15 @@ def nc_permits_invalid_email_san(builder: Builder) -> None:
             ),
             critical=False,
         ),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
         builder.client_validation()
+        .extended_key_usage([KnownEKUs.client_auth])
         .trusted_certs(root)
         .untrusted_intermediates(intermediate)
         .peer_certificate(leaf)
@@ -1542,10 +1552,15 @@ def nc_permits_email_exact(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         ica,
         san=ext(x509.SubjectAlternativeName([x509.RFC822Name("foo@example.com")]), critical=False),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
         builder.client_validation()
+        .extended_key_usage([KnownEKUs.client_auth])
         .trusted_certs(root)
         .untrusted_intermediates(ica)
         .peer_certificate(leaf)
@@ -1581,10 +1596,15 @@ def nc_permits_email_domain(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         ica,
         san=ext(x509.SubjectAlternativeName([x509.RFC822Name("foo@example.com")]), critical=False),
+        eku=ext(
+            x509.ExtendedKeyUsage([x509.OID_CLIENT_AUTH]),
+            critical=False,
+        ),
     )
 
     builder = (
         builder.client_validation()
+        .extended_key_usage([KnownEKUs.client_auth])
         .trusted_certs(root)
         .untrusted_intermediates(ica)
         .peer_certificate(leaf)
