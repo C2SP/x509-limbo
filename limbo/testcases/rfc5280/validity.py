@@ -183,6 +183,44 @@ def notbefore_exact(builder: Builder) -> None:
 
 
 @testcase
+def notbefore_fractional(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> EE
+    ```
+
+    EE becomes valid at `2024-03-01T00:00:01Z`, and the chain is validated at
+    exactly `2024-03-01T00:00:00.999Z`.
+
+    This is the counterpart to `rfc5280::validity::notafter-fractional`:
+    despite rounding to the `notBefore` date, implementations should
+    `floor` the validation time instead and subsequently reject this chain.
+    """
+
+    not_before = datetime.fromisoformat("2024-03-01T00:00:01Z")
+    not_after = datetime.fromisoformat("2024-04-01T00:00:00Z")
+
+    root = builder.root_ca(not_before=not_before, not_after=not_after)
+    ica = builder.intermediate_ca(root, not_before=not_before, not_after=not_after)
+    leaf = builder.leaf_cert(
+        ica,
+        not_before=not_before,
+        not_after=not_after,
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .validation_time(not_before - timedelta(milliseconds=1))
+        .fails()
+    )
+
+
+@testcase
 def notafter_exact(builder: Builder) -> None:
     """
     Produces the following valid chain:
