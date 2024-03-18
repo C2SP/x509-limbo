@@ -28,6 +28,18 @@
       "title": "Feature",
       "type": "string"
     },
+    "Importance": {
+      "description": "A subjective ranking of a testcase's importance.",
+      "enum": [
+        "undetermined",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Importance",
+      "type": "string"
+    },
     "KeyUsage": {
       "description": "X.509 key usages.\n\nSee: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.3",
       "enum": [
@@ -180,6 +192,15 @@
           },
           "title": "Features",
           "type": "array"
+        },
+        "importance": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Importance"
+            }
+          ],
+          "default": "undetermined",
+          "description": "The testcase's importance"
         },
         "description": {
           "description": "A short, Markdown-formatted description",

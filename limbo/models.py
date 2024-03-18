@@ -282,6 +282,8 @@ class Testcase(BaseModel):
         ),
     )
 
+    importance: Importance = Field(Importance.UNDETERMINED, description="The testcase's importance")
+
     description: StrictStr = Field(..., description="A short, Markdown-formatted description")
 
     validation_kind: ValidationKind = Field(..., description="The kind of validation to perform")
