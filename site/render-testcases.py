@@ -163,6 +163,7 @@ for namespace, tc_results in namespaces.items():
                     features=", ".join([f.value for f in r.tc.features])
                     if r.tc.features
                     else "N/A",
+                    importance=r.tc.importance.value,
                     description=_linkify(r.tc.description.strip()),
                     conflicts=_render_conflicts(r.tc),
                     pems=_tc_pem_bundle(r.tc),
