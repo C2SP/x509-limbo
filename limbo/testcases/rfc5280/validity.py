@@ -140,3 +140,43 @@ def expired_leaf(builder: Builder) -> None:
         .validation_time(datetime.fromisoformat("2022-01-01T00:00:00Z"))
         .fails()
     )
+
+
+@testcase
+def notafter_exact(builder: Builder) -> None:
+    """
+    Produces the following valid chain:
+
+    ```
+    root -> ICA -> EE
+    ```
+
+    EE expires at `2024-04-01T00:00:00Z`, and the chain is validated at
+    exactly `2024-04-01T00:00:00Z`.
+
+    RFC 5280 4.1.2.5 says that `notAfter` is inclusive, so this chain should
+    validate:
+
+    > The validity period for a certificate is the period of time from
+    > notBefore through notAfter, inclusive.
+    """
+
+    not_before = datetime.fromisoformat("2024-03-01T00:00:00Z")
+    not_after = datetime.fromisoformat("2024-04-01T00:00:00Z")
+
+    root = builder.root_ca(not_before=not_before, not_after=not_after)
+    ica = builder.intermediate_ca(root, not_before=not_before, not_after=not_after)
+    leaf = builder.leaf_cert(
+        ica,
+        not_before=not_before,
+        not_after=not_after,
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .validation_time(not_after)
+        .succeeds()
+    )
