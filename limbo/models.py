@@ -216,6 +216,41 @@ class Feature(str, Enum):
     """
 
 
+class Importance(str, Enum):
+    """
+    A subjective ranking of a testcase's importance.
+    """
+
+    UNDETERMINED = "undetermined"
+    """
+    Not yet determined.
+    """
+
+    LOW = "low"
+    """
+    Low importance, e.g. due to a pedantic reading of the specifications
+    or being commonly ignored by other implementations.
+    """
+
+    MEDIUM = "medium"
+    """
+    Medium importance; implementations should address these but are unlikely
+    to encounter issues with real-world chains due to them.
+    """
+
+    HIGH = "high"
+    """
+    High importance; implementations should address these due to expected issues
+    with real-world chains.
+    """
+
+    CRITICAL = "critical"
+    """
+    Critical importance; failure to handle this indicates a potentially
+    exploitable vulnerability in the implementation under test.
+    """
+
+
 class ValidationKind(str, Enum):
     """
     The kind of validation to perform.
@@ -246,6 +281,8 @@ class Testcase(BaseModel):
             "marked with it."
         ),
     )
+
+    importance: Importance = Field(Importance.UNDETERMINED, description="The testcase's importance")
 
     description: StrictStr = Field(..., description="A short, Markdown-formatted description")
 
