@@ -2,6 +2,7 @@
   "id": "online::aws.amazon.com",
   "conflicts_with": [],
   "features": [],
+  "importance": "undetermined",
   "description": "A valid chain for `aws.amazon.com`.",
   "validation_kind": "SERVER",
   "trusted_certs": [

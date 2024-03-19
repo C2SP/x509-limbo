@@ -2,6 +2,7 @@
   "id": "online::microsoft.com",
   "conflicts_with": [],
   "features": [],
+  "importance": "undetermined",
   "description": "A valid chain for `microsoft.com`.",
   "validation_kind": "SERVER",
   "trusted_certs": [
