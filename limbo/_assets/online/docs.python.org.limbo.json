@@ -2,6 +2,7 @@
   "id": "online::docs.python.org",
   "conflicts_with": [],
   "features": [],
+  "importance": "undetermined",
   "description": "A valid chain for `docs.python.org`.",
   "validation_kind": "SERVER",
   "trusted_certs": [

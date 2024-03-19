@@ -2,6 +2,7 @@
   "id": "online::akamai.com",
   "conflicts_with": [],
   "features": [],
+  "importance": "undetermined",
   "description": "A valid chain for `akamai.com`.",
   "validation_kind": "SERVER",
   "trusted_certs": [
