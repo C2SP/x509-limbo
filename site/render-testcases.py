@@ -4,6 +4,7 @@
 # TODO(ww): Use some kind of Markdown builder API here, rather than
 # smashing strings together.
 
+import json
 import re
 from collections import defaultdict
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from pathlib import Path
 import mkdocs_gen_files
 from py_markdown_table.markdown_table import markdown_table
 
+from limbo._markdown import template, testcase_link, testcase_url
 from limbo.models import (
     ActualResult,
     ExpectedResult,
@@ -30,18 +32,6 @@ assert LIMBO_JSON.is_file()
 RESULTS = _HERE.parent / "results"
 
 BASE_URL = mkdocs_gen_files.config["site_url"]
-
-TESTCASE_TEMPLATE = """
-## {tc_id}
-
-{description}
-
-| Expected result | Validation kind | Validation time | Features   | Conflicts   | Download |
-| --------------- | --------------- | --------------- | ---------- | ----------- | -------- |
-| {exp_result}    | {val_kind}      | {val_time}      | {features} | {conflicts} | {pems}   |
-
-{harness_results}
-"""
 
 LINK_SUBSTITUTIONS = [
     # Rewrite `RFC XXXX A.B.C.D` into a section link.
@@ -80,23 +70,11 @@ def _linkify(description: str) -> str:
     return description
 
 
-def _testcase_url(testcase_id: TestCaseID) -> str:
-    namespace, _ = testcase_id.split("::", 1)
-    slug = testcase_id.replace("::", "")
-    return f"{BASE_URL}/testcases/{namespace}/#{slug}"
-
-
-def _testcase_link(testcase_id: TestCaseID) -> str:
-    url = _testcase_url(testcase_id)
-
-    return f"[`{testcase_id}`]({url})"
-
-
 def _render_conflicts(tc: Testcase) -> str:
     if not tc.conflicts_with:
         return "N/A"
 
-    urls = [_testcase_url(id_) for id_ in tc.conflicts_with]
+    urls = [testcase_url(id_) for id_ in tc.conflicts_with]
     md_urls = [f"[`{id_}`]({url})" for (id_, url) in zip(tc.conflicts_with, urls)]
 
     return ", ".join(md_urls)
@@ -152,7 +130,6 @@ def _render_harness_results(
 
 
 limbo = Limbo.model_validate_json(LIMBO_JSON.read_text())
-tcs_by_id = {tc.id: tc for tc in limbo.testcases}
 
 if RESULTS.is_dir():
     harness_results = [
@@ -181,8 +158,9 @@ for namespace, tc_results in namespaces.items():
         print(f"# {namespace}", file=f)
 
         for r in tc_results:
+            testcase_template = template("testcase.md")
             print(
-                TESTCASE_TEMPLATE.format(
+                testcase_template.render(
                     tc_id=r.tc.id,
                     exp_result=r.tc.expected_result.value,
                     val_kind=r.tc.validation_kind.value,
@@ -190,6 +168,7 @@ for namespace, tc_results in namespaces.items():
                     features=", ".join([f.value for f in r.tc.features])
                     if r.tc.features
                     else "N/A",
+                    importance=r.tc.importance.value,
                     description=_linkify(r.tc.description.strip()),
                     conflicts=_render_conflicts(r.tc),
                     pems=_tc_pem_bundle(r.tc),
@@ -206,7 +185,12 @@ for harness_result in harness_results:
         unexpected_passes: list[TestcaseResult] = []
         skipped_testcases: list[TestcaseResult] = []
         for testcase_result in harness_result.results:
-            expected_result = tcs_by_id[testcase_result.id].expected_result
+            try:
+                # The local results might be newer than the latest test suite,
+                # so skip anything that doesn't have a corresponding testcase.
+                expected_result = limbo.by_id[testcase_result.id].expected_result
+            except KeyError:
+                continue
 
             match (expected_result.value, testcase_result.actual_result.value):
                 case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
@@ -243,7 +227,7 @@ for harness_result in harness_results:
 
             table = [
                 {
-                    "Testcase": _testcase_link(tc_result.id),
+                    "Testcase": testcase_link(tc_result.id),
                     "Context": _multiline_cell(tc_result.context) if tc_result.context else "N/A",
                 }
                 for tc_result in tc_results
@@ -253,3 +237,8 @@ for harness_result in harness_results:
                 file=f,
             )
             print("\n\n", file=f)
+
+# Create an unofficial JSON API for the latest results.
+with mkdocs_gen_files.open("_api/all-results.json", "w") as f:
+    result_dicts = [hr.model_dump(mode="json", by_alias=True) for hr in harness_results]
+    json.dump(result_dicts, f)

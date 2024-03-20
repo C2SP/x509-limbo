@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from functools import cached_property
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -107,8 +108,8 @@ class KeyUsage(str, Enum):
     key_agreement = "keyAgreement"
     key_cert_sign = "keyCertSign"
     crl_sign = "cRLSign"
-    encipher_only = "encipher_only"
-    decipher_only = "decipher_only"
+    encipher_only = "encipherOnly"
+    decipher_only = "decipherOnly"
 
 
 class KnownEKUs(str, Enum):
@@ -174,14 +175,18 @@ class Feature(str, Enum):
     For implementations that do not support name constraints for Distinguished Names (temporary).
     """
 
-    pedantic_webpki = "pedantic-webpki"
+    pedantic_webpki_subscriber_key = "pedantic-webpki-subscriber-key"
     """
-    Tests that exercise "pedantic" corners of the CABF profile.
+    Tests that exercise "pedantic" handling of subscriber key types under CABF.
+
+    Many CABF validators don't enforce the key requirements on subscriber (i.e. leaf, EE)
+    certificates. However, the language in CABF 7.1.2.7 implies that subscriber certificates
+    obey the same `subjectPublicKeyInfo` rules as CAs, as defined in CABF 7.1.3.1.
     """
 
     pedantic_webpki_eku = "pedantic-webpki-eku"
     """
-    Like `pedantic_webpkif`, but specifically for "pedantic" EKU handling under CABF.
+    Tests that exercise "pedantic" EKU handling under CABF.
     """
 
     pedantic_serial_number = "pedantic-serial-number"
@@ -203,6 +208,46 @@ class Feature(str, Enum):
     rfc5280_incompatible_with_webpki = "rfc5280-incompatible-with-webpki"
     """
     Tests where RFC 5280's prescription is stronger than the Web PKI's.
+    """
+
+    denial_of_service = "denial-of-service"
+    """
+    Tests that exercise DoS resiliency.
+    """
+
+
+class Importance(str, Enum):
+    """
+    A subjective ranking of a testcase's importance.
+    """
+
+    UNDETERMINED = "undetermined"
+    """
+    Not yet determined.
+    """
+
+    LOW = "low"
+    """
+    Low importance, e.g. due to a pedantic reading of the specifications
+    or being commonly ignored by other implementations.
+    """
+
+    MEDIUM = "medium"
+    """
+    Medium importance; implementations should address these but are unlikely
+    to encounter issues with real-world chains due to them.
+    """
+
+    HIGH = "high"
+    """
+    High importance; implementations should address these due to expected issues
+    with real-world chains.
+    """
+
+    CRITICAL = "critical"
+    """
+    Critical importance; failure to handle this indicates a potentially
+    exploitable vulnerability in the implementation under test.
     """
 
 
@@ -237,6 +282,8 @@ class Testcase(BaseModel):
         ),
     )
 
+    importance: Importance = Field(Importance.UNDETERMINED, description="The testcase's importance")
+
     description: StrictStr = Field(..., description="A short, Markdown-formatted description")
 
     validation_kind: ValidationKind = Field(..., description="The kind of validation to perform")
@@ -250,6 +297,11 @@ class Testcase(BaseModel):
     )
 
     peer_certificate: StrictStr = Field(..., description="The PEM-encoded peer (EE) certificate")
+
+    peer_certificate_key: StrictStr | None = Field(
+        None,
+        description="The PEM-encoded private key for the peer certificate, if present",
+    )
 
     validation_time: datetime | None = Field(
         None, description="The time at which to perform the validation"
@@ -336,6 +388,13 @@ class Limbo(BaseModel):
 
         return v
 
+    @cached_property
+    def by_id(self) -> dict[TestCaseID, Testcase]:
+        """
+        Returns a cached mapping of every testcase, keyed by its ID.
+        """
+        return {tc.id: tc for tc in self.testcases}
+
 
 class TestcaseResult(BaseModel):
     """
@@ -373,3 +432,10 @@ class LimboResult(BaseModel):
     results: list[TestcaseResult] = Field(
         ..., description="One or more results for testcase evaluations"
     )
+
+    @cached_property
+    def by_id(self) -> dict[TestCaseID, TestcaseResult]:
+        """
+        Returns a cached mapping of every testcase result, keyed by its ID.
+        """
+        return {r.id: r for r in self.results}

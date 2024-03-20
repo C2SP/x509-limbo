@@ -9,7 +9,7 @@ x509-limbo's own development.
 
 Each harness should behave as follows:
 
-1. It should be a single binary that takes no inputs or flags;
+1. It can be either a single binary or multiple arguments (e.g. `docker run ...`);
 1. It should read a Limbo-formatted testsuite via `stdin`;
 1. It should exit with a non-zero exit code on any harness-specific errors
    (e.g. unexpected internal errors, not testcase failures);

@@ -5,7 +5,7 @@ Web PKI (CABF) profile tests.
 from datetime import datetime
 
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import dsa, ec
+from cryptography.hazmat.primitives.asymmetric import dsa, ec, rsa
 
 from limbo.assets import ASSETS_PATH, Certificate, ext
 from limbo.models import Feature, KeyUsage, PeerName
@@ -15,6 +15,39 @@ from .aki import *  # noqa: F403
 from .eku import *  # noqa: F403
 from .nc import *  # noqa: F403
 from .san import *  # noqa: F403
+
+
+@testcase
+def explicit_curve(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    Both root and EE convey EC keys using the "explicit" curve encoding,
+    which is forbidden under CABF 7.1.3.1.2:
+
+    > The CA SHALL indicate an ECDSA key using the id‐ecPublicKey
+    > (OID: 1.2.840.10045.2.1) algorithm identifier. The parameters MUST use
+    > the namedCurve encoding.
+    """
+
+    root_pem = ASSETS_PATH / "explicit_curve_ca.pem"
+    leaf_pem = ASSETS_PATH / "explicit_curve_leaf.pem"
+
+    root = Certificate(x509.load_pem_x509_certificate(root_pem.read_bytes()))
+    leaf = Certificate(x509.load_pem_x509_certificate(leaf_pem.read_bytes()))
+
+    builder = (
+        builder.server_validation()
+        .validation_time(datetime.fromisoformat("2024-03-13T00:00:00Z"))
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
 
 
 @testcase
@@ -90,7 +123,7 @@ def malformed_aia(builder: Builder) -> None:
 
 
 @testcase
-def forbidden_p192_spki_leaf(builder: Builder) -> None:
+def forbidden_p192_root(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -98,7 +131,31 @@ def forbidden_p192_spki_leaf(builder: Builder) -> None:
     root -> EE
     ```
 
-    The EE cert contains a P-192 key, which is not one of the permitted
+    The root cert conveys a P-192 key and signs for the EE with it,
+    which is not permitted under the CABF's key or signature types.
+    """
+
+    root_key = ec.generate_private_key(ec.SECP192R1())
+    root = builder.root_ca(key=root_key)
+
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_p192_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert conveys a P-192 key, which is not one of the permitted
     public keys under CABF.
     """
 
@@ -107,14 +164,14 @@ def forbidden_p192_spki_leaf(builder: Builder) -> None:
     leaf_key = ec.generate_private_key(ec.SECP192R1())
     leaf = builder.leaf_cert(root, key=leaf_key)
 
-    builder = builder.server_validation().features([Feature.pedantic_webpki])
+    builder = builder.server_validation().features([Feature.pedantic_webpki_subscriber_key])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
 
 
 @testcase
-def forbidden_dsa_spki_leaf(builder: Builder) -> None:
+def forbidden_dsa_root(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -122,7 +179,31 @@ def forbidden_dsa_spki_leaf(builder: Builder) -> None:
     root -> EE
     ```
 
-    The EE cert is signed with a DSA key, which is not one of the permitted
+    The root cert conveys a DSA-30272 key and signs for the EE with it,
+    which is not permitted under the CABF's key or signature types.
+    """
+
+    root_key = dsa.generate_private_key(key_size=3072)
+    root = builder.root_ca(key=root_key)
+
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_dsa_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert conveys a DSA key, which is not one of the permitted
     public keys under CABF.
     """
 
@@ -131,14 +212,14 @@ def forbidden_dsa_spki_leaf(builder: Builder) -> None:
     leaf_key = dsa.generate_private_key(3072)
     leaf = builder.leaf_cert(root, key=leaf_key)
 
-    builder = builder.server_validation().features([Feature.pedantic_webpki])
+    builder = builder.server_validation().features([Feature.pedantic_webpki_subscriber_key])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
 
 
 @testcase
-def forbidden_signature_algorithm_in_root(builder: Builder) -> None:
+def forbidden_weak_rsa_key_in_root(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -146,11 +227,11 @@ def forbidden_signature_algorithm_in_root(builder: Builder) -> None:
     root -> EE
     ```
 
-    The root cert is signed with a DSA-3072 key, which is not one of the
-    permitted signature algorithms under CABF.
+    The root cert is signed with and conveys an RSA-1024 key, which is
+    below the security margin (2048) required under CABF 6.1.5.
     """
 
-    root_key = dsa.generate_private_key(3072)
+    root_key = rsa.generate_private_key(public_exponent=65537, key_size=1024)
     root = builder.root_ca(key=root_key)
     leaf = builder.leaf_cert(root)
 
@@ -161,7 +242,7 @@ def forbidden_signature_algorithm_in_root(builder: Builder) -> None:
 
 
 @testcase
-def forbidden_signature_algorithm_in_leaf(builder: Builder) -> None:
+def forbidden_weak_rsa_in_leaf(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
 
@@ -169,24 +250,64 @@ def forbidden_signature_algorithm_in_leaf(builder: Builder) -> None:
     root -> EE
     ```
 
-    The EE cert is signed with a DSA-3072 key, which is not one of the
-    permitted signature algorithms under CABF.
-
-    This case is distinct from `forbidden_signature_algorithm_in_root`,
-    as DSA keys are forbidden in both places but not all implementations
-    check both.
+    The EE cert conveys an RSA 1024 key, which is below the security margin
+    (2048) required under CABF 6.1.5.
     """
 
     root = builder.root_ca()
 
-    leaf_key = dsa.generate_private_key(3072)
+    leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=1024)
     leaf = builder.leaf_cert(root, key=leaf_key)
 
-    # NOTE: Currently marked as "pedantic" because the correct behavior
-    # here for a path validator is unclear: DSA keys are not allowed
-    # in any certificates under CABF, but path validation logically
-    # does not require checking the EE's key.
-    builder = builder.server_validation().features([Feature.pedantic_webpki])
+    builder = builder.server_validation().features([Feature.pedantic_webpki_subscriber_key])
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_rsa_not_divisable_by_8_in_root(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The root cert is signed with and conveys an RSA-2052 key, which is
+    above the security margin (2048) but not divisible by 8, as is required
+    under CABF 6.1.5.
+    """
+
+    root_key = rsa.generate_private_key(public_exponent=65537, key_size=2052)
+    root = builder.root_ca(key=root_key)
+    leaf = builder.leaf_cert(root)
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.com")
+    ).fails()
+
+
+@testcase
+def forbidden_rsa_key_not_divisable_by_8_in_leaf(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert conveys an RSA-2052 key, which is above the security margin
+    (2048) but not divisible by 8, as is required under CABF 6.1.5.
+    """
+
+    root = builder.root_ca()
+
+    leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2052)
+    leaf = builder.leaf_cert(root, key=leaf_key)
+
+    builder = builder.server_validation().features([Feature.pedantic_webpki_subscriber_key])
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()

@@ -34,13 +34,13 @@ dev: $(NEEDS_VENV)
 lint: $(NEEDS_VENV)
 	. $(VENV_BIN)/activate && \
 		ruff format --check $(ALL_PY_SRCS) && \
-		ruff $(ALL_PY_SRCS) && \
+		ruff check $(ALL_PY_SRCS) && \
 		mypy $(PY_MODULE)
 
 .PHONY: reformat
 reformat: $(NEEDS_VENV)
 	. $(VENV_BIN)/activate && \
-		ruff --fix $(ALL_PY_SRCS) && \
+		ruff check --fix $(ALL_PY_SRCS) && \
 		ruff format $(ALL_PY_SRCS)
 
 .PHONY: edit
@@ -80,8 +80,11 @@ test-go:
 
 .PHONY: test-openssl
 test-openssl:
-	$(MAKE) -C harness/openssl
-	$(MAKE) run ARGS="harness ./harness/openssl/main --output ./results/openssl.json"
+	$(MAKE) -C harness/openssl openssl-1.1.1 openssl-3.0 openssl-3.1 openssl-3.2
+	$(MAKE) run ARGS="harness --output ./results/openssl-1.1.1.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-1.1.1"
+	$(MAKE) run ARGS="harness --output ./results/openssl-3.0.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.0"
+	$(MAKE) run ARGS="harness --output ./results/openssl-3.1.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.1"
+	$(MAKE) run ARGS="harness --output ./results/openssl-3.2.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.2"
 
 .PHONY: test-rust-webpki
 test-rust-webpki:
@@ -93,12 +96,20 @@ test-rustls-webpki:
 	@cargo build --bin rust-rustls-harness
 	$(MAKE) run ARGS="harness ./target/debug/rust-rustls-harness --output ./results/rustls-webpki.json"
 
+.PHONY: test-pyca-cryptography
+test-pyca-cryptography: $(NEEDS_VENV)
+	$(MAKE) run ARGS="harness --output ./results/pyca-cryptography.json -- ./$(VENV_BIN)/python ./harness/pyca-cryptography/main.py"
+
+.PHONY: test-certvalidator
+test-certvalidator: $(NEEDS_VENV)
+	$(MAKE) run ARGS="harness --output ./results/certvalidator.json -- ./$(VENV_BIN)/python ./harness/certvalidator/main.py"
+
 .PHONY: test-gnutls
 test-gnutls:
 	$(MAKE) run ARGS="harness ./harness/gnutls/test-gnutls --output ./results/gnutls.json"
 
 .PHONY: test
-test: test-go test-openssl test-rust-webpki test-rustls-webpki test-gnutls
+test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
 
 .PHONY: site
 site: $(NEEDS_VENV)

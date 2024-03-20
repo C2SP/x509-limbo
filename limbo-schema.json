@@ -17,14 +17,27 @@
         "no-cert-policies",
         "pedantic-public-suffix-wildcard",
         "name-constraint-dn",
-        "pedantic-webpki",
+        "pedantic-webpki-subscriber-key",
         "pedantic-webpki-eku",
         "pedantic-serial-number",
         "max-chain-depth",
         "pedantic-rfc5280",
-        "rfc5280-incompatible-with-webpki"
+        "rfc5280-incompatible-with-webpki",
+        "denial-of-service"
       ],
       "title": "Feature",
+      "type": "string"
+    },
+    "Importance": {
+      "description": "A subjective ranking of a testcase's importance.",
+      "enum": [
+        "undetermined",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Importance",
       "type": "string"
     },
     "KeyUsage": {
@@ -37,8 +50,8 @@
         "keyAgreement",
         "keyCertSign",
         "cRLSign",
-        "encipher_only",
-        "decipher_only"
+        "encipherOnly",
+        "decipherOnly"
       ],
       "title": "KeyUsage",
       "type": "string"
@@ -180,6 +193,15 @@
           "title": "Features",
           "type": "array"
         },
+        "importance": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Importance"
+            }
+          ],
+          "default": "undetermined",
+          "description": "The testcase's importance"
+        },
         "description": {
           "description": "A short, Markdown-formatted description",
           "title": "Description",
@@ -213,6 +235,19 @@
           "description": "The PEM-encoded peer (EE) certificate",
           "title": "Peer Certificate",
           "type": "string"
+        },
+        "peer_certificate_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The PEM-encoded private key for the peer certificate, if present",
+          "title": "Peer Certificate Key"
         },
         "validation_time": {
           "anyOf": [

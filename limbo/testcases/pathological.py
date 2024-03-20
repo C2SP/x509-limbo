@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import EPOCH, ONE_THOUSAND_YEARS_OF_TORMENT, CertificatePair, ext
+from limbo.models import Feature, PeerName
 from limbo.testcases._core import Builder, testcase
 
 
@@ -290,5 +291,156 @@ def intermediate_cycle_same_logical_ca(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica_1_pair, ica_2_pair)
         .peer_certificate(leaf)
+        .fails()
+    )
+
+
+@testcase
+def nc_dos_1(builder: Builder) -> None:
+    """
+    Produces the following pathological chain:
+
+    ```
+    root [many constraints] -> EE [many names]
+    ```
+
+    The root CA contains 2048 permits and excludes name constraints, which
+    are checked against the EE's 2048 SANs and 2048 subjects. This is typically rejected by
+    implementations due to quadratic blowup, but is technically valid.
+
+    This testcase is extended from OpenSSL's `(many-names1.pem, many-constraints.pem)`
+    testcase, via <https://github.com/openssl/openssl/pull/4393>.
+    """
+    sans = [x509.DNSName(f"t{i}.test") for i in range(2048)]
+
+    excludes = [x509.DNSName(f"x{i}.test") for i in range(2048)]
+
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(
+                # Permit t{0-512}.test, as well as blanket permit all subdomains of test
+                # NOTE: This behavior is slightly different from the original OpenSSL test:
+                # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
+                # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
+                permitted_subtrees=[*sans, x509.DNSName("test")],
+                excluded_subtrees=excludes,
+            ),
+            critical=True,
+        ),
+    )
+
+    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(2048)]
+    subjects.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, "t0.test"))
+    leaf = builder.leaf_cert(
+        root,
+        subject=x509.Name(subjects),
+        san=ext(x509.SubjectAlternativeName(sans), critical=False),
+    )
+
+    builder = (
+        builder.server_validation()
+        .features([Feature.denial_of_service])
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="t0.test"))
+        .fails()
+    )
+
+
+@testcase
+def nc_dos_2(builder: Builder) -> None:
+    """
+    Produces the following pathological chain:
+
+    ```
+    root [many constraints] -> EE [many names]
+    ```
+
+    The root CA contains over 2048 permits and excludes name constraints, which
+    are checked against the EE's 2048 SANs. This is typically rejected by
+    implementations due to quadratic blowup, but is technically valid.
+
+    This testcase is extended from OpenSSL's `(many-names2.pem, many-constraints.pem)`
+    testcase, via <https://github.com/openssl/openssl/pull/4393>.
+    """
+    # Permit t{0..2048}.test, as well as blanket permit all subdomains of test
+    # NOTE: This behavior is slightly different from the original OpenSSL test:
+    # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
+    # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
+    permits = [x509.DNSName(f"t{i}.test") for i in range(2048)]
+    permits.append(x509.DNSName("test"))
+
+    # Forbid x{0..2048}.test.
+    excludes = [x509.DNSName(f"x{i}.test") for i in range(2048)]
+
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(permitted_subtrees=permits, excluded_subtrees=excludes),
+            critical=True,
+        ),
+    )
+
+    sans = [x509.DNSName(f"t{i}.test") for i in range(2048)]
+    leaf = builder.leaf_cert(
+        root, subject=x509.Name([]), san=ext(x509.SubjectAlternativeName(sans), critical=True)
+    )
+
+    builder = (
+        builder.server_validation()
+        .features([Feature.denial_of_service])
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="t0.test"))
+        .fails()
+    )
+
+
+@testcase
+def nc_dos_3(builder: Builder) -> None:
+    """
+    Produces the following pathological chain:
+
+    ```
+    root [many constraints] -> EE [many names]
+    ```
+
+    The root CA contains over 2048 permits and excludes name constraints, which
+    are checked against the EE's 2048 subjects (**not** SANS). This is typically
+    rejected by implementations due to quadratic blowup, but is technically valid.
+
+    This testcase is a reproduction of OpenSSL's `(many-names3.pem, many-constraints.pem)`
+    testcase, via <https://github.com/openssl/openssl/pull/4393>.
+    """
+    # Permit t{0..2048}.test, as well as blanket permit all subdomains of test
+    # NOTE: This behavior is slightly different from the original OpenSSL test:
+    # the original test uses `.test`, since OpenSSL allows the `.foo` syntax
+    # in DNS Name Constraints despite not being valid per RFC 5280 4.2.1.10.
+    permits = [x509.DNSName(f"t{i}.test") for i in range(2048)]
+    permits.append(x509.DNSName("test"))
+
+    # Forbid x{0..2048}.test.
+    excludes = [x509.DNSName(f"x{i}.test") for i in range(2048)]
+
+    root = builder.root_ca(
+        name_constraints=ext(
+            x509.NameConstraints(permitted_subtrees=permits, excluded_subtrees=excludes),
+            critical=True,
+        ),
+    )
+
+    subjects = [x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, f"t{i}@test") for i in range(2048)]
+    subjects.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, "t0.test"))
+    leaf = builder.leaf_cert(
+        root,
+        subject=x509.Name(subjects),
+        san=None,
+    )
+
+    builder = (
+        builder.server_validation()
+        .features([Feature.denial_of_service])
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="t0.test"))
         .fails()
     )

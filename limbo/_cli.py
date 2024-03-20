@@ -4,17 +4,21 @@ import fnmatch
 import json
 import logging
 import os
+import random
 import subprocess
 import sys
+from collections import defaultdict
 from pathlib import Path
 
+import requests
+from pydantic import TypeAdapter
 from pydantic.json_schema import models_json_schema
 
-from limbo import testcases
+from limbo import _github, _markdown, testcases
 from limbo.testcases import bettertls, online
 
 from . import __version__
-from .models import Limbo
+from .models import ActualResult, Limbo, LimboResult
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -80,8 +84,51 @@ def main() -> None:
         type=str,
         help="Exclude any testcases matching the given fnmatch(2)-style pattern",
     )
-    harness.add_argument("harness", type=str, help="The harness to execute")
+    harness.add_argument("harness", help="The harness to execute", nargs="+")
     harness.set_defaults(func=_harness)
+
+    # `limbo regression`
+    regression = subparsers.add_parser(
+        "regression", help="Run regression checks against the last result set"
+    )
+    regression.add_argument(
+        "--limbo",
+        type=Path,
+        default=Path("limbo.json"),
+        metavar="FILE",
+        help="The limbo testcase suite to load from",
+    )
+    regression.add_argument(
+        "--current",
+        type=Path,
+        default=Path("results"),
+        metavar="DIR",
+        help="The current results to check against",
+    )
+    regression.set_defaults(func=_regression)
+
+    # `limbo extract`
+    extract = subparsers.add_parser("extract", help="Extract a single testcase from the test-suite")
+    extract.add_argument(
+        "--limbo",
+        type=Path,
+        default=Path("limbo.json"),
+        metavar="FILE",
+        help="The limbo testcase suite to load from",
+    )
+    extract.add_argument(
+        "--output",
+        type=str,
+        metavar="FILE",
+        help=(
+            "The filename to write the extracted testcase to. "
+            "By default, {id}.json will be written; use - for stdout"
+        ),
+    )
+    extract.add_argument(
+        "id", type=str, metavar="TESTCASE-ID", help="The testcase to extract, by ID"
+    )
+    extract.set_defaults(func=_extract)
 
     args = parser.parse_args()
     args.func(args)
@@ -128,8 +175,120 @@ def _harness(args: argparse.Namespace) -> None:
 
     try:
         result = subprocess.run(
-            [args.harness], input=limbo_json, encoding="utf-8", capture_output=True, check=True
+            args.harness, input=limbo_json, encoding="utf-8", capture_output=True, check=True
         )
         args.output.write_text(result.stdout)
     except subprocess.CalledProcessError as e:
         print(e.stderr, file=sys.stderr)
+
+
+def _regression(args: argparse.Namespace) -> None:
+    previous_results = TypeAdapter(list[LimboResult]).validate_python(
+        requests.get("https://x509-limbo.com/_api/all-results.json").json()
+    )
+
+    current_results: list[LimboResult] = []
+    for result in args.current.glob("*.json"):
+        current_results.append(LimboResult.model_validate_json(result.read_text()))
+
+    # mapping of harness -> [(testcase-id, previous-result, current-result)]
+    all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]] = defaultdict(list)
+    for previous_result in previous_results:
+        current_result = next(
+            (r for r in current_results if r.harness == previous_result.harness), None
+        )
+        if not current_result:
+            continue
+
+        previous_by_id = previous_result.by_id
+        current_by_id = current_result.by_id
+
+        common_testcases = previous_by_id.keys() & current_by_id.keys()
+        for tc in common_testcases:
+            if previous_by_id[tc].actual_result != current_by_id[tc].actual_result:
+                all_regressions[previous_result.harness].append(
+                    (tc, previous_by_id[tc].actual_result, current_by_id[tc].actual_result)
+                )
+
+    limbo = Limbo.model_validate_json(args.limbo.read_text())
+    # Assumption: all previous results have the same set of testcase IDs
+    previous_tc_ids = {r.id for r in previous_results[0].results}
+    # mapping of harness -> [(testcase-id, expected, actual, content)]
+    new_results: dict[str, list[tuple[str, str, str, str | None]]] = defaultdict(list)
+    for current_result in current_results:
+        new_tc_ids = current_result.by_id.keys() - previous_tc_ids
+        for new_tc_id in new_tc_ids:
+            actual_result = current_result.by_id[new_tc_id].actual_result.value
+            context = current_result.by_id[new_tc_id].context
+            expected_result = limbo.by_id[new_tc_id].expected_result.value
+
+            new_results[current_result.harness].append(
+                (new_tc_id, expected_result, actual_result, context)
+            )
+
+    if os.getenv("GITHUB_ACTIONS"):
+        if all_regressions:
+            sampled_regressions = _sample_regressions(all_regressions)
+
+            template = _markdown.template("sampled-regressions.md")
+            _github.step_summary(
+                template.render(
+                    sampled_regressions=sampled_regressions, testcase_link=_markdown.testcase_link
+                )
+            )
+            template = _markdown.template("regressions.md")
+            _github.comment(
+                template.render(regressions_url=_github.workflow_url()), update="@@regressions@@"
+            )
+            _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
+        else:
+            # Avoid spamming the user with "no regression" comments.
+            if not _github.has_label(_github.NO_REGRESSIONS_LABEL):
+                _github.comment(":shipit: No regressions found.", update="@@regressions@@")
+                _github.label(
+                    add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL]
+                )
+
+        if new_results:
+            template = _markdown.template("new-testcases.md")
+            _github.comment(template.render(new_results=new_results), update="@@new-testcases@@")
+
+
+def _sample_regressions(
+    all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]],
+) -> dict[str, list[tuple[str, ActualResult, ActualResult]]]:
+    sampled = {}
+    for harness, regressions in all_regressions.items():
+        # Sample up to 10 regressions per harness.
+        # Filter the bettertls suite by default, since it's huge.
+        # But re-include if we can't sample enough.
+        regressions_without_bettertls = [
+            r for r in regressions if not r[0].startswith("bettertls::")
+        ]
+        if len(regressions_without_bettertls) >= 10:
+            regressions = random.sample(regressions_without_bettertls, 10)
+        else:
+            regressions = random.sample(regressions, min(len(regressions), 10))
+
+        sampled[harness] = regressions
+
+    return sampled
+
+
+def _extract(args: argparse.Namespace) -> None:
+    limbo = Limbo.model_validate_json(args.limbo.read_text())
+
+    try:
+        testcase = limbo.by_id[args.id]
+    except KeyError:
+        logger.error(f"no such testcase: {args.id}")
+        sys.exit(1)
+
+    output = args.output
+    if not output:
+        output = f"{args.id}.json"
+
+    if args.output == "-":
+        print(testcase.model_dump_json(indent=2), file=sys.stdout)
+    else:
+        Path(output).write_text(testcase.model_dump_json(indent=2))
