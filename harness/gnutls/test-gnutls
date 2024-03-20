@@ -104,6 +104,8 @@ def evaluate_testcase(certtool: str, testcase: Testcase) -> TestcaseResult:
             pass
         case PeerName(kind=PeerKind.DNS, value=value):
             certtool_args.append(f"--verify-hostname={value}")
+        case PeerName(kind=PeerKind.IP, value=value):
+            certtool_args.append(f"--verify-hostname={value}")
         case PeerName(kind=PeerKind.RFC822, value=value):
             certtool_args.append(f"--verify-email={value}")
         case PeerName(kind=kind, value=_):

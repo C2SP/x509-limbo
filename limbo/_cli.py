@@ -180,6 +180,7 @@ def _harness(args: argparse.Namespace) -> None:
         args.output.write_text(result.stdout)
     except subprocess.CalledProcessError as e:
         print(e.stderr, file=sys.stderr)
+        sys.exit(1)
 
 
 def _regression(args: argparse.Namespace) -> None:
