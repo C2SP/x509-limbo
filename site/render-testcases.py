@@ -106,6 +106,11 @@ def _result_emoji(expected: ExpectedResult, actual: ActualResult):
             return f"❌ (unexpected {actual.value.lower()})"
 
 
+def _multiline_cell(cell: str) -> str:
+    # Nasty hack to make multiple lines render correctly in individual table cells.
+    return cell.replace("\n", "<br>")
+
+
 def _render_harness_results(
     results: list[tuple[str, TestcaseResult]], expected: ExpectedResult
 ) -> str:
@@ -118,7 +123,7 @@ def _render_harness_results(
             {
                 "Harness": f"`{harness}`",
                 "Result": _result_emoji(expected, tc_result.actual_result),
-                "Context": f"`{tc_result.context}`" if tc_result.context else "N/A",
+                "Context": f"{_multiline_cell(tc_result.context)}" if tc_result.context else "N/A",
             }
         )
     return markdown_table(data).set_params(quote=False, row_sep="markdown").get_markdown()
@@ -223,7 +228,7 @@ for harness_result in harness_results:
             table = [
                 {
                     "Testcase": testcase_link(tc_result.id),
-                    "Context": tc_result.context if tc_result.context else "N/A",
+                    "Context": _multiline_cell(tc_result.context) if tc_result.context else "N/A",
                 }
                 for tc_result in tc_results
             ]

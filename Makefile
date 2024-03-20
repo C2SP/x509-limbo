@@ -104,8 +104,12 @@ test-pyca-cryptography: $(NEEDS_VENV)
 test-certvalidator: $(NEEDS_VENV)
 	$(MAKE) run ARGS="harness --output ./results/certvalidator.json -- ./$(VENV_BIN)/python ./harness/certvalidator/main.py"
 
+.PHONY: test-gnutls
+test-gnutls:
+	$(MAKE) run ARGS="harness --output ./results/gnutls.json -- ./$(VENV_BIN)/python ./harness/gnutls/test-gnutls"
+
 .PHONY: test
-test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator
+test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
 
 .PHONY: site
 site: $(NEEDS_VENV)

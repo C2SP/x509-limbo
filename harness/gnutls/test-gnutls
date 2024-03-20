@@ -1,0 +1,167 @@
+#!/usr/bin/env python
+
+# test-gnutls: run GnuTLS's `certtool` against the Limbo testsuite.
+
+import itertools
+import re
+import shutil
+import subprocess
+import sys
+from contextlib import contextmanager
+from sys import stdin
+from tempfile import NamedTemporaryFile
+from typing import ContextManager, NoReturn
+
+from limbo.models import (
+    ActualResult,
+    Limbo,
+    LimboResult,
+    PeerKind,
+    PeerName,
+    Testcase,
+    TestcaseResult,
+    ValidationKind,
+)
+
+IDENTIFIER_RE = re.compile(r"^certtool-\d+\.\d+\.\d+$")
+
+
+def log(msg: str) -> None:
+    print(f"[+] {msg}", file=sys.stderr)
+
+
+def die(msg: str) -> NoReturn:
+    log(msg)
+    sys.exit(1)
+
+
+def find_certtool() -> tuple[str, str]:
+    """
+    Locate a suitable GnuTLS `certtool` on the `$PATH` and return a tuple
+    of `(certtool-path, certtool-identifier)` where `certtool-identifier`
+    is a version string like `certtool-1.2.3`.
+    """
+    if sys.platform == "darwin":
+        # `certtool` on macOS is from Security.framework; Homebrew
+        # installs it as `gnutls-certtool`.
+        candidate = shutil.which("gnutls-certtool")
+    else:
+        candidate = shutil.which("certtool")
+
+    if candidate is None:
+        die("could not locate a suitable GnuTLS `certtool`")
+
+    # `--version=v` emits a single-line version string, with no copyright info.
+    process = subprocess.run([candidate, "--version=v"], check=True, capture_output=True, text=True)
+    identifier = process.stdout.splitlines()[0].replace(" ", "-")
+
+    if not IDENTIFIER_RE.match(identifier):
+        die(f"certtool identifier looks wrong: {identifier}")
+
+    return candidate, identifier
+
+
+@contextmanager
+def pemfile(pems: list[str]) -> ContextManager[NamedTemporaryFile]:
+    with NamedTemporaryFile(mode="w+") as tmp:
+        tmp.write("\n".join(pems))
+        tmp.flush()
+        yield tmp
+
+
+def skip(testcase: Testcase, context: str) -> TestcaseResult:
+    return TestcaseResult(id=testcase.id, actual_result=ActualResult.SKIPPED, context=context)
+
+
+def evaluate_testcase(certtool: str, testcase: Testcase) -> TestcaseResult:
+    if testcase.validation_kind != ValidationKind.SERVER:
+        return skip(testcase, "non-SERVER testcases not yet supported")
+
+    if testcase.signature_algorithms:
+        return skip(testcase, "custom signature algorithms not supported")
+
+    if testcase.key_usage:
+        return skip(testcase, "custom key usages not supported")
+
+    # TODO: These could be supported relatively easily.
+    if testcase.extended_key_usage != []:
+        return skip(testcase, "custom EKUs not yet supported")
+
+    certtool_args = [
+        certtool,
+        "--verify",
+        # NOTE: "high" profile chosen arbitrarily; needs investigation.
+        "--verify-profile=high",
+        # serverAuth EKU
+        "--verify-purpose=1.3.6.1.5.5.7.3.1",
+    ]
+
+    if testcase.validation_time:
+        certtool_args.append(f"--attime={testcase.validation_time.isoformat()}")
+
+    match testcase.expected_peer_name:
+        case None:
+            pass
+        case PeerName(kind=PeerKind.DNS, value=value):
+            certtool_args.append(f"--verify-hostname={value}")
+        case PeerName(kind=PeerKind.IP, value=value):
+            certtool_args.append(f"--verify-hostname={value}")
+        case PeerName(kind=PeerKind.RFC822, value=value):
+            certtool_args.append(f"--verify-email={value}")
+        case PeerName(kind=kind, value=_):
+            return skip(testcase, f"unsupported peer name kind: {kind}")
+
+    with pemfile(testcase.trusted_certs) as trust_root, pemfile(
+        [*testcase.untrusted_intermediates, testcase.peer_certificate]
+    ) as untrusted_chain:
+        certtool_args.extend(
+            [f"--load-ca-certificate={trust_root.name}", f"--infile={untrusted_chain.name}"]
+        )
+
+        log(f"running {testcase.id} with {certtool_args=}")
+        status = subprocess.run(certtool_args, capture_output=True, text=True)
+        # HACK(ww): certtool emits a lot of chaff on stdout that we can't easily configure away;
+        # instead, we scan for the important line(s) of verification output.
+        stdout = "\n".join(
+            itertools.dropwhile(
+                lambda line: not line.startswith("Chain verification output:"),
+                status.stdout.splitlines(),
+            )
+        )
+        if not stdout:
+            # If somehow we've filtered everything out, include the whole stdout for debugging.
+            stdout = status.stdout
+        stderr = status.stderr.strip()
+
+        match status.returncode:
+            case 0:
+                return TestcaseResult(
+                    id=testcase.id, actual_result=ActualResult.SUCCESS, context=stdout
+                )
+            case 1:
+                return TestcaseResult(
+                    id=testcase.id, actual_result=ActualResult.FAILURE, context=stdout
+                )
+            case other:
+                return TestcaseResult(
+                    id=testcase.id,
+                    actual_result=ActualResult.FAILURE,
+                    context=f"abnormal termination/abort: exit code {other}: {stderr}",
+                )
+
+
+def main():
+    certtool, identifier = find_certtool()
+    limbo = Limbo.model_validate_json(stdin.read())
+    log(f"found certtool: {certtool} with identifer: {identifier}")
+
+    results: list[TestcaseResult] = []
+    for testcase in limbo.testcases:
+        results.append(evaluate_testcase(certtool, testcase))
+
+    result = LimboResult(version=1, harness=f"gnutls-{identifier}", results=results)
+    print(result.model_dump_json(indent=2))
+
+
+if __name__ == "__main__":
+    main()
