@@ -336,9 +336,8 @@ class Testcase(BaseModel):
     @classmethod
     def validate_validation_time(cls, v: datetime | None) -> datetime | None:
         if v is not None:
-            # Times must be in UTC, must not have fractional seconds.
+            # Times must be in UTC.
             assert v.tzname() == "UTC"
-            assert v.microsecond == 0
 
         return v
 
@@ -351,7 +350,11 @@ class Testcase(BaseModel):
         # NOTE(ww): Explicitly serialize with `isoformat`, which expresses UTC
         # with `+00:00`` instead of `Z`. This is needed for Python consumers below 3.11,
         # which don't support `Z` in `fromisoformat()`.
-        return validation_time.isoformat(timespec="seconds")
+        if validation_time.microsecond != 0:
+            # Only render millis if they're present.
+            return validation_time.isoformat(timespec="milliseconds")
+        else:
+            return validation_time.isoformat(timespec="seconds")
 
 
 class Limbo(BaseModel):
