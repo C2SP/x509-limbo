@@ -297,10 +297,10 @@ type Testcase struct {
 	// A short, Markdown-formatted description
 	Description string `json:"description" yaml:"description" mapstructure:"description"`
 
-	// For client-side validation: the expected peer name, if any
+	// For server (i.e. client-side) validation: the expected peer name, if any
 	ExpectedPeerName interface{} `json:"expected_peer_name,omitempty" yaml:"expected_peer_name,omitempty" mapstructure:"expected_peer_name,omitempty"`
 
-	// For server-side validation: the expected peer names
+	// For client (i.e. server-side) validation: the expected peer names
 	ExpectedPeerNames []PeerName `json:"expected_peer_names" yaml:"expected_peer_names" mapstructure:"expected_peer_names"`
 
 	// The expected validation result

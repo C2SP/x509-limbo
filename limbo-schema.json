@@ -305,10 +305,10 @@
             }
           ],
           "default": null,
-          "description": "For client-side validation: the expected peer name, if any"
+          "description": "For server (i.e. client-side) validation: the expected peer name, if any"
         },
         "expected_peer_names": {
-          "description": "For server-side validation: the expected peer names",
+          "description": "For client (i.e. server-side) validation: the expected peer names",
           "items": {
             "$ref": "#/$defs/PeerName"
           },
