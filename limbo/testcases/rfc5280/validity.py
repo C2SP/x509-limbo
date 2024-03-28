@@ -4,6 +4,7 @@ RFC 5280 validity testcases.
 
 from datetime import datetime, timedelta
 
+from limbo.models import Importance
 from limbo.testcases._core import Builder, testcase
 
 
@@ -42,6 +43,7 @@ def expired_root(builder: Builder) -> None:
 
     builder = (
         builder.server_validation()
+        .importance(Importance.UNDETERMINED)
         .trusted_certs(root)
         .untrusted_intermediates(intermediate)
         .peer_certificate(leaf)
@@ -87,6 +89,7 @@ def expired_intermediate(builder: Builder) -> None:
 
     builder = (
         builder.server_validation()
+        .importance(Importance.CRITICAL)
         .trusted_certs(root)
         .untrusted_intermediates(intermediate)
         .peer_certificate(leaf)
@@ -132,6 +135,7 @@ def expired_leaf(builder: Builder) -> None:
 
     builder = (
         builder.server_validation()
+        .importance(Importance.CRITICAL)
         .trusted_certs(root)
         .untrusted_intermediates(intermediate)
         .peer_certificate(leaf)

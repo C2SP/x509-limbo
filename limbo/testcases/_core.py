@@ -20,6 +20,7 @@ from limbo.assets import (
 )
 from limbo.models import (
     Feature,
+    Importance,
     KeyUsage,
     KnownEKUs,
     PeerName,
@@ -367,6 +368,7 @@ class Builder:
         self._id = id
         self._conflicts_with: list[str] = []
         self._features: list[Feature] = []
+        self._importance: Importance = Importance.UNDETERMINED
         self._description = description
         self._validation_kind: str | None = None
         self._trusted_certs: list[str] = []
@@ -389,6 +391,10 @@ class Builder:
 
     def features(self, feats: list[Feature]) -> Self:
         self._features = feats
+        return self
+
+    def importance(self, importance: Importance) -> Self:
+        self._importance = importance
         return self
 
     def client_validation(self) -> Self:
@@ -455,6 +461,7 @@ class Builder:
             id=self._id,
             conflicts_with=self._conflicts_with,
             features=self._features,
+            importance=self._importance,
             description=self._description,
             validation_kind=self._validation_kind,
             trusted_certs=self._trusted_certs,
