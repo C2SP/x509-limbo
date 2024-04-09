@@ -131,6 +131,7 @@ def evaluate_testcase(certtool: str, testcase: Testcase) -> TestcaseResult:
         if not stdout:
             # If somehow we've filtered everything out, include the whole stdout for debugging.
             stdout = status.stdout
+        stdout = stdout.strip()
         stderr = status.stderr.strip()
 
         match status.returncode:

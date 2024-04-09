@@ -397,3 +397,69 @@ def san_critical_with_nonempty_subject(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def san_wildcard_only(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert contains a SAN of just `DNS:*`, which should be rejected.
+
+    The reason for this is subtle: CABF 3.2.2.6 notes that certs with
+    wildcards on public suffixes should not be issued, and `.` (i.e. the DNS
+    root) is effectively a public suffix. This is true even though the DNS
+    root is not itself on the PSL.
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("*")]),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+    ).fails()
+
+
+@testcase
+def san_wildcard_only_tld(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE cert contains a SAN of just `DNS:*`, which should be rejected.
+
+    The reason for this is subtle: CABF 3.2.2.6 notes that certs with
+    wildcards on public suffixes should not be issued, and `.` (i.e. the DNS
+    root) is effectively a public suffix. This is true even though the DNS
+    root is not itself on the PSL.
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("*")]),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="com"))
+    ).fails()
