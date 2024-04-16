@@ -76,7 +76,11 @@
         "version": {
           "const": 1,
           "description": "The limbo schema version; this must currently always be 1",
-          "title": "Version"
+          "enum": [
+            1
+          ],
+          "title": "Version",
+          "type": "integer"
         },
         "testcases": {
           "description": "One or more testcases in this testsuite",
