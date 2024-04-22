@@ -38,7 +38,8 @@ runs:
       shell: bash
       if: steps.restore-cache.outputs.cache-hit != 'true'
       run: |
-        sudo apt install -y gnutls-bin
+        sudo apt update
+        sudo install -y gnutls-bin
 
     - name: setup limbo
       shell: bash
