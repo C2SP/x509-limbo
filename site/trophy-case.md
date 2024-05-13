@@ -17,7 +17,8 @@ Legend:
 
 ## GnuTLS
 
-* 💀 [CVE-2024-28835](https://nvd.nist.gov/vuln/detail/CVE-2024-28835)
+* 💀 [CVE-2024-28835](https://nvd.nist.gov/vuln/detail/CVE-2024-28835): remote
+  crash caused by an OOB `memcpy` due to a long X.509 chain.
 
 ## Go (`crypto/x509`)
 
