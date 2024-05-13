@@ -35,8 +35,8 @@ def ee_empty_issuer(builder: Builder) -> None:
     # Intentionally empty issuer name.
     issuer = x509.Name([])
     subject = x509.Name.from_rfc4514_string("CN=empty-issuer")
-    root = builder.root_ca(issuer=issuer, subject=subject)
-    leaf = builder.leaf_cert(root)
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(root, issuer=issuer, subject=subject)
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
