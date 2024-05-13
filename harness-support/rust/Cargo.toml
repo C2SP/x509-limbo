@@ -10,5 +10,5 @@ regress = "0.9.1"
 # https://github.com/Marwes/schemafy/pull/76
 # schemafy = { git = "https://github.com/woodruffw-forks/schemafy", rev = "de28e87" }
 serde = { version = "1.0.200", features = ["derive"] }
-serde_json = "1.0.116"
+serde_json = "1.0.117"
 typify = "0.0.16"
