@@ -177,6 +177,7 @@ def _harness(args: argparse.Namespace) -> None:
         result = subprocess.run(
             args.harness, input=limbo_json, encoding="utf-8", capture_output=True, check=True
         )
+        print(result.stderr, file=sys.stderr)
         args.output.write_text(result.stdout)
     except subprocess.CalledProcessError as e:
         print(e.stderr, file=sys.stderr)
