@@ -377,14 +377,16 @@ class Limbo(BaseModel):
                 raise ValueError(f"duplicated testcase id: {case.id}")
             id_tc_map[case.id] = case
 
-        # Check that all conflicts_with references are valid,
-        # and bidirectional.
+        # Check that all conflicts_with references are bidirectional.
         for case in v:
             for cid in case.conflicts_with:
                 # NOTE: https://github.com/python/mypy/issues/12998
                 match _ := id_tc_map.get(cid):
                     case None:
-                        raise ValueError(f"{case.id} marks conflict with nonexistent case: {cid}")
+                        # This might mean that the conflicting testcase doesn't exist,
+                        # or that we've only loaded a subset of testcases.
+                        # Silently ignore for now.
+                        pass
                     case conflicting_case:
                         if case.id not in conflicting_case.conflicts_with:
                             raise ValueError(f"{case.id} -> {cid} conflict is not bidirectional")

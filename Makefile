@@ -108,6 +108,10 @@ test-certvalidator: $(NEEDS_VENV)
 test-gnutls:
 	$(MAKE) run ARGS="harness --output ./results/gnutls.json -- ./$(VENV_BIN)/python ./harness/gnutls/test-gnutls"
 
+.PHONY: test-macos-security
+test-macos-security:
+	$(MAKE) run ARGS="harness --output ./results/macos-security.json -- ./$(VENV_BIN)/python ./harness/macos-security/test-macos-security"
+
 .PHONY: test
 test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
 
