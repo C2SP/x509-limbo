@@ -171,7 +171,7 @@ name = "limbo-harness-support"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "regress",
+ "regress 0.10.0",
  "serde",
  "serde_json",
  "typify",
@@ -237,6 +237,16 @@ name = "regress"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0eae2a1ebfecc58aff952ef8ccd364329abe627762f5bf09ff42eb9d98522479"
+dependencies = [
+ "hashbrown",
+ "memchr",
+]
+
+[[package]]
+name = "regress"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16fe0a24af5daaae947294213d2fd2646fbf5e1fbacc1d4ba3e84b2393854842"
 dependencies = [
  "hashbrown",
  "memchr",
@@ -336,18 +346,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.202"
+version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "226b61a0d411b2ba5ff6d7f73a476ac4f8bb900373459cd00fab8512828ba395"
+checksum = "7253ab4de971e72fb7be983802300c30b5a7f0c2e56fab8abfc6a214307c0094"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.202"
+version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6048858004bcff69094cd972ed40a32500f153bd3be9f716b2eed2e8217c4838"
+checksum = "500cbc0ebeb6f46627f50f3f5811ccf6bf00643be300b4c3eabc0ef55dc5b5ba"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -445,7 +455,7 @@ dependencies = [
  "log",
  "proc-macro2",
  "quote",
- "regress",
+ "regress 0.9.1",
  "schemars",
  "semver",
  "serde",
