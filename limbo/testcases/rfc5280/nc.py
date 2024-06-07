@@ -476,7 +476,8 @@ def permitted_dn_match(builder: Builder) -> None:
                 excluded_subtrees=None,
             ),
             critical=True,
-        )
+        ),
+        san=None,
     )
     leaf = builder.leaf_cert(
         root,
