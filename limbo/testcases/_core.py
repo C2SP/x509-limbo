@@ -444,7 +444,7 @@ class Builder:
         self._expected_result = "FAILURE"
         return self
 
-    def expected_peer_name(self, name: PeerName) -> Self:
+    def expected_peer_name(self, name: PeerName | None) -> Self:
         self._expected_peer_name = name
         return self
 
