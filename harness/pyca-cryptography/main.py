@@ -123,7 +123,12 @@ def evaluate_testcase(testcase: Testcase) -> TestcaseResult:
     if max_chain_depth := testcase.max_chain_depth:
         builder = builder.max_chain_depth(max_chain_depth)
 
-    verifier = builder.build_server_verifier(peer_name)
+    # This can fail if the peer name is invalid.
+    try:
+        verifier = builder.build_server_verifier(peer_name)
+    except ValueError as e:
+        return TestcaseResult(id=testcase.id, actual_result=ActualResult.FAILURE, context=str(e))
+
     try:
         verifier.verify(peer_certificate, untrusted_intermediates)
         return TestcaseResult(id=testcase.id, actual_result=ActualResult.SUCCESS, context=None)
