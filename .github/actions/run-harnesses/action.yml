@@ -49,7 +49,7 @@ runs:
     - name: run harnesses
       shell: bash
       if: steps.restore-cache.outputs.cache-hit != 'true'
-      run: make test -j
+      run: make test
 
     - uses: actions/cache/save@v4
       if: steps.restore-cache.outputs.cache-hit != 'true'
