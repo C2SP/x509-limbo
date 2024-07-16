@@ -56,3 +56,30 @@ def noncritical_with_empty_subject(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="example.com")
     ).fails()
+
+
+@testcase
+def underscore_dns(builder: Builder) -> None:
+    """
+    Produces an **invalid** chain due to an invalid EE cert.
+
+    The EE cert contains a Subject Alternative Name extension that
+    contains an underscore, which is disallowed under RFC 5280 4.2.1.6:
+
+    > When the subjectAltName extension contains a domain name system
+    > label, the domain name MUST be stored in the dNSName (an IA5String).
+    > The name MUST be in the "preferred name syntax", as specified by
+    > Section 3.5 of RFC 1034 and as modified by Section 2.1 of
+    > RFC 1123.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("foo_bar.example.com")]), critical=False),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="foo_bar.example.com")
+    ).fails()

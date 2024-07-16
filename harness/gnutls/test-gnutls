@@ -118,7 +118,6 @@ def evaluate_testcase(certtool: str, testcase: Testcase) -> TestcaseResult:
             [f"--load-ca-certificate={trust_root.name}", f"--infile={untrusted_chain.name}"]
         )
 
-        log(f"running {testcase.id} with {certtool_args=}")
         status = subprocess.run(certtool_args, capture_output=True, text=True)
         # HACK(ww): certtool emits a lot of chaff on stdout that we can't easily configure away;
         # instead, we scan for the important line(s) of verification output.
