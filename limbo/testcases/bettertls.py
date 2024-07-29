@@ -60,14 +60,10 @@ def _bettertls_testcase(id_: str, root: Certificate, testcase: dict) -> Testcase
     if "INVALID_REASON_EXPIRED" in testcase["requiredFeatures"] and expected == "REJECT":
         # If the testcase is explicitly exercising expiry logic, set our
         # validation time to something that must fail.
-        validation_time = leaf.cert.not_valid_after.replace(tzinfo=timezone.utc) + timedelta(
-            seconds=1
-        )
+        validation_time = leaf.cert.not_valid_after_utc + timedelta(seconds=1)
     else:
         # Otherwise, pick a validation time that should be valid for the whole chain.
-        validation_time = leaf.cert.not_valid_before.replace(tzinfo=timezone.utc) + timedelta(
-            seconds=1
-        )
+        validation_time = leaf.cert.not_valid_before_utc + timedelta(seconds=1)
 
     builder = (
         builder.server_validation()
