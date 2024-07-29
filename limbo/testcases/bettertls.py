@@ -11,7 +11,7 @@ import functools
 import ipaddress
 import json
 import logging
-from datetime import timedelta, timezone
+from datetime import timedelta
 
 from cryptography import x509
 
