@@ -95,7 +95,6 @@ def ee_eku_empty(builder: Builder) -> None:
     builder = builder.server_validation()
     builder = (
         builder.trusted_certs(root)
-        .extended_key_usage([KnownEKUs.server_auth])
         .peer_certificate(leaf)
         .expected_peer_name(PeerName(kind="DNS", value="example.com"))
         .fails()
