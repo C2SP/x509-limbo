@@ -65,3 +65,37 @@ def ee_without_eku(builder: Builder) -> None:
         .peer_certificate(leaf)
         .succeeds()
     )
+
+
+@testcase
+def ee_eku_empty(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> EE
+    ```
+
+    The EE contains an extKeyUsage extension, but with no listed usages,
+    which is forbidden per RFC 5280 4.2.1.12:
+
+    > This extension indicates one or more purposes for which the certified
+    > public key may be used
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        eku=ext(
+            x509.ExtendedKeyUsage([]),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .fails()
+    )
