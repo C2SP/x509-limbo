@@ -476,7 +476,8 @@ def permitted_dn_match(builder: Builder) -> None:
                 excluded_subtrees=None,
             ),
             critical=True,
-        )
+        ),
+        san=None,
     )
     leaf = builder.leaf_cert(
         root,
@@ -490,7 +491,7 @@ def permitted_dn_match(builder: Builder) -> None:
     )
 
     builder = builder.server_validation().features([Feature.name_constraint_dn])
-    builder.trusted_certs(root).peer_certificate(leaf).succeeds()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(None).succeeds()
 
 
 @testcase
