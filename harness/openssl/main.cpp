@@ -11,10 +11,18 @@
 #include "date.hpp"
 #include "json.hpp"
 
+#ifdef OPENSSL_IS_BORINGSSL
+#define HARNESS_PREFIX "boringssl-"
+#else
+#define HARNESS_PREFIX "openssl-"
+#endif
+
 #ifdef OPENSSL_VERSION_STR
 #define HARNESS_OPENSSL_VERSION_STR OPENSSL_VERSION_STR
 #elif defined(SHLIB_VERSION_NUMBER)
 #define HARNESS_OPENSSL_VERSION_STR SHLIB_VERSION_NUMBER
+#elif defined(OPENSSL_IS_BORINGSSL)
+#define HARNESS_OPENSSL_VERSION_STR "head"
 #else
 #error "unsupported OpenSSL version: " #OPENSSL_VERSION
 #endif
@@ -68,7 +76,12 @@ STACK_OF_X509_ptr x509_stack(const json &certs)
     barf("unexpected type: expected an array of certs");
   }
 
+#ifdef OPENSSL_IS_BORINGSSL
+  auto *stack = sk_X509_new(nullptr);
+#else
   auto *stack = sk_X509_new_reserve(nullptr, certs.size());
+#endif
+
   for (auto &cert : certs)
   {
     auto cert_pem = cert.template get<std::string>();
@@ -165,10 +178,12 @@ json evaluate_testcase(const json &testcase)
 
   auto param = X509_STORE_CTX_get0_param(ctx.get());
 
+#ifndef OPENSSL_IS_BORINGSSL
   // The default authentication level is 1, which corresponds to 80 bits
   // of security. Level 2 corresponds to 112 bits and includes RSA 2048,
   // which brings the validation logic very slightly closer to the Web PKI.
   X509_VERIFY_PARAM_set_auth_level(param, 2);
+#endif
 
   if (testcase["expected_peer_name"].is_object())
   {
@@ -251,7 +266,7 @@ int main()
 
   json limbo_result = {
       {"version", 1},
-      {"harness", std::string("openssl-") + HARNESS_OPENSSL_VERSION_STR},
+      {"harness", std::string(HARNESS_PREFIX) + HARNESS_OPENSSL_VERSION_STR},
       {"results", std::move(results)},
   };
   std::cout << std::setw(2) << limbo_result << std::endl;
