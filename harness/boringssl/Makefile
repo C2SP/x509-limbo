@@ -1,7 +1,8 @@
 CXXFLAGS = -std=c++17
 
-CPPFLAGS = $(shell pkg-config --cflags libcrypto)
-LDLIBS = $(shell pkg-config --libs libcrypto)
+# NOTE: too lazy to do this generically; this assumes the boringssl container.
+CPPFLAGS = -I/build/boringssl/include
+LDLIBS = /build/boringssl/lib/libcrypto.a /build/boringssl/lib/libpki.a
 
 .PHONY: all
 all: main
@@ -14,6 +15,5 @@ debug: main
 clean:
 	rm -f main
 
-openssl-%: openssl-%.dockerfile
+boringssl: boringssl.dockerfile
 	docker build --platform linux/amd64 -f $< . -t x509-limbo-$@
-

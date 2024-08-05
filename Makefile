@@ -69,7 +69,7 @@ testcases: $(NEEDS_VENV)
 .PHONY: build-harnesses
 build-harnesses:
 	$(MAKE) -C harness/gocryptox509
-	$(MAKE) -C harness/openssl
+	$(MAKE) -C harness/openssl openssl-1.1.1
 	cargo build --bin rust-webpki-harness
 	cargo build --bin rust-rustls-harness
 
@@ -86,6 +86,11 @@ test-openssl:
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.1.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.1"
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.2.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.2"
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.3.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.3"
+
+.PHONY: test-boringssl
+test-boringssl:
+	$(MAKE) -C harness/boringssl boringssl
+	$(MAKE) run ARGS="harness --output ./results/boringssl.json -- docker run --platform linux/amd64 --rm -i x509-limbo-boringssl"
 
 .PHONY: test-rust-webpki
 test-rust-webpki:
