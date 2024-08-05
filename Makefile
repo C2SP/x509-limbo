@@ -80,12 +80,16 @@ test-go:
 
 .PHONY: test-openssl
 test-openssl:
-	$(MAKE) -C harness/openssl openssl-1.1.1 openssl-3.0 openssl-3.1 openssl-3.2 openssl-3.3 boringssl
+	$(MAKE) -C harness/openssl openssl-1.1.1 openssl-3.0 openssl-3.1 openssl-3.2 openssl-3.3
 	$(MAKE) run ARGS="harness --output ./results/openssl-1.1.1.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-1.1.1"
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.0.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.0"
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.1.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.1"
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.2.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.2"
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.3.json -- docker run --platform linux/amd64 --rm -i x509-limbo-openssl-3.3"
+
+.PHONY: test-boringssl
+test-boringssl:
+	$(MAKE) -C harness/boringssl boringssl
 	$(MAKE) run ARGS="harness --output ./results/boringssl.json -- docker run --platform linux/amd64 --rm -i x509-limbo-boringssl"
 
 .PHONY: test-rust-webpki

@@ -4,7 +4,7 @@ WORKDIR /tmp/harness
 
 COPY ./ .
 
-RUN apk add --no-cache make
-RUN make BORINGSSL=1
+RUN apk add --no-cache make date-dev nlohmann-json
+RUN make
 
 ENTRYPOINT ["./main"]
