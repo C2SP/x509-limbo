@@ -69,7 +69,7 @@ testcases: $(NEEDS_VENV)
 .PHONY: build-harnesses
 build-harnesses:
 	$(MAKE) -C harness/gocryptox509
-	$(MAKE) -C harness/openssl
+	$(MAKE) -C harness/openssl openssl-1.1.1
 	cargo build --bin rust-webpki-harness
 	cargo build --bin rust-rustls-harness
 
