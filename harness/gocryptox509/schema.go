@@ -297,7 +297,7 @@ func (j *PeerKind) UnmarshalJSON(b []byte) error {
 // Represents a peer (i.e., end entity) certificate's name (Subject or SAN).
 type PeerName struct {
 	// The kind of peer name
-	Kind interface{} `json:"kind" yaml:"kind" mapstructure:"kind"`
+	Kind PeerKind `json:"kind" yaml:"kind" mapstructure:"kind"`
 
 	// The peer's name
 	Value string `json:"value" yaml:"value" mapstructure:"value"`
@@ -425,7 +425,7 @@ type Testcase struct {
 	ExpectedPeerNames []PeerName `json:"expected_peer_names" yaml:"expected_peer_names" mapstructure:"expected_peer_names"`
 
 	// The expected validation result
-	ExpectedResult interface{} `json:"expected_result" yaml:"expected_result" mapstructure:"expected_result"`
+	ExpectedResult ExpectedResult `json:"expected_result" yaml:"expected_result" mapstructure:"expected_result"`
 
 	// A constraining list of extended key usages, either in well-known form or as
 	// OIDs
@@ -442,7 +442,7 @@ type Testcase struct {
 	Id string `json:"id" yaml:"id" mapstructure:"id"`
 
 	// The testcase's importance
-	Importance interface{} `json:"importance,omitempty" yaml:"importance,omitempty" mapstructure:"importance,omitempty"`
+	Importance Importance `json:"importance,omitempty" yaml:"importance,omitempty" mapstructure:"importance,omitempty"`
 
 	// A constraining list of key usages
 	KeyUsage []KeyUsage `json:"key_usage" yaml:"key_usage" mapstructure:"key_usage"`
@@ -466,7 +466,7 @@ type Testcase struct {
 	UntrustedIntermediates []string `json:"untrusted_intermediates" yaml:"untrusted_intermediates" mapstructure:"untrusted_intermediates"`
 
 	// The kind of validation to perform
-	ValidationKind interface{} `json:"validation_kind" yaml:"validation_kind" mapstructure:"validation_kind"`
+	ValidationKind ValidationKind `json:"validation_kind" yaml:"validation_kind" mapstructure:"validation_kind"`
 
 	// The time at which to perform the validation
 	ValidationTime interface{} `json:"validation_time,omitempty" yaml:"validation_time,omitempty" mapstructure:"validation_time,omitempty"`

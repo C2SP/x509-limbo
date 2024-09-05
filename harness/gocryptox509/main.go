@@ -18,21 +18,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-type testcaseResult string
+type actualResult string
 
 const (
-	validationKindClient = "CLIENT"
-	validationKindServer = "SERVER"
-
-	resultFailure testcaseResult = "FAILURE"
-	resultSuccess testcaseResult = "SUCCESS"
-	resultSkipped testcaseResult = "SKIPPED"
+	resultFailure actualResult = "FAILURE"
+	resultSuccess actualResult = "SUCCESS"
+	resultSkipped actualResult = "SKIPPED"
 )
 
 type result struct {
-	ID      string         `json:"id"`
-	Result  testcaseResult `json:"actual_result"`
-	Context string         `json:"context"`
+	ID      string       `json:"id"`
+	Result  actualResult `json:"actual_result"`
+	Context string       `json:"context"`
 }
 
 type results struct {
@@ -58,7 +55,7 @@ func main() {
 		r, err := evaluateTestcase(tc)
 
 		var context string
-		if r != testcaseResult(tc.ExpectedResult.(string)) {
+		if string(r) != string(tc.ExpectedResult) {
 			if r != resultSkipped {
 				fmt.Fprintf(os.Stderr, "NON-CONFORMANT\n\terr=%s\n", err)
 				nonconform++
@@ -107,7 +104,7 @@ func concatPEMCerts(certs []string) []byte {
 	return buf.Bytes()
 }
 
-func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
+func evaluateTestcase(testcase Testcase) (actualResult, error) {
 	_ = spew.Dump
 
 	for _, feature := range testcase.Features {
@@ -169,9 +166,9 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 	}
 
 	switch testcase.ValidationKind {
-	case validationKindClient:
+	case ValidationKindCLIENT:
 		return resultSkipped, fmt.Errorf("unimplemented validationKindClient")
-	case validationKindServer:
+	case ValidationKindSERVER:
 		var dnsName string
 		if peerName, ok := testcase.ExpectedPeerName.(map[string]interface{}); ok {
 			if peerName["kind"] == "DNS" {
@@ -209,8 +206,8 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 		_ = chain
 
 		var (
-			expected = testcaseResult(testcase.ExpectedResult.(string))
-			actual   testcaseResult
+			expected = testcase.ExpectedResult
+			actual   actualResult
 		)
 		if err != nil {
 			actual = resultFailure
@@ -218,7 +215,7 @@ func evaluateTestcase(testcase Testcase) (testcaseResult, error) {
 			actual = resultSuccess
 		}
 
-		if expected != actual {
+		if string(expected) != string(actual) {
 			if err == nil {
 				err = errors.New("chain built")
 			}
