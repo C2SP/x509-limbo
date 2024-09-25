@@ -8,8 +8,9 @@
 #include <openssl/opensslv.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
-#include "date.hpp"
-#include "json.hpp"
+
+#include <date/date.h>
+#include <nlohmann/json.hpp>
 
 #ifdef OPENSSL_VERSION_STR
 #define HARNESS_OPENSSL_VERSION_STR OPENSSL_VERSION_STR
@@ -69,6 +70,7 @@ STACK_OF_X509_ptr x509_stack(const json &certs)
   }
 
   auto *stack = sk_X509_new_reserve(nullptr, certs.size());
+
   for (auto &cert : certs)
   {
     auto cert_pem = cert.template get<std::string>();

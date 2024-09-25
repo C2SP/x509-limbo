@@ -21,6 +21,9 @@ On macOS, you'll need to tell the build where to find the version of OpenSSL
 to use. The easiest way to do that is to use `brew` and `PKG_CONFIG_PATH`, e.g.:
 
 ```bash
+# install baseline deps
+brew install howard-hinnant-date nlohmann-json
+
 # install the version of OpenSSL you'd like to test
 brew install openssl@3.1
 
