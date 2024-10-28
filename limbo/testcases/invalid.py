@@ -109,6 +109,6 @@ def invalid_issuer_key(builder: Builder) -> None:
 
     leaf = builder.leaf_cert(intermediate)
 
-    builder.server_validation().trusted_certs(root1).untrusted_intermediates(leaf).peer_certificate(
-        leaf
-    ).fails()
+    builder.server_validation().trusted_certs(root1).untrusted_intermediates(
+        intermediate
+    ).peer_certificate(leaf).fails()
