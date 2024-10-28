@@ -5,6 +5,7 @@ package main
 import "encoding/json"
 import "fmt"
 import "reflect"
+import "regexp"
 
 type ExpectedResult string
 
@@ -521,6 +522,9 @@ func (j *Testcase) UnmarshalJSON(b []byte) error {
 	}
 	if v, ok := raw["features"]; !ok || v == nil {
 		plain.Features = []Feature{}
+	}
+	if matched, _ := regexp.MatchString("^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$", string(plain.Id)); !matched {
+		return fmt.Errorf("field %s pattern match: must match %s", "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$", "Id")
 	}
 	if v, ok := raw["importance"]; !ok || v == nil {
 		plain.Importance = "undetermined"
