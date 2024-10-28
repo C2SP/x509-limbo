@@ -4,3 +4,5 @@ site_html/
 # harness results
 results.json
 results/
+
+__pycache__/
