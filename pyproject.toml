@@ -41,7 +41,7 @@ site = [
     "mkdocs-gen-files",
     "pymdown-extensions",
     "mkdocs-material",
-    "py-markdown-table==1.1.0",
+    "py-markdown-table==1.2.0",
 ]
 dev = ["limbo[doc,test,lint,site]", "twine", "wheel", "build"]
 [project.scripts]
