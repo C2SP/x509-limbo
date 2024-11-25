@@ -76,9 +76,6 @@
         "version": {
           "const": 1,
           "description": "The limbo schema version; this must currently always be 1",
-          "enum": [
-            1
-          ],
           "title": "Version",
           "type": "integer"
         },
