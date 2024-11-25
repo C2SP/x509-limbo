@@ -213,33 +213,7 @@ type Limbo struct {
 	Testcases []Testcase `json:"testcases" yaml:"testcases" mapstructure:"testcases"`
 
 	// The limbo schema version; this must currently always be 1
-	Version LimboVersion `json:"version" yaml:"version" mapstructure:"version"`
-}
-
-type LimboVersion int
-
-var enumValues_LimboVersion = []interface{}{
-	1,
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *LimboVersion) UnmarshalJSON(b []byte) error {
-	var v int
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_LimboVersion {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_LimboVersion, v)
-	}
-	*j = LimboVersion(v)
-	return nil
+	Version int `json:"version" yaml:"version" mapstructure:"version"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
