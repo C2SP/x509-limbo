@@ -99,12 +99,12 @@ def ip_in_dns(builder: Builder) -> None:
     leaf = builder.leaf_cert(
         root,
         san=ext(
-            x509.SubjectAlternativeName([x509.DNSName._init_without_validation("1.2.3.4")]),
+            x509.SubjectAlternativeName([x509.DNSName._init_without_validation("8.8.8.8")]),
             critical=False,
         ),
     )
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="IP", value="1.2.3.4")
+        PeerName(kind="IP", value="8.8.8.8")
     ).fails()
