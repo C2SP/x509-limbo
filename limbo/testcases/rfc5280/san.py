@@ -93,6 +93,9 @@ def ip_in_dns(builder: Builder) -> None:
     The EE certain contains a Subject Alternative Name extension that
     contains an IP address as a DNSName rather than as an IPAddress,
     which is disallowed under RFC 5280 4.2.1.6.
+
+    See: <https://bugzilla.mozilla.org/show_bug.cgi?id=1448986> for a public
+    example of this kind of misissuance.
     """
 
     root = builder.root_ca()
