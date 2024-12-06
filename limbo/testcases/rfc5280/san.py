@@ -83,3 +83,31 @@ def underscore_dns(builder: Builder) -> None:
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         PeerName(kind="DNS", value="foo_bar.example.com")
     ).fails()
+
+
+@testcase
+def ip_in_dns(builder: Builder) -> None:
+    """
+    Produces an **invalid** chain due to an invalid EE cert.
+
+    The EE certain contains a Subject Alternative Name extension that
+    contains an IP address as a DNSName rather than as an IPAddress,
+    which is disallowed under RFC 5280 4.2.1.6.
+
+    See: <https://bugzilla.mozilla.org/show_bug.cgi?id=1448986> for a public
+    example of this kind of misissuance.
+    """
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName._init_without_validation("8.8.8.8")]),
+            critical=False,
+        ),
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="IP", value="8.8.8.8")
+    ).fails()
