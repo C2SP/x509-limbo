@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = { version = "0.4.38", features = ["serde"] }
+chrono = { version = "0.4.39", features = ["serde"] }
 regress = "0.10.1"
 # TODO: Replace with upstream once merged:
 # https://github.com/Marwes/schemafy/pull/76
