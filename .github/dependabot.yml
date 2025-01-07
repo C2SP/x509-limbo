@@ -5,8 +5,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    pip:
-      cargo:
+    groups:
+      pip:
         patterns:
           - "*"
 
@@ -14,8 +14,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    github-actions:
-      cargo:
+    groups:
+      github-actions:
         patterns:
           - "*"
 
