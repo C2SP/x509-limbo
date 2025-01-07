@@ -5,13 +5,25 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    pip:
+      cargo:
+        patterns:
+          - "*"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    github-actions:
+      cargo:
+        patterns:
+          - "*"
 
   - package-ecosystem: cargo
     directory: /
     schedule:
       interval: weekly
+    groups:
+      cargo:
+        patterns:
+          - "*"
