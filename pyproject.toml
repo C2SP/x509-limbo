@@ -15,6 +15,8 @@ dependencies = [
     "pydantic ~= 2.4",
     # For the `certvalidator` test harness.
     "certvalidator ~= 0.11",
+    # TODO: Remove pending https://github.com/wbond/oscrypto/issues/78
+    "oscrypto @ git+https://github.com/wbond/oscrypto.git@1547f535001ba568b239b8797465536759c742a3",
     "cryptography ~= 44.0",
     "pyyaml ~= 6.0",
     "pyOpenSSL",
