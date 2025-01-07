@@ -15,6 +15,8 @@ dependencies = [
     "pydantic ~= 2.4",
     # For the `certvalidator` test harness.
     "certvalidator ~= 0.11",
+    # TODO: Remove pending https://github.com/wbond/oscrypto/issues/78
+    "oscrypto @ git+https://github.com/wbond/oscrypto.git@1547f535001ba568b239b8797465536759c742a3",
     "cryptography ~= 44.0",
     "pyyaml ~= 6.0",
     "pyOpenSSL",
@@ -28,7 +30,7 @@ requires-python = ">=3.11"
 lint = [
     # NOTE: ruff is under active development, so we pin conservatively here
     # and let Dependabot periodically perform this update.
-    "ruff < 0.8.5",
+    "ruff < 0.8.7",
     "mypy >= 1.0",
     "types-pyyaml",
     "types-pyOpenSSL",
