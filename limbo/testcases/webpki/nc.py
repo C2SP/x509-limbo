@@ -112,3 +112,41 @@ def intermediate_permitted_excluded_subtrees_both_empty_sequences(builder: Build
     builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(
         leaf
     ).expected_peer_name(PeerName(kind="DNS", value="example.com")).fails()
+
+
+@testcase
+def nc_permits_dns_san_pattern(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    root -> ICA (permit: foo.com) -> EE (SAN: *.foo.com)
+    ```
+
+    CABF does not specify how Name Constraints and SAN patterns compose
+    (the latter is not specified at all), but their compatibility is a logical
+    conclusion of the following rules:
+
+    1. A DNS Name Constraint matches `name` as well as zero or more sublabels
+    2. A DNS SAN pattern of `*.name` matches exactly one sublabel
+    3. Therefore, any DNS NC of `name` will always match all `*.name` SANs
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("*.example.com")]), critical=False)
+    )
+
+    builder.server_validation().trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind="DNS", value="foo.example.com")).succeeds()
