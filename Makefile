@@ -5,7 +5,7 @@ PY_MODULE := limbo
 ALL_PY_SRCS := $(shell find $(PY_MODULE) -name '*.py')
 
 # Optionally overriden by the user, if they're using a virtual environment manager.
-VENV ?= env
+VENV ?= .venv
 
 # On Windows, venv scripts/shims are under `Scripts` instead of `bin`.
 VENV_BIN := $(VENV)/bin
@@ -24,8 +24,8 @@ all:
 	@echo "Run my targets individually!"
 
 $(NEEDS_VENV): pyproject.toml
-	python -m venv $(VENV) --upgrade-deps
-	$(VENV_BIN)/python -m pip install -e .[$(INSTALL_EXTRA)]
+	uv venv $(VENV)
+	uv pip install -e .[$(INSTALL_EXTRA)]
 
 .PHONY: dev
 dev: $(NEEDS_VENV)
