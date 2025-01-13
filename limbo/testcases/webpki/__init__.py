@@ -379,7 +379,7 @@ def ca_as_leaf(builder: Builder) -> None:
 
     The ICA is in leaf position, despite being a CA certificate,
     which is explicitly forbidden under CABF 7.1.2.7.11 (`keyUsage.keyCertSign` must NOT be
-    permitted) and 7.1.2.7.8 (`basicConstraints.cA` MUST be false`).
+    permitted) and 7.1.2.7.8 (`basicConstraints.cA` MUST be false).
     """
 
     root = builder.root_ca()
