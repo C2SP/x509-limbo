@@ -1,31 +1,71 @@
 site_name: x509-limbo
-site_description: x509-limbo
+site_description: A testvector suite for X.509 path validators
 site_url: https://x509-limbo.com
 docs_dir: site
 site_dir: site_html
 dev_addr: "127.0.0.1:9999"
+
+repo_url: https://github.com/C2SP/x509-limbo
+edit_uri: edit/main/site
+
 theme:
   name: material
   features:
     - navigation.expand
+    - navigation.footer
+    - navigation.sections
+    - navigation.tracking
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
 plugins:
   - search
   - gen-files:
       scripts:
         - site/render-testcases.py
+
 markdown_extensions:
   # Makes sure we render `<https://...>`-style links correctly.
   - pymdownx.magiclink
   - toc:
       permalink: 🔗
+
 extra_css:
   - style.css
+
 extra_javascript:
   - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
   - js/tablesort.js
+
 exclude_docs: |
   render-testcases.py
+
 validation:
   omitted_files: warn
   absolute_links: warn
   unrecognized_links: warn
+
+copyright: "&copy; 2024 x509-limbo maintainers"

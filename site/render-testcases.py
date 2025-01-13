@@ -36,23 +36,23 @@ BASE_URL = mkdocs_gen_files.config["site_url"]
 LINK_SUBSTITUTIONS = [
     # Rewrite `RFC XXXX A.B.C.D` into a section link.
     (
-        r"(?<!\[)RFC (\d+) (\d+(?:.\d+)*)(?!\])",
+        re.compile(r"(?<!\[)RFC (\d+) (\d+(?:.\d+)*)(?!\])"),
         r"[\g<0>](https://datatracker.ietf.org/doc/html/rfc\g<1>#section-\g<2>)",
     ),
     # Rewrite bare `RFC XXXX` into an RFC link.
     (
-        r"(?<!\[)RFC (\d+)(?!\])",
+        re.compile(r"(?<!\[)RFC (\d+)(?!\])"),
         r"[\g<0>](https://datatracker.ietf.org/doc/html/rfc\g<1>)",
     ),
     # Rewrite `CABF` into a PDF link.
     # TODO(ww): Figure out a good way to hotlink to specific CABF sections.
     (
-        r"(?<!\[)CABF(?!\])",
+        re.compile(r"(?<!\[)CABF(?!\])"),
         r"[\g<0>](https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-v2.0.1.pdf)",
     ),
     # Rewrite `CVE-YYYY-ABCDEF` into a NIST NVD link.
     (
-        r"(?<!\[)CVE-(\d{4})-(\d+(?:.\d+)*)(?!\])",
+        re.compile(r"(?<!\[)CVE-(\d{4})-(\d+(?:.\d+)*)(?!\])"),
         r"[\g<0>](https://nvd.nist.gov/vuln/detail/CVE-\g<1>-\g<2>)",
     ),
 ]
