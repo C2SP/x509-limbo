@@ -9,6 +9,6 @@ regress = "0.10.3"
 # TODO: Replace with upstream once merged:
 # https://github.com/Marwes/schemafy/pull/76
 # schemafy = { git = "https://github.com/woodruffw-forks/schemafy", rev = "de28e87" }
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.138"
+serde = { version = "1.0.218", features = ["derive"] }
+serde_json = "1.0.139"
 typify = "0.3.0"
