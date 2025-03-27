@@ -3,6 +3,7 @@
 package main
 
 import "encoding/json"
+import "errors"
 import "fmt"
 import "reflect"
 import "regexp"
@@ -18,9 +19,9 @@ var enumValues_ExpectedResult = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *ExpectedResult) UnmarshalJSON(b []byte) error {
+func (j *ExpectedResult) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -68,9 +69,9 @@ var enumValues_Feature = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *Feature) UnmarshalJSON(b []byte) error {
+func (j *Feature) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -104,9 +105,9 @@ var enumValues_Importance = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *Importance) UnmarshalJSON(b []byte) error {
+func (j *Importance) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -148,9 +149,9 @@ var enumValues_KeyUsage = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *KeyUsage) UnmarshalJSON(b []byte) error {
+func (j *KeyUsage) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -188,9 +189,9 @@ var enumValues_KnownEKUs = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *KnownEKUs) UnmarshalJSON(b []byte) error {
+func (j *KnownEKUs) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -217,9 +218,9 @@ type Limbo struct {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *Limbo) UnmarshalJSON(b []byte) error {
+func (j *Limbo) UnmarshalJSON(value []byte) error {
 	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
+	if err := json.Unmarshal(value, &raw); err != nil {
 		return err
 	}
 	if _, ok := raw["testcases"]; raw != nil && !ok {
@@ -230,7 +231,7 @@ func (j *Limbo) UnmarshalJSON(b []byte) error {
 	}
 	type Plain Limbo
 	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
+	if err := json.Unmarshal(value, &plain); err != nil {
 		return err
 	}
 	*j = Limbo(plain)
@@ -250,9 +251,9 @@ var enumValues_PeerKind = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *PeerKind) UnmarshalJSON(b []byte) error {
+func (j *PeerKind) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -279,9 +280,9 @@ type PeerName struct {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *PeerName) UnmarshalJSON(b []byte) error {
+func (j *PeerName) UnmarshalJSON(value []byte) error {
 	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
+	if err := json.Unmarshal(value, &raw); err != nil {
 		return err
 	}
 	if _, ok := raw["kind"]; raw != nil && !ok {
@@ -292,7 +293,7 @@ func (j *PeerName) UnmarshalJSON(b []byte) error {
 	}
 	type Plain PeerName
 	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
+	if err := json.Unmarshal(value, &plain); err != nil {
 		return err
 	}
 	*j = PeerName(plain)
@@ -366,9 +367,9 @@ var enumValues_SignatureAlgorithm = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *SignatureAlgorithm) UnmarshalJSON(b []byte) error {
+func (j *SignatureAlgorithm) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -394,7 +395,7 @@ type Testcase struct {
 	Description string `json:"description" yaml:"description" mapstructure:"description"`
 
 	// For server (i.e. client-side) validation: the expected peer name, if any
-	ExpectedPeerName interface{} `json:"expected_peer_name,omitempty" yaml:"expected_peer_name,omitempty" mapstructure:"expected_peer_name,omitempty"`
+	ExpectedPeerName *TestcaseExpectedPeerName `json:"expected_peer_name,omitempty" yaml:"expected_peer_name,omitempty" mapstructure:"expected_peer_name,omitempty"`
 
 	// For client (i.e. server-side) validation: the expected peer names
 	ExpectedPeerNames []PeerName `json:"expected_peer_names" yaml:"expected_peer_names" mapstructure:"expected_peer_names"`
@@ -447,10 +448,46 @@ type Testcase struct {
 	ValidationTime interface{} `json:"validation_time,omitempty" yaml:"validation_time,omitempty" mapstructure:"validation_time,omitempty"`
 }
 
+// Represents a peer (i.e., end entity) certificate's name (Subject or SAN).
+type TestcaseExpectedPeerName struct {
+	// The kind of peer name
+	Kind PeerKind `json:"kind" yaml:"kind" mapstructure:"kind"`
+
+	// The peer's name
+	Value string `json:"value" yaml:"value" mapstructure:"value"`
+}
+
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *Testcase) UnmarshalJSON(b []byte) error {
+func (j *TestcaseExpectedPeerName) UnmarshalJSON(value []byte) error {
 	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	var testcaseExpectedPeerName_0 TestcaseExpectedPeerName_0
+	var testcaseExpectedPeerName_1 TestcaseExpectedPeerName_1
+	var errs []error
+	if err := testcaseExpectedPeerName_0.UnmarshalJSON(value); err != nil {
+		errs = append(errs, err)
+	}
+	if err := testcaseExpectedPeerName_1.UnmarshalJSON(value); err != nil {
+		errs = append(errs, err)
+	}
+	if len(errs) == 2 {
+		return fmt.Errorf("all validators failed: %s", errors.Join(errs...))
+	}
+	type Plain TestcaseExpectedPeerName
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = TestcaseExpectedPeerName(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Testcase) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
 		return err
 	}
 	if _, ok := raw["description"]; raw != nil && !ok {
@@ -488,7 +525,7 @@ func (j *Testcase) UnmarshalJSON(b []byte) error {
 	}
 	type Plain Testcase
 	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
+	if err := json.Unmarshal(value, &plain); err != nil {
 		return err
 	}
 	if v, ok := raw["conflicts_with"]; !ok || v == nil {
@@ -497,8 +534,8 @@ func (j *Testcase) UnmarshalJSON(b []byte) error {
 	if v, ok := raw["features"]; !ok || v == nil {
 		plain.Features = []Feature{}
 	}
-	if matched, _ := regexp.MatchString("^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$", string(plain.Id)); !matched {
-		return fmt.Errorf("field %s pattern match: must match %s", "^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$", "Id")
+	if matched, _ := regexp.MatchString(`^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$`, string(plain.Id)); !matched {
+		return fmt.Errorf("field %s pattern match: must match %s", "Id", `^([A-Za-z][A-Za-z0-9-.]+::)*([A-Za-z][A-Za-z0-9-.]+)$`)
 	}
 	if v, ok := raw["importance"]; !ok || v == nil {
 		plain.Importance = "undetermined"
@@ -518,9 +555,9 @@ var enumValues_ValidationKind = []interface{}{
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *ValidationKind) UnmarshalJSON(b []byte) error {
+func (j *ValidationKind) UnmarshalJSON(value []byte) error {
 	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(value, &v); err != nil {
 		return err
 	}
 	var ok bool
@@ -536,3 +573,5 @@ func (j *ValidationKind) UnmarshalJSON(b []byte) error {
 	*j = ValidationKind(v)
 	return nil
 }
+
+type TestcaseExpectedPeerName_0 = PeerName

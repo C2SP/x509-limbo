@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run github.com/atombender/go-jsonschema@latest -v -p main -o schema.go ../../limbo-schema.json
+//go:generate go run github.com/atombender/go-jsonschema@v0.18.0 -v -p main -o schema.go ../../limbo-schema.json
 
 import (
 	"bytes"
@@ -170,13 +170,12 @@ func evaluateTestcase(testcase Testcase) (actualResult, error) {
 		return resultSkipped, fmt.Errorf("unimplemented validationKindClient")
 	case ValidationKindSERVER:
 		var dnsName string
-		if peerName, ok := testcase.ExpectedPeerName.(map[string]interface{}); ok {
-			if peerName["kind"] == "DNS" {
-				dnsName = peerName["value"].(string)
-			} else {
-				// crypto/x509 takes IP subjects in `[addr]` form.
-				dnsName = fmt.Sprintf("[%s]", peerName["value"].(string))
-			}
+		peerName := testcase.ExpectedPeerName
+		if peerName.Kind == "DNS" {
+			dnsName = peerName.Value
+		} else {
+			// crypto/x509 takes IP subjects in `[addr]` form.
+			dnsName = fmt.Sprintf("[%s]", peerName.Value)
 		}
 		roots, intermediates := x509.NewCertPool(), x509.NewCertPool()
 		roots.AppendCertsFromPEM(concatPEMCerts(testcase.TrustedCerts))
