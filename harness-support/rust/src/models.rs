@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use typify::import_types;
 
 import_types!(schema = "../../limbo-schema.json");

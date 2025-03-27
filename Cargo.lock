@@ -264,6 +264,7 @@ dependencies = [
  "chrono",
  "limbo-harness-support",
  "pem",
+ "rustls-pki-types",
  "rustls-webpki",
  "serde_json",
 ]
