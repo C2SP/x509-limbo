@@ -22,9 +22,9 @@ fn main() {
     serde_json::to_writer_pretty(std::io::stdout(), &result).unwrap();
 }
 
-fn der_from_pem<B: AsRef<[u8]>>(bytes: B) -> webpki::types::CertificateDer<'static> {
+fn der_from_pem<B: AsRef<[u8]>>(bytes: B) -> rustls_pki_types::CertificateDer<'static> {
     let pem = pem::parse(bytes).expect("cert: PEM parse failed");
-    webpki::types::CertificateDer::from(pem.contents()).into_owned()
+    rustls_pki_types::CertificateDer::from(pem.contents()).into_owned()
 }
 
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
@@ -72,7 +72,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
     };
 
-    let validation_time = webpki::types::UnixTime::since_unix_epoch(
+    let validation_time = rustls_pki_types::UnixTime::since_unix_epoch(
         (tc.validation_time.unwrap_or(Utc::now().into()) - DateTime::UNIX_EPOCH)
             .to_std()
             .expect("invalid validation time!"),
@@ -104,13 +104,13 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
     let subject_name = match &tc.expected_peer_name {
         None => return TestcaseResult::skip(tc, "implementation requires peer names"),
         Some(pn) => match pn.kind {
-            PeerKind::Dns => webpki::types::ServerName::DnsName(
-                webpki::types::DnsName::try_from(pn.value.as_str())
+            PeerKind::Dns => rustls_pki_types::ServerName::DnsName(
+                rustls_pki_types::DnsName::try_from(pn.value.as_str())
                     .expect(&format!("invalid expected DNS name: {}", &pn.value)),
             ),
             PeerKind::Ip => {
                 let addr = pn.value.as_str().try_into().unwrap();
-                webpki::types::ServerName::IpAddress(addr)
+                rustls_pki_types::ServerName::IpAddress(addr)
             }
             _ => return TestcaseResult::skip(tc, "implementation requires DNS or IP peer names"),
         },
