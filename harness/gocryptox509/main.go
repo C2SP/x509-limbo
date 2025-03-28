@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run github.com/atombender/go-jsonschema@latest -v -p main -o schema.go ../../limbo-schema.json
+//go:generate go run github.com/atombender/go-jsonschema@v0.17.0 -v -p main -o schema.go ../../limbo-schema.json
 
 import (
 	"bytes"
