@@ -3,7 +3,7 @@
 This directory contains a basic test harness for running the x509-testsuite
 against OpenSSL.
 
-OpenSSL 1.1, 3.0, and 3.1 should all work.
+OpenSSL 1.1, 3.0, and forwards should all work.
 
 ## Building
 
