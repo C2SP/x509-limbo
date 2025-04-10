@@ -80,22 +80,6 @@ def _render_conflicts(tc: Testcase) -> str:
     return ", ".join(md_urls)
 
 
-def _tc_pem_bundle(tc: Testcase) -> str:
-    # NOTE: Don't bother generating or linking individual PEMs for
-    # the bettertls suite, since they're entirely auto-generated.
-    if tc.id.startswith("bettertls"):
-        return ""
-
-    namespace, _ = tc.id.split("::", 1)
-    slug = tc.id.replace("::", "")
-
-    bundle = [tc.peer_certificate, *tc.untrusted_intermediates, *tc.trusted_certs]
-    with mkdocs_gen_files.open(f"testcases/{namespace}/assets/{slug}/bundle.pem", "w") as f:
-        print("\n".join(bundle), file=f)
-
-    return f"[PEM bundle]({BASE_URL}/testcases/{namespace}/assets/{slug}/bundle.pem)"
-
-
 def _result_emoji(expected: ExpectedResult, actual: ActualResult):
     match expected.value, actual.value:
         case ("SUCCESS", "SUCCESS") | ("FAILURE", "FAILURE"):
@@ -129,11 +113,11 @@ def _render_harness_results(
     return markdown_table(data).set_params(quote=False, row_sep="markdown").get_markdown()
 
 
-limbo = Limbo.model_validate_json(LIMBO_JSON.read_text())
+limbo = Limbo.model_validate_json(LIMBO_JSON.read_bytes())
 
 if RESULTS.is_dir():
     harness_results = [
-        LimboResult.model_validate_json(f.read_text()) for f in RESULTS.glob("*.json")
+        LimboResult.model_validate_json(f.read_bytes()) for f in RESULTS.glob("*.json")
     ]
 else:
     harness_results = []
@@ -171,11 +155,11 @@ for namespace, tc_results in namespaces.items():
                     importance=r.tc.importance.value,
                     description=_linkify(r.tc.description.strip()),
                     conflicts=_render_conflicts(r.tc),
-                    pems=_tc_pem_bundle(r.tc),
                     harness_results=_render_harness_results(r.results, r.tc.expected_result),
                 ),
                 file=f,
             )
+
 
 for harness_result in harness_results:
     with mkdocs_gen_files.open(f"anomalous-results/{harness_result.harness}.md", "w") as f:
@@ -237,6 +221,7 @@ for harness_result in harness_results:
                 file=f,
             )
             print("\n\n", file=f)
+
 
 # Create an unofficial JSON API for the latest results.
 with mkdocs_gen_files.open("_api/all-results.json", "w") as f:
