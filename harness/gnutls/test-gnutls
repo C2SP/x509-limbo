@@ -14,6 +14,7 @@ from typing import ContextManager, NoReturn
 
 from limbo.models import (
     ActualResult,
+    Feature,
     Limbo,
     LimboResult,
     PeerKind,
@@ -76,6 +77,9 @@ def skip(testcase: Testcase, context: str) -> TestcaseResult:
 def evaluate_testcase(certtool: str, testcase: Testcase) -> TestcaseResult:
     if testcase.validation_kind != ValidationKind.SERVER:
         return skip(testcase, "non-SERVER testcases not yet supported")
+        
+    if Feature.has_crl in testcase.features:
+        return skip(testcase, "CRLs not supported yet")
 
     if testcase.signature_algorithms:
         return skip(testcase, "custom signature algorithms not supported")
