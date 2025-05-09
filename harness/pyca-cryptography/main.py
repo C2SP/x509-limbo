@@ -131,7 +131,9 @@ def evaluate_testcase(testcase: Testcase) -> TestcaseResult:
 
     try:
         verifier.verify(peer_certificate, untrusted_intermediates)
-        return TestcaseResult(id=testcase.id, actual_result=ActualResult.SUCCESS, context="chain built successfully")
+        return TestcaseResult(
+            id=testcase.id, actual_result=ActualResult.SUCCESS, context="chain built successfully"
+        )
     except VerificationError as e:
         return TestcaseResult(id=testcase.id, actual_result=ActualResult.FAILURE, context=str(e))
 

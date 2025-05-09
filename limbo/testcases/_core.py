@@ -384,6 +384,7 @@ class Builder:
         self._expected_peer_name: PeerName | None = PeerName(kind="DNS", value="example.com")
         self._expected_peer_names: list[PeerName] = []
         self._max_chain_depth: int | None = None
+        self._crls: list[str] = []
 
     def conflicts_with(self, *conflicting_ids: str) -> Self:
         self._conflicts_with = list(conflicting_ids)
@@ -456,6 +457,10 @@ class Builder:
         self._max_chain_depth = max_chain_depth
         return self
 
+    def crls(self, crls: list[str]) -> Self:
+        self._crls = crls
+        return self
+
     def build(self) -> Testcase:
         return Testcase(
             id=self._id,
@@ -476,6 +481,7 @@ class Builder:
             expected_peer_name=self._expected_peer_name,
             expected_peer_names=self._expected_peer_names,
             max_chain_depth=self._max_chain_depth,
+            crls=self._crls,
         )
 
 

@@ -14,7 +14,7 @@ from limbo.models import (
     ValidationKind,
 )
 
-LIMBO_UNSUPPORTED_FEATURES = set()
+LIMBO_UNSUPPORTED_FEATURES = {"has-crl"}
 
 LIMBO_SKIP_TESTCASES = set()
 
