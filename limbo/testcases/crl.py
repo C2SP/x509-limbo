@@ -41,13 +41,9 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
         ),
     )
 
-    # Create a leaf key
-    leaf_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
-
     # Create a leaf certificate
     leaf = builder.leaf_cert(
         parent=root,
-        key=leaf_key,
         subject=x509.Name(
             [
                 x509.NameAttribute(NameOID.COMMON_NAME, "revoked.example.com"),
