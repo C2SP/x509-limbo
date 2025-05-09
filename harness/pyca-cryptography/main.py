@@ -41,6 +41,8 @@ LIMBO_UNSUPPORTED_FEATURES = {
     Feature.rfc5280_incompatible_with_webpki,
     # We do not support policy constraints.
     Feature.has_policy_constraints,
+    # We do not support CRLs
+    Feature.has_crl,
 }
 
 LIMBO_SKIP_TESTCASES = {
