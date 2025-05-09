@@ -6,7 +6,7 @@ from textwrap import dedent
 from typing import Callable, Literal, Self
 
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPrivateKeyTypes
 
@@ -457,8 +457,8 @@ class Builder:
         self._max_chain_depth = max_chain_depth
         return self
 
-    def crls(self, crls: list[str]) -> Self:
-        self._crls = crls
+    def crls(self, *crls: x509.CertificateRevocationList) -> Self:
+        self._crls = [c.public_bytes(serialization.Encoding.PEM).decode() for c in crls]
         return self
 
     def build(self) -> Testcase:

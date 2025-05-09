@@ -8,7 +8,6 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from .. import models
@@ -75,7 +74,6 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
 
     # Sign the CRL with the root key
     crl = crl_builder.sign(root_key, hashes.SHA256())
-    crl_pem = crl.public_bytes(Encoding.PEM).decode()
 
     builder.features([Feature.has_crl]).importance(
         Importance.HIGH
@@ -83,4 +81,4 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
         leaf
     ).key_usage([]).expected_peer_name(
         models.PeerName(kind=PeerKind.DNS, value="revoked.example.com")
-    ).expected_peer_names().extended_key_usage([]).signature_algorithms([]).crls([crl_pem]).fails()
+    ).expected_peer_names().extended_key_usage([]).signature_algorithms([]).crls(crl).fails()
