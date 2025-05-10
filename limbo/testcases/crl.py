@@ -36,6 +36,8 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
         ),
     )
 
+    serial_number = 1000
+
     # Create a leaf certificate
     leaf = builder.leaf_cert(
         parent=root,
@@ -46,7 +48,7 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
         ),
         eku=ext(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), critical=False),
         san=ext(x509.SubjectAlternativeName([x509.DNSName("revoked.example.com")]), critical=False),
-        serial=1000,  # Specific serial number for revocation
+        serial=serial_number,
     )
 
     # Issue a time in the past
@@ -62,7 +64,7 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
     # Add the revoked certificate with its serial number
     revoked_cert = (
         x509.RevokedCertificateBuilder()
-        .serial_number(1000)
+        .serial_number(serial_number)
         .revocation_date(revocation_date)
         .build()
     )
