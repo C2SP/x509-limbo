@@ -24,17 +24,7 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
     """
 
     # Create a root CA
-    root = builder.root_ca(
-        basic_constraints=ext(
-            x509.BasicConstraints(ca=True, path_length=0),
-            critical=True,
-        ),
-        subject=x509.Name(
-            [
-                x509.NameAttribute(NameOID.COMMON_NAME, "X.509 Limbo CRL Test CA"),
-            ]
-        ),
-    )
+    root = builder.root_ca()
 
     serial_number = 1000
 
