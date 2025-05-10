@@ -5,9 +5,7 @@ CRL (Certificate Revocation List) tests.
 from datetime import datetime, timedelta, timezone
 
 from cryptography import x509
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from .. import models
@@ -26,9 +24,7 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
     """
 
     # Create a root CA
-    root_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
     root = builder.root_ca(
-        key=root_key,
         basic_constraints=ext(
             x509.BasicConstraints(ca=True, path_length=0),
             critical=True,
@@ -73,7 +69,7 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
     crl_builder = crl_builder.add_revoked_certificate(revoked_cert)
 
     # Sign the CRL with the root key
-    crl = crl_builder.sign(root_key, hashes.SHA256())
+    crl = crl_builder.sign(root.key, hashes.SHA256())
 
     builder.features([Feature.has_crl]).importance(
         Importance.HIGH
