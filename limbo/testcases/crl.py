@@ -65,8 +65,6 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
 
     builder.features([Feature.has_crl]).importance(
         Importance.HIGH
-    ).server_validation().trusted_certs(root).untrusted_intermediates().peer_certificate(
-        leaf
-    ).key_usage([]).expected_peer_name(
+    ).server_validation().trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         models.PeerName(kind=PeerKind.DNS, value="revoked.example.com")
-    ).expected_peer_names().extended_key_usage([]).signature_algorithms([]).crls(crl).fails()
+    ).crls(crl).fails()
