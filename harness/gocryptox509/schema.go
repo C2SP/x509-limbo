@@ -41,6 +41,7 @@ type Feature string
 
 const FeatureDenialOfService Feature = "denial-of-service"
 const FeatureHasCertPolicies Feature = "has-cert-policies"
+const FeatureHasCrl Feature = "has-crl"
 const FeatureHasPolicyConstraints Feature = "has-policy-constraints"
 const FeatureMaxChainDepth Feature = "max-chain-depth"
 const FeatureNameConstraintDn Feature = "name-constraint-dn"
@@ -65,6 +66,7 @@ var enumValues_Feature = []interface{}{
 	"pedantic-rfc5280",
 	"rfc5280-incompatible-with-webpki",
 	"denial-of-service",
+	"has-crl",
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -390,6 +392,9 @@ type Testcase struct {
 	// A list of testcase IDs that this testcase is mutually incompatible with
 	ConflictsWith []string `json:"conflicts_with,omitempty" yaml:"conflicts_with,omitempty" mapstructure:"conflicts_with,omitempty"`
 
+	// A list of PEM-encoded Certificate Revocation Lists (CRLs)
+	Crls []string `json:"crls,omitempty" yaml:"crls,omitempty" mapstructure:"crls,omitempty"`
+
 	// A short, Markdown-formatted description
 	Description string `json:"description" yaml:"description" mapstructure:"description"`
 
@@ -493,6 +498,9 @@ func (j *Testcase) UnmarshalJSON(b []byte) error {
 	}
 	if v, ok := raw["conflicts_with"]; !ok || v == nil {
 		plain.ConflictsWith = []string{}
+	}
+	if v, ok := raw["crls"]; !ok || v == nil {
+		plain.Crls = []string{}
 	}
 	if v, ok := raw["features"]; !ok || v == nil {
 		plain.Features = []Feature{}
