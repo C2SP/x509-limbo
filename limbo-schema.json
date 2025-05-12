@@ -23,7 +23,8 @@
         "max-chain-depth",
         "pedantic-rfc5280",
         "rfc5280-incompatible-with-webpki",
-        "denial-of-service"
+        "denial-of-service",
+        "has-crl"
       ],
       "title": "Feature",
       "type": "string"
@@ -312,6 +313,15 @@
           "default": null,
           "description": "The maximum chain-building depth",
           "title": "Max Chain Depth"
+        },
+        "crls": {
+          "default": [],
+          "description": "A list of PEM-encoded Certificate Revocation Lists (CRLs)",
+          "items": {
+            "type": "string"
+          },
+          "title": "CRLs",
+          "type": "array"
         }
       },
       "required": [

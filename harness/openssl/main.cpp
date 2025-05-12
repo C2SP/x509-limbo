@@ -2,12 +2,14 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/opensslv.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
+#include <openssl/x509.h>
 #include "date.hpp"
 #include "json.hpp"
 
@@ -32,6 +34,7 @@ using X509_ptr = std::unique_ptr<X509, decltype(&X509_free)>;
 using STACK_OF_X509_ptr = std::unique_ptr<STACK_OF(X509), decltype(&SK_X509_free)>;
 using X509_STORE_ptr = std::unique_ptr<X509_STORE, decltype(&X509_STORE_free)>;
 using X509_STORE_CTX_ptr = std::unique_ptr<X509_STORE_CTX, decltype(&X509_STORE_CTX_free)>;
+using X509_CRL_ptr = std::unique_ptr<X509_CRL, decltype(&X509_CRL_free)>;
 
 [[noreturn]] void barf(const std::string &msg)
 {
@@ -59,6 +62,19 @@ X509_ptr pem_to_x509(const std::string &pem)
   }
 
   return X509_ptr(cert, X509_free);
+}
+
+X509_CRL_ptr pem_to_crl(const std::string &pem)
+{
+  X509_CRL *crl = nullptr;
+  BIO_ptr crl_bio(BIO_new_mem_buf(pem.data(), pem.length()), BIO_free);
+
+  if (!PEM_read_bio_X509_CRL(crl_bio.get(), &crl, 0, NULL))
+  {
+    barf("failed to parse CRL");
+  }
+
+  return X509_CRL_ptr(crl, X509_CRL_free);
 }
 
 STACK_OF_X509_ptr x509_stack(const json &certs)
@@ -136,6 +152,19 @@ json evaluate_testcase(const json &testcase)
     // TODO(ww): Ownership is murky here, but appears to work;
     // probably because X509_STORE_add_cert does its own up-ref.
     X509_STORE_add_cert(store.get(), cert_x509.get());
+  }
+
+  // Add CRLs to the store if present
+  if (testcase.contains("crls") && !testcase["crls"].array().empty())
+  {
+    for (auto &crl_pem : testcase["crls"])
+    {
+      auto crl = pem_to_crl(crl_pem.template get<std::string>());
+      X509_STORE_add_crl(store.get(), crl.get());
+    }
+
+    // Enable CRL checking
+    X509_STORE_set_flags(store.get(), X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
   }
 
   auto untrusted = x509_stack(testcase["untrusted_intermediates"]);

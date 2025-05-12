@@ -111,6 +111,9 @@ func evaluateTestcase(testcase Testcase) (actualResult, error) {
 		if feature == "max-chain-depth" {
 			return resultSkipped, fmt.Errorf("max chain depth not supported")
 		}
+		if feature == "has-crl" {
+			return resultSkipped, fmt.Errorf("CRLs not supported")
+		}
 	}
 
 	var ts time.Time
