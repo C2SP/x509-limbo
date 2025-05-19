@@ -41,6 +41,8 @@ LIMBO_UNSUPPORTED_FEATURES = {
     Feature.rfc5280_incompatible_with_webpki,
     # We do not support policy constraints.
     Feature.has_policy_constraints,
+    # We do not support CRLs
+    Feature.has_crl,
 }
 
 LIMBO_SKIP_TESTCASES = {
@@ -131,7 +133,9 @@ def evaluate_testcase(testcase: Testcase) -> TestcaseResult:
 
     try:
         verifier.verify(peer_certificate, untrusted_intermediates)
-        return TestcaseResult(id=testcase.id, actual_result=ActualResult.SUCCESS, context="chain built successfully")
+        return TestcaseResult(
+            id=testcase.id, actual_result=ActualResult.SUCCESS, context="chain built successfully"
+        )
     except VerificationError as e:
         return TestcaseResult(id=testcase.id, actual_result=ActualResult.FAILURE, context=str(e))
 

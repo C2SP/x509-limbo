@@ -215,6 +215,11 @@ class Feature(str, Enum):
     Tests that exercise DoS resiliency.
     """
 
+    has_crl = "has-crl"
+    """
+    Tests that use Certificate Revocation Lists (CRLs).
+    """
+
 
 class Importance(str, Enum):
     """
@@ -331,6 +336,10 @@ class Testcase(BaseModel):
     )
 
     max_chain_depth: int | None = Field(None, description="The maximum chain-building depth")
+
+    crls: list[StrictStr] = Field(
+        [], description="A list of PEM-encoded Certificate Revocation Lists (CRLs)", title="CRLs"
+    )
 
     @field_validator("validation_time")
     @classmethod
