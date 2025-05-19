@@ -42,7 +42,6 @@ theme:
         name: Switch to system preference
 
 plugins:
-  - search
   - gen-files:
       scripts:
         - site/render-testcases.py
