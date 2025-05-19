@@ -26,7 +26,22 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
     validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
 
     # Create a root CA
-    root = builder.root_ca()
+    root = builder.root_ca(
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+    )
 
     # Create a leaf certificate
     leaf = builder.leaf_cert(

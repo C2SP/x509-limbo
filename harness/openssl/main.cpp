@@ -155,7 +155,7 @@ json evaluate_testcase(const json &testcase)
   }
 
   // Add CRLs to the store if present
-  if (testcase.contains("crls") && !testcase["crls"].array().empty())
+  if (testcase.contains("crls") && !testcase["crls"].empty())
   {
     for (auto &crl_pem : testcase["crls"])
     {
