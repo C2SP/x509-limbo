@@ -43,6 +43,9 @@ class MalformedRSAPrivateKey(rsa.RSAPrivateKey):
     def private_numbers(self) -> rsa.RSAPrivateNumbers:
         raise NotImplementedError
 
+    def __copy__(self) -> MalformedRSAPrivateKey:
+        raise NotImplementedError
+
 
 class MalformedRSAPublicKey(rsa.RSAPublicKey):
     def public_bytes(
@@ -96,6 +99,9 @@ class MalformedRSAPublicKey(rsa.RSAPublicKey):
         padding: AsymmetricPadding,
         algorithm: asym_utils.Prehashed | hashes.HashAlgorithm,
     ) -> None:
+        raise NotImplementedError
+
+    def __copy__(self) -> MalformedRSAPublicKey:
         raise NotImplementedError
 
 
