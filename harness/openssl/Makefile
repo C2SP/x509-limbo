@@ -14,4 +14,4 @@ clean:
 	rm -f main
 
 openssl-%: openssl-%.dockerfile
-	docker build --platform linux/amd64 -f $< . -t x509-limbo-$@
+	docker build -f $< . -t x509-limbo-$@
