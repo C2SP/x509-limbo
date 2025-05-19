@@ -38,8 +38,9 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
                 crl_sign=True,
                 encipher_only=False,
                 decipher_only=False,
-        ),
-        critical=True)
+            ),
+            critical=True,
+        )
     )
 
     # Create a leaf certificate
