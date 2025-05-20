@@ -23,5 +23,6 @@
     "value": "s3.amazonaws.com"
   },
   "expected_peer_names": [],
-  "max_chain_depth": null
+  "max_chain_depth": null,
+  "crls": []
 }
