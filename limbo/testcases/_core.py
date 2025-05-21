@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import base64
 import logging
 from collections.abc import Callable
 from datetime import datetime
-from textwrap import dedent
+from textwrap import dedent, wrap
 from typing import Literal, Self
 
 from cryptography import x509
@@ -511,8 +512,19 @@ class Builder:
         self._max_chain_depth = max_chain_depth
         return self
 
-    def crls(self, *crls: x509.CertificateRevocationList) -> Self:
-        self._crls = [c.public_bytes(serialization.Encoding.PEM).decode() for c in crls]
+    def crls(self, *crls: x509.CertificateRevocationList | bytes) -> Self:
+        # Needed because we won't necessarily be able to round-trip invalid CRLs
+        # through cryptography.
+        def _der_to_pem(der: bytes, tag: str) -> str:
+            body = "\n".join(wrap(base64.b64encode(der).decode("utf-8"), width=64))
+            return f"-----BEGIN {tag}-----\n{body}-----END {tag}-----\n"
+
+        def _x_to_pem(x: x509.CertificateRevocationList | bytes) -> str:
+            if isinstance(x, x509.CertificateRevocationList):
+                return x.public_bytes(serialization.Encoding.PEM).decode()
+            return _der_to_pem(x, "X509 CRL")
+
+        self._crls = [_x_to_pem(c) for c in crls]
         return self
 
     def build(self) -> Testcase:

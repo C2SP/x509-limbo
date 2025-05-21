@@ -1,0 +1,71 @@
+SEQUENCE {
+  SEQUENCE {
+    INTEGER { {{ version }} }
+    SEQUENCE {
+      # ecdsa-with-SHA256
+      OBJECT_IDENTIFIER { 1.2.840.10045.4.3.2 }
+    }
+    SEQUENCE {
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "x509-limbo-root" }
+        }
+      }
+
+    }
+    {# lastUpdate = 2025-01-01 to nextUpdate = 2025-01-30 #}
+    {{ last_update.to_der_ascii() }}
+    {{ next_update.to_der_ascii() }}
+    SEQUENCE {
+      {% for cert in certs %}
+      SEQUENCE {
+        INTEGER { `{{ cert.serial_hex_bytes }}` }
+        UTCTime { "{{ cert.revoke_at.value() }}" }
+      }
+      {% endfor %}
+    }
+    [0] {
+      SEQUENCE {
+        {% if ski %}
+        SEQUENCE {
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }
+          OCTET_STRING {
+            SEQUENCE {
+              [0 PRIMITIVE] { `{{ ski.hex() }}` }
+            }
+          }
+        }
+        {% endif %}
+        SEQUENCE {
+          # cRLNumber
+          OBJECT_IDENTIFIER { 2.5.29.20 }
+          OCTET_STRING {
+            INTEGER { `00` }
+          }
+        }
+      }
+    }
+  }
+
+  {#
+  we append the signature's DER post hoc, but here is the expected structure:
+
+  {% if signature %}
+  SEQUENCE {
+    # ecdsa-with-SHA256
+    OBJECT_IDENTIFIER { 1.2.840.10045.4.3.2 }
+  }
+  BIT_STRING {
+    `00`
+    SEQUENCE {
+      INTEGER { `{{ signature.r }}` }
+      INTEGER { `{{ signature.s }}` }
+    }
+  }
+  {% endif %}
+
+  #}
+}
