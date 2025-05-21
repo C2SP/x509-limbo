@@ -3,8 +3,10 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <optional>
 
 #include <openssl/bio.h>
+#include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/opensslv.h>
 #include <openssl/x509_vfy.h>
@@ -42,6 +44,22 @@ using X509_CRL_ptr = std::unique_ptr<X509_CRL, decltype(&X509_CRL_free)>;
   std::exit(1);
 }
 
+void warn(const std::string &msg)
+{
+  std::cerr << "Warning: " << msg << std::endl;
+}
+
+std::string get_errors()
+{
+  BIO *mem = BIO_new(BIO_s_mem());
+  char *mem_ptr;
+
+  ERR_print_errors(mem);
+  BIO_get_mem_data(mem, &mem_ptr);
+
+  return std::string(mem_ptr);
+}
+
 std::map<std::string, int> create_eku_map()
 {
   std::map<std::string, int> m;
@@ -64,14 +82,15 @@ X509_ptr pem_to_x509(const std::string &pem)
   return X509_ptr(cert, X509_free);
 }
 
-X509_CRL_ptr pem_to_crl(const std::string &pem)
+std::optional<X509_CRL_ptr> pem_to_crl(const std::string &pem)
 {
   X509_CRL *crl = nullptr;
   BIO_ptr crl_bio(BIO_new_mem_buf(pem.data(), pem.length()), BIO_free);
 
   if (!PEM_read_bio_X509_CRL(crl_bio.get(), &crl, 0, NULL))
   {
-    barf("failed to parse CRL");
+    warn("failed to parse CRL");
+    return std::nullopt;
   }
 
   return X509_CRL_ptr(crl, X509_CRL_free);
@@ -114,6 +133,8 @@ json skip(const std::string &id, const std::string &reason)
 json evaluate_testcase(const json &testcase)
 {
   auto id = testcase["id"].template get<std::string>();
+  std::ostringstream errors;
+
   std::cerr << "Evaluating case: " << id << std::endl;
 
   if (testcase["validation_kind"] != "SERVER")
@@ -157,14 +178,27 @@ json evaluate_testcase(const json &testcase)
   // Add CRLs to the store if present
   if (testcase.contains("crls") && !testcase["crls"].empty())
   {
+    int total_crls = testcase["crls"].size();
+    int parsed_crls = 0;
     for (auto &crl_pem : testcase["crls"])
     {
       auto crl = pem_to_crl(crl_pem.template get<std::string>());
-      X509_STORE_add_crl(store.get(), crl.get());
+      if (crl) {
+	parsed_crls++;
+        X509_STORE_add_crl(store.get(), crl->get());
+      }
     }
 
-    // Enable CRL checking
-    X509_STORE_set_flags(store.get(), X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+    if (parsed_crls == total_crls)
+    {
+      // Enable CRL checking
+      X509_STORE_set_flags(store.get(), X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+    }
+    else
+    {
+      errors << total_crls - parsed_crls << " / " << total_crls << " CRLs failed to parse\n";
+      errors << get_errors() << "\n";
+    }
   }
 
   auto untrusted = x509_stack(testcase["untrusted_intermediates"]);
@@ -260,11 +294,14 @@ json evaluate_testcase(const json &testcase)
     std::cerr << "\tPASS" << std::endl;
   }
 
+  if (!does_pass) {
+    errors << X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx.get()));
+  };
+
   return {
       {"id", id},
       {"actual_result", does_pass ? "SUCCESS" : "FAILURE"},
-      // NOTE: default-constructed json{} is null.
-      {"context", does_pass ? json{} : X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx.get()))},
+      {"context", errors.str()},
   };
 }
 
