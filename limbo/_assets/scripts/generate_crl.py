@@ -180,14 +180,14 @@ def gen_crl_test(
     ecdsa_with_sha256 = bytes.fromhex("06 08 2A 86 48 CE 3D 04 03 02")
     signature_algorithm = tlv_encode(sequence, ecdsa_with_sha256)
     signature_bits = tlv_encode(bitstring, b"\x00" + sig)
-    signature = tlv_encode(sequence, signature_bits)
 
-    _, tbs_body = tlv_decode(tbs_crl.stdout)
+    tbs_tag, tbs_body = tlv_decode(tbs_crl.stdout)
+    assert tbs_tag == sequence
 
     (OUT_PATH / f"{name}.crl").write_bytes(
         tlv_encode(
             sequence,
-            tbs_body + signature_algorithm + signature,
+            tbs_body + signature_algorithm + signature_bits,
         )
     )
 
