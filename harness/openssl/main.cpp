@@ -51,11 +51,11 @@ void warn(const std::string &msg)
 
 std::string get_errors()
 {
-  BIO *mem = BIO_new(BIO_s_mem());
+  BIO_ptr mem(BIO_new(BIO_s_mem()), BIO_free);
   char *mem_ptr = nullptr;
 
-  ERR_print_errors(mem);
-  BIO_get_mem_data(mem, &mem_ptr);
+  ERR_print_errors(mem.get());
+  BIO_get_mem_data(mem.get(), &mem_ptr);
 
   if (mem_ptr == nullptr)
   {
