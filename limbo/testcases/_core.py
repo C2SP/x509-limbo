@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import logging
+import textwrap
 from datetime import datetime
 from textwrap import dedent
 from typing import Callable, Literal, Self
@@ -15,6 +17,7 @@ from limbo.assets import (
     ONE_THOUSAND_YEARS_OF_TORMENT,
     Certificate,
     CertificatePair,
+    PEMCertificate,
     _Extension,
     ext,
 )
@@ -406,16 +409,20 @@ class Builder:
         self._validation_kind = "SERVER"
         return self
 
-    def trusted_certs(self, *certs: Certificate) -> Self:
-        self._trusted_certs = [c.cert_pem for c in certs]
+    def trusted_certs(self, *certs: Certificate | PEMCertificate) -> Self:
+        self._trusted_certs = [c.cert_pem if isinstance(c, Certificate) else c for c in certs]
+
         return self
 
-    def untrusted_intermediates(self, *certs: Certificate) -> Self:
-        self._untrusted_intermediates = [c.cert_pem for c in certs]
+    def untrusted_intermediates(self, *certs: Certificate | PEMCertificate) -> Self:
+        self._untrusted_intermediates = [
+            c.cert_pem if isinstance(c, Certificate) else c for c in certs
+        ]
+
         return self
 
-    def peer_certificate(self, cert: Certificate | CertificatePair) -> Self:
-        self._peer_certificate = cert.cert_pem
+    def peer_certificate(self, cert: Certificate | CertificatePair | PEMCertificate) -> Self:
+        self._peer_certificate = cert.cert_pem if isinstance(cert, Certificate) else cert
 
         if isinstance(cert, CertificatePair):
             self._peer_certificate_key = cert.key_pem
@@ -457,8 +464,20 @@ class Builder:
         self._max_chain_depth = max_chain_depth
         return self
 
-    def crls(self, *crls: x509.CertificateRevocationList) -> Self:
-        self._crls = [c.public_bytes(serialization.Encoding.PEM).decode() for c in crls]
+    def crls(self, *crls: x509.CertificateRevocationList | bytes) -> Self:
+        def _der_to_pem(der: bytes, tag: str) -> str:
+            return (
+                f"-----BEGIN {tag}-----\n"
+                f"{'\n'.join(textwrap.wrap(base64.b64encode(der).decode('utf-8'), width=64))}\n"
+                f"-----END {tag}-----\n"
+            )
+
+        def _x_to_pem(x: x509.CertificateRevocationList | bytes) -> str:
+            if isinstance(x, x509.CertificateRevocationList):
+                return x.public_bytes(serialization.Encoding.PEM).decode()
+            return _der_to_pem(x, "X509 CRL")
+
+        self._crls = [_x_to_pem(c) for c in crls]
         return self
 
     def build(self) -> Testcase:
