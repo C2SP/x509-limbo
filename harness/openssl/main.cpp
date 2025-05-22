@@ -52,12 +52,19 @@ void warn(const std::string &msg)
 std::string get_errors()
 {
   BIO *mem = BIO_new(BIO_s_mem());
-  char *mem_ptr;
+  char *mem_ptr = nullptr;
 
   ERR_print_errors(mem);
   BIO_get_mem_data(mem, &mem_ptr);
 
-  return std::string(mem_ptr);
+  if (mem_ptr == nullptr)
+  {
+    return "<no errors from OpenSSL>";
+  }
+  else
+  {
+    return std::string(mem_ptr);
+  }
 }
 
 std::map<std::string, int> create_eku_map()
@@ -183,8 +190,9 @@ json evaluate_testcase(const json &testcase)
     for (auto &crl_pem : testcase["crls"])
     {
       auto crl = pem_to_crl(crl_pem.template get<std::string>());
-      if (crl) {
-	parsed_crls++;
+      if (crl)
+      {
+        parsed_crls++;
         X509_STORE_add_crl(store.get(), crl->get());
       }
     }
@@ -294,7 +302,8 @@ json evaluate_testcase(const json &testcase)
     std::cerr << "\tPASS" << std::endl;
   }
 
-  if (!does_pass) {
+  if (!does_pass)
+  {
     errors << X509_verify_cert_error_string(X509_STORE_CTX_get_error(ctx.get()));
   };
 
