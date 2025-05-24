@@ -36,10 +36,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
     }
 
     if tc.features.contains(&Feature::HasCrl) {
-        return TestcaseResult::skip(
-            tc,
-            "CRLs are not supported by this API",
-        );
+        return TestcaseResult::skip(tc, "CRLs are not supported by this API");
     }
 
     if !matches!(tc.validation_kind, ValidationKind::Server) {
