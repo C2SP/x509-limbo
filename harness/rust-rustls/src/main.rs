@@ -70,14 +70,14 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
 
     let Ok(trust_anchors) = trust_anchor_ders
         .iter()
-        .map(|ta| webpki::anchor_from_trusted_cert(ta.into()))
+        .map(|ta| webpki::anchor_from_trusted_cert(ta))
         .collect::<Result<Vec<_>, _>>()
     else {
         return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
     };
 
     let validation_time = rustls_pki_types::UnixTime::since_unix_epoch(
-        (tc.validation_time.unwrap_or(Utc::now().into()) - DateTime::UNIX_EPOCH)
+        (tc.validation_time.unwrap_or(Utc::now()) - DateTime::UNIX_EPOCH)
             .to_std()
             .expect("invalid validation time!"),
     );
