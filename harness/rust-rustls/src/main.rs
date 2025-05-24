@@ -120,7 +120,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         },
     };
 
-    if let Err(_) = leaf.verify_is_valid_for_subject_name(&subject_name) {
+    if leaf.verify_is_valid_for_subject_name(&subject_name).is_err() {
         TestcaseResult::fail(tc, "subject name validation failed")
     } else {
         TestcaseResult::success(tc)
