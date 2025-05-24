@@ -22,7 +22,7 @@ fn main() {
     serde_json::to_writer_pretty(std::io::stdout(), &result).unwrap();
 }
 
-fn der_from_pem<B: AsRef<[u8]>>(bytes: B) -> rustls_pki_types::CertificateDer<'static> {
+fn cert_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> rustls_pki_types::CertificateDer<'static> {
     let pem = pem::parse(bytes).expect("cert: PEM parse failed");
     rustls_pki_types::CertificateDer::from(pem.contents()).into_owned()
 }
@@ -51,7 +51,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::skip(tc, "key_usage not supported yet");
     }
 
-    let leaf_der = der_from_pem(&tc.peer_certificate);
+    let leaf_der = cert_der_from_pem(&tc.peer_certificate);
     let Ok(leaf) = webpki::EndEntityCert::try_from(&leaf_der) else {
         return TestcaseResult::fail(tc, "leaf cert: X.509 parse failed");
     };
@@ -59,13 +59,13 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
     let intermediates = tc
         .untrusted_intermediates
         .iter()
-        .map(|ic| der_from_pem(ic))
+        .map(|ic| cert_der_from_pem(ic))
         .collect::<Vec<_>>();
 
     let trust_anchor_ders = tc
         .trusted_certs
         .iter()
-        .map(|ta| der_from_pem(ta))
+        .map(|ta| cert_der_from_pem(ta))
         .collect::<Vec<_>>();
 
     let Ok(trust_anchors) = trust_anchor_ders
