@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use limbo_harness_support::{
     load_limbo,
-    models::{Feature, LimboResult, PeerKind, Testcase, TestcaseResult, ValidationKind},
+    models::{Feature, LimboResult, Testcase, TestcaseResult, ValidationKind},
 };
 use webpki::ring;
 
@@ -105,22 +105,17 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::fail(tc, &e.to_string());
     }
 
-    let subject_name = match &tc.expected_peer_name {
-        None => return TestcaseResult::skip(tc, "implementation requires peer names"),
-        Some(pn) => match pn.kind {
-            PeerKind::Dns => rustls_pki_types::ServerName::DnsName(
-                rustls_pki_types::DnsName::try_from(pn.value.as_str())
-                    .expect(&format!("invalid expected DNS name: {}", &pn.value)),
-            ),
-            PeerKind::Ip => {
-                let addr = pn.value.as_str().try_into().unwrap();
-                rustls_pki_types::ServerName::IpAddress(addr)
-            }
-            _ => return TestcaseResult::skip(tc, "implementation requires DNS or IP peer names"),
-        },
+    let Some(peer_name) = tc.expected_peer_name.as_ref() else {
+        return TestcaseResult::skip(tc, "implementation requires peer names");
     };
 
-    if leaf.verify_is_valid_for_subject_name(&subject_name).is_err() {
+    let subject_name = rustls_pki_types::ServerName::try_from(peer_name.value.as_str())
+        .unwrap_or_else(|_| panic!("invalid expected peer name: {peer_name:?}"));
+
+    if leaf
+        .verify_is_valid_for_subject_name(&subject_name)
+        .is_err()
+    {
         TestcaseResult::fail(tc, "subject name validation failed")
     } else {
         TestcaseResult::success(tc)
