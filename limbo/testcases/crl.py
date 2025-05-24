@@ -3,9 +3,11 @@ CRL (Certificate Revocation List) tests.
 """
 
 from datetime import datetime, timedelta
+from typing import cast
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPublicKeyTypes
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from .. import models
@@ -69,6 +71,12 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
         .build()
     )
     crl_builder = crl_builder.add_revoked_certificate(revoked_cert)
+    # Add a CRL number
+    crl_builder = crl_builder.add_extension(x509.CRLNumber(1337), critical=False)
+    # Add the Authority Key Identifier
+    issuer_pubkey = cast(CertificateIssuerPublicKeyTypes, root.cert.public_key())
+    aki = x509.AuthorityKeyIdentifier.from_issuer_public_key(issuer_pubkey)
+    crl_builder = crl_builder.add_extension(aki, critical=False)
 
     # Sign the CRL with the root key
     crl = crl_builder.sign(root.key, hashes.SHA256())
