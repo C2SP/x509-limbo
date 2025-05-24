@@ -70,7 +70,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
 
     let Ok(trust_anchors) = trust_anchor_ders
         .iter()
-        .map(|ta| webpki::anchor_from_trusted_cert(ta))
+        .map(webpki::anchor_from_trusted_cert)
         .collect::<Result<Vec<_>, _>>()
     else {
         return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
