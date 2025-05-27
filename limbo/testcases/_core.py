@@ -364,6 +364,54 @@ class Builder:
 
         return CertificatePair(certificate, key)
 
+    def crl(
+        self,
+        signer: CertificatePair | None,
+        *,
+        issuer: x509.Name | None = None,
+        last_update: datetime = EPOCH,
+        next_update: datetime = ONE_THOUSAND_YEARS_OF_TORMENT,
+        revoked: list[x509.RevokedCertificate] = [],
+        aki: _Extension[x509.AuthorityKeyIdentifier] | Literal[True] | None = True,
+        crl_number: _Extension[x509.CRLNumber] | Literal[True] | None = True,
+    ) -> x509.CertificateRevocationList:
+        if issuer is None:
+            if signer:
+                issuer = signer.cert.subject
+            else:
+                issuer = x509.Name.from_rfc4514_string("CN=x509-limbo-crl")
+
+        key = signer.key if signer else ec.generate_private_key(ec.SECP256R1())
+
+        builder = x509.CertificateRevocationListBuilder()
+        builder = builder.issuer_name(issuer)
+        builder = builder.last_update(last_update)
+        builder = builder.next_update(next_update)
+
+        for cert in revoked:
+            builder = builder.add_revoked_certificate(cert)
+
+        if isinstance(aki, _Extension):
+            builder = builder.add_extension(aki.ext, critical=aki.critical)
+        elif aki:
+            pubkey = signer.cert.public_key() if signer else key.public_key()
+            builder = builder.add_extension(
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(pubkey),  # type: ignore[arg-type]
+                critical=False,
+            )
+
+        if isinstance(crl_number, _Extension):
+            builder = builder.add_extension(crl_number.ext, critical=crl_number.critical)
+        elif crl_number:
+            builder = builder.add_extension(x509.CRLNumber(1337), critical=False)
+
+        crl = builder.sign(
+            private_key=key,
+            algorithm=hashes.SHA256(),
+        )
+
+        return crl
+
     def __init__(self, id: str, description: str):
         self._id = id
         self._conflicts_with: list[str] = []
