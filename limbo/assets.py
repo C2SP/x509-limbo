@@ -9,7 +9,7 @@ import logging
 from dataclasses import dataclass
 from functools import cached_property
 from importlib import resources
-from typing import Generic, TypeVar
+from typing import Generic, NewType, TypeVar
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -22,6 +22,7 @@ from cryptography.x509 import ExtensionType
 EPOCH = datetime.datetime.utcfromtimestamp(1)
 ONE_THOUSAND_YEARS_OF_TORMENT = EPOCH + datetime.timedelta(days=365 * 1000)
 ASSETS_PATH = resources.files("limbo._assets")
+PEMCertificate = NewType("PEMCertificate", str)
 _ExtensionType = TypeVar("_ExtensionType", bound=ExtensionType)
 
 
