@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use limbo_harness_support::{
     load_limbo,
-    models::{Feature, LimboResult, PeerKind, Testcase, TestcaseResult, ValidationKind},
+    models::{Feature, LimboResult, Testcase, TestcaseResult, ValidationKind},
 };
 use webpki::ring;
 
@@ -22,9 +22,16 @@ fn main() {
     serde_json::to_writer_pretty(std::io::stdout(), &result).unwrap();
 }
 
-fn der_from_pem<B: AsRef<[u8]>>(bytes: B) -> rustls_pki_types::CertificateDer<'static> {
+fn cert_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> rustls_pki_types::CertificateDer<'static> {
     let pem = pem::parse(bytes).expect("cert: PEM parse failed");
     rustls_pki_types::CertificateDer::from(pem.contents()).into_owned()
+}
+
+fn crl_der_from_pem<B: AsRef<[u8]>>(
+    bytes: B,
+) -> rustls_pki_types::CertificateRevocationListDer<'static> {
+    let pem = pem::parse(bytes).expect("crl: PEM parse failed");
+    rustls_pki_types::CertificateRevocationListDer::from(pem.into_contents())
 }
 
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
@@ -32,13 +39,6 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::skip(
             tc,
             "max-chain-depth testcases are not supported by this API",
-        );
-    }
-
-    if tc.features.contains(&Feature::HasCrl) {
-        return TestcaseResult::skip(
-            tc,
-            "CRLs are not supported by this API",
         );
     }
 
@@ -54,7 +54,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::skip(tc, "key_usage not supported yet");
     }
 
-    let leaf_der = der_from_pem(&tc.peer_certificate);
+    let leaf_der = cert_der_from_pem(&tc.peer_certificate);
     let Ok(leaf) = webpki::EndEntityCert::try_from(&leaf_der) else {
         return TestcaseResult::fail(tc, "leaf cert: X.509 parse failed");
     };
@@ -62,25 +62,25 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
     let intermediates = tc
         .untrusted_intermediates
         .iter()
-        .map(|ic| der_from_pem(ic))
+        .map(|ic| cert_der_from_pem(ic))
         .collect::<Vec<_>>();
 
     let trust_anchor_ders = tc
         .trusted_certs
         .iter()
-        .map(|ta| der_from_pem(ta))
+        .map(|ta| cert_der_from_pem(ta))
         .collect::<Vec<_>>();
 
     let Ok(trust_anchors) = trust_anchor_ders
         .iter()
-        .map(|ta| webpki::anchor_from_trusted_cert(ta.into()))
+        .map(webpki::anchor_from_trusted_cert)
         .collect::<Result<Vec<_>, _>>()
     else {
         return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
     };
 
     let validation_time = rustls_pki_types::UnixTime::since_unix_epoch(
-        (tc.validation_time.unwrap_or(Utc::now().into()) - DateTime::UNIX_EPOCH)
+        (tc.validation_time.unwrap_or(Utc::now()) - DateTime::UNIX_EPOCH)
             .to_std()
             .expect("invalid validation time!"),
     );
@@ -96,34 +96,50 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         ring::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
     ];
 
+    let crls = tc
+        .crls
+        .iter()
+        .map(|pem| {
+            webpki::OwnedCertRevocationList::from_der(crl_der_from_pem(pem).as_ref())
+                .unwrap_or_else(|e| panic!("crl: tc {} DER parse failed: {e}", tc.id.to_string()))
+                .into()
+        })
+        .collect::<Vec<_>>();
+    let crls = crls.iter().collect::<Vec<_>>();
+
+    let revocation_options = if !crls.is_empty() {
+        let opts = webpki::RevocationOptionsBuilder::new(crls.as_slice()).unwrap();
+        opts.with_depth(webpki::RevocationCheckDepth::Chain);
+        opts.with_status_policy(webpki::UnknownStatusPolicy::Deny);
+        opts.with_expiration_policy(webpki::ExpirationPolicy::Enforce);
+        Some(opts.build())
+    } else {
+        None
+    };
+
     if let Err(e) = leaf.verify_for_usage(
         sig_algs,
         &trust_anchors,
         &intermediates[..],
         validation_time,
         webpki::KeyUsage::server_auth(),
-        None,
+        revocation_options,
         None,
     ) {
         return TestcaseResult::fail(tc, &e.to_string());
     }
 
-    let subject_name = match &tc.expected_peer_name {
-        None => return TestcaseResult::skip(tc, "implementation requires peer names"),
-        Some(pn) => match pn.kind {
-            PeerKind::Dns => rustls_pki_types::ServerName::DnsName(
-                rustls_pki_types::DnsName::try_from(pn.value.as_str())
-                    .expect(&format!("invalid expected DNS name: {}", &pn.value)),
-            ),
-            PeerKind::Ip => {
-                let addr = pn.value.as_str().try_into().unwrap();
-                rustls_pki_types::ServerName::IpAddress(addr)
-            }
-            _ => return TestcaseResult::skip(tc, "implementation requires DNS or IP peer names"),
-        },
+    let Some(peer_name) = tc.expected_peer_name.as_ref() else {
+        return TestcaseResult::skip(tc, "implementation requires peer names");
     };
 
-    if let Err(_) = leaf.verify_is_valid_for_subject_name(&subject_name) {
+    let subject_name = rustls_pki_types::ServerName::try_from(peer_name.value.as_str())
+        .unwrap_or_else(|_| panic!("invalid expected peer name: {peer_name:?}"));
+
+    if leaf
+        .verify_is_valid_for_subject_name(&subject_name)
+        .is_err()
+    {
         TestcaseResult::fail(tc, "subject name validation failed")
     } else {
         TestcaseResult::success(tc)
