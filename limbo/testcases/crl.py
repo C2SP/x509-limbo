@@ -69,3 +69,71 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
     ).server_validation().trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         models.PeerName(kind=PeerKind.DNS, value="revoked.example.com")
     ).crls(crl).validation_time(validation_time).fails()
+
+
+@testcase
+def missing_crlnumber(builder: Builder) -> None:
+    """
+    Tests handling of a CRL that's missing the `CRLNumber` extension.
+
+    Per RFC 5280 5.2.3 this extension MUST be included in a CRL. Therefore,
+    a CRL that does not include this extension is considered invalid,
+    and therefore certificate validation should pass, even if the CRL
+    revokes the leaf being verified.
+    """
+
+    root = builder.root_ca(
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+    )
+
+    leaf = builder.leaf_cert(
+        parent=root,
+        subject=x509.Name(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "missing-crlnumber.example.com"),
+            ]
+        ),
+        eku=ext(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), critical=False),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("missing-crlnumber.example.com")]),
+            critical=False,
+        ),
+    )
+
+    crl = builder.crl(
+        signer=root,
+        revoked=[
+            x509.RevokedCertificateBuilder()
+            .serial_number(leaf.cert.serial_number)
+            .revocation_date(leaf.cert.not_valid_before_utc + timedelta(seconds=1))
+            .build()
+        ],
+        crl_number=None,
+    )
+
+    builder = (
+        builder.features([Feature.has_crl])
+        .importance(Importance.HIGH)
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(
+            models.PeerName(kind=PeerKind.DNS, value="missing-crlnumber.example.com")
+        )
+        .crls(crl)
+        .validation_time(leaf.cert.not_valid_before_utc + timedelta(seconds=2))
+        .succeeds()
+    )
