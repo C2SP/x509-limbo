@@ -76,10 +76,7 @@ def missing_crlnumber(builder: Builder) -> None:
     """
     Tests handling of a CRL that's missing the `CRLNumber` extension.
 
-    Per RFC 5280 5.2.3 this extension MUST be included in a CRL. Therefore,
-    a CRL that does not include this extension is considered invalid,
-    and therefore certificate validation should pass, even if the CRL
-    revokes the leaf being verified.
+    Per RFC 5280 5.2.3 this extension MUST be included in a CRL.
     """
 
     root = builder.root_ca(
@@ -116,8 +113,11 @@ def missing_crlnumber(builder: Builder) -> None:
     crl = builder.crl(
         signer=root,
         revoked=[
+            # Revoke a random certificate here, not the leaf,
+            # to ensure that we fail because the CRL is invalid,
+            # not because the leaf is revoked.
             x509.RevokedCertificateBuilder()
-            .serial_number(leaf.cert.serial_number)
+            .serial_number(x509.random_serial_number())
             .revocation_date(leaf.cert.not_valid_before_utc + timedelta(seconds=1))
             .build()
         ],
@@ -135,7 +135,7 @@ def missing_crlnumber(builder: Builder) -> None:
         )
         .crls(crl)
         .validation_time(leaf.cert.not_valid_before_utc + timedelta(seconds=2))
-        .succeeds()
+        .fails()
     )
 
 
@@ -145,9 +145,7 @@ def crlnumber_critical(builder: Builder) -> None:
     Tests handling of a CRL that has a critical `CRLNumber` extension.
 
     Per RFC 5280 5.2.3, the `CRLNumber` extension is mandatory but MUST
-    be marked as non-critical. Therefore, a CRL that has a critical `CRLNumber`
-    extension is considered invalid, and therefore certificate validation
-    should pass, even if the CRL revokes the leaf being verified.
+    be marked as non-critical.
     """
 
     root = builder.root_ca(
@@ -184,8 +182,11 @@ def crlnumber_critical(builder: Builder) -> None:
     crl = builder.crl(
         signer=root,
         revoked=[
+            # Revoke a random certificate here, not the leaf,
+            # to ensure that we fail because the CRL is invalid,
+            # not because the leaf is revoked.
             x509.RevokedCertificateBuilder()
-            .serial_number(leaf.cert.serial_number)
+            .serial_number(x509.random_serial_number())
             .revocation_date(leaf.cert.not_valid_before_utc + timedelta(seconds=1))
             .build()
         ],
@@ -203,5 +204,5 @@ def crlnumber_critical(builder: Builder) -> None:
         )
         .crls(crl)
         .validation_time(leaf.cert.not_valid_before_utc + timedelta(seconds=2))
-        .succeeds()
+        .fails()
     )
