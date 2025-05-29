@@ -394,9 +394,8 @@ class Builder:
         if isinstance(aki, _Extension):
             builder = builder.add_extension(aki.ext, critical=aki.critical)
         elif aki:
-            pubkey = signer.cert.public_key() if signer else key.public_key()
             builder = builder.add_extension(
-                x509.AuthorityKeyIdentifier.from_issuer_public_key(pubkey),  # type: ignore[arg-type]
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()),
                 critical=False,
             )
 
