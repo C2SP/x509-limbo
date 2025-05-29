@@ -72,7 +72,7 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
 
 
 @testcase
-def missing_crlnumber(builder: Builder) -> None:
+def crlnumber_missing(builder: Builder) -> None:
     """
     Tests handling of a CRL that's missing the `CRLNumber` extension.
 
