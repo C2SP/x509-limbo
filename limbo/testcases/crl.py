@@ -3,11 +3,8 @@ CRL (Certificate Revocation List) tests.
 """
 
 from datetime import datetime, timedelta
-from typing import cast
 
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPublicKeyTypes
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from .. import models
@@ -57,32 +54,155 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
         san=ext(x509.SubjectAlternativeName([x509.DNSName("revoked.example.com")]), critical=False),
     )
 
-    # Create a CRL revoking the leaf certificate
-    crl_builder = x509.CertificateRevocationListBuilder()
-    crl_builder = crl_builder.issuer_name(root.cert.subject)
-    crl_builder = crl_builder.last_update(validation_time - timedelta(days=30))
-    crl_builder = crl_builder.next_update(validation_time + timedelta(days=30))
-
-    # Add the revoked certificate with its serial number
-    revoked_cert = (
-        x509.RevokedCertificateBuilder()
-        .serial_number(leaf.cert.serial_number)
-        .revocation_date(validation_time - timedelta(days=1))
-        .build()
+    crl = builder.crl(
+        signer=root,
+        revoked=[
+            x509.RevokedCertificateBuilder()
+            .serial_number(leaf.cert.serial_number)
+            .revocation_date(validation_time - timedelta(days=1))
+            .build()
+        ],
     )
-    crl_builder = crl_builder.add_revoked_certificate(revoked_cert)
-    # Add a CRL number
-    crl_builder = crl_builder.add_extension(x509.CRLNumber(1337), critical=False)
-    # Add the Authority Key Identifier
-    issuer_pubkey = cast(CertificateIssuerPublicKeyTypes, root.cert.public_key())
-    aki = x509.AuthorityKeyIdentifier.from_issuer_public_key(issuer_pubkey)
-    crl_builder = crl_builder.add_extension(aki, critical=False)
-
-    # Sign the CRL with the root key
-    crl = crl_builder.sign(root.key, hashes.SHA256())
 
     builder.features([Feature.has_crl]).importance(
         Importance.HIGH
     ).server_validation().trusted_certs(root).peer_certificate(leaf).expected_peer_name(
         models.PeerName(kind=PeerKind.DNS, value="revoked.example.com")
     ).crls(crl).validation_time(validation_time).fails()
+
+
+@testcase
+def crlnumber_missing(builder: Builder) -> None:
+    """
+    Tests handling of a CRL that's missing the `CRLNumber` extension.
+
+    Per RFC 5280 5.2.3 this extension MUST be included in a CRL.
+    """
+
+    root = builder.root_ca(
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+    )
+
+    leaf = builder.leaf_cert(
+        parent=root,
+        subject=x509.Name(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "missing-crlnumber.example.com"),
+            ]
+        ),
+        eku=ext(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), critical=False),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("missing-crlnumber.example.com")]),
+            critical=False,
+        ),
+    )
+
+    crl = builder.crl(
+        signer=root,
+        revoked=[
+            # Revoke a random certificate here, not the leaf,
+            # to ensure that we fail because the CRL is invalid,
+            # not because the leaf is revoked.
+            x509.RevokedCertificateBuilder()
+            .serial_number(x509.random_serial_number())
+            .revocation_date(leaf.cert.not_valid_before_utc + timedelta(seconds=1))
+            .build()
+        ],
+        crl_number=None,
+    )
+
+    builder = (
+        builder.features([Feature.has_crl])
+        .importance(Importance.HIGH)
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(
+            models.PeerName(kind=PeerKind.DNS, value="missing-crlnumber.example.com")
+        )
+        .crls(crl)
+        .validation_time(leaf.cert.not_valid_before_utc + timedelta(seconds=2))
+        .fails()
+    )
+
+
+@testcase
+def crlnumber_critical(builder: Builder) -> None:
+    """
+    Tests handling of a CRL that has a critical `CRLNumber` extension.
+
+    Per RFC 5280 5.2.3, the `CRLNumber` extension is mandatory but MUST
+    be marked as non-critical.
+    """
+
+    root = builder.root_ca(
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+    )
+
+    leaf = builder.leaf_cert(
+        parent=root,
+        subject=x509.Name(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, "crlnumber-critical.example.com"),
+            ]
+        ),
+        eku=ext(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), critical=False),
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("crlnumber-critical.example.com")]),
+            critical=False,
+        ),
+    )
+
+    crl = builder.crl(
+        signer=root,
+        revoked=[
+            # Revoke a random certificate here, not the leaf,
+            # to ensure that we fail because the CRL is invalid,
+            # not because the leaf is revoked.
+            x509.RevokedCertificateBuilder()
+            .serial_number(x509.random_serial_number())
+            .revocation_date(leaf.cert.not_valid_before_utc + timedelta(seconds=1))
+            .build()
+        ],
+        crl_number=ext(x509.CRLNumber(12345), critical=True),
+    )
+
+    builder = (
+        builder.features([Feature.has_crl])
+        .importance(Importance.HIGH)
+        .server_validation()
+        .trusted_certs(root)
+        .peer_certificate(leaf)
+        .expected_peer_name(
+            models.PeerName(kind=PeerKind.DNS, value="crlnumber-critical.example.com")
+        )
+        .crls(crl)
+        .validation_time(leaf.cert.not_valid_before_utc + timedelta(seconds=2))
+        .fails()
+    )
