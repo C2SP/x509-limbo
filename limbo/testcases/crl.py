@@ -140,6 +140,134 @@ def crlnumber_missing(builder: Builder) -> None:
 
 
 @testcase
+def certificate_not_on_crl(builder: Builder) -> None:
+    """
+    Tests a certificate that is not present on any of the CRLs (expected pass).
+    """
+
+    validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
+
+    root = builder.root_ca(
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+    )
+
+    leaf = builder.leaf_cert(
+        parent=root,
+    )
+
+    crl = builder.crl(
+        signer=root,
+        revoked=[
+            x509.RevokedCertificateBuilder()
+            .serial_number(x509.random_serial_number())
+            .revocation_date(validation_time - timedelta(days=1))
+            .build(),
+            x509.RevokedCertificateBuilder()
+            .serial_number(x509.random_serial_number())
+            .revocation_date(validation_time - timedelta(days=2))
+            .build(),
+        ],
+    )
+
+    builder.features([Feature.has_crl]).importance(
+        Importance.HIGH
+    ).server_validation().trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        models.PeerName(kind=PeerKind.DNS, value="example.com")
+    ).crls(crl).validation_time(validation_time).succeeds()
+
+
+@testcase
+def certificate_serial_on_crl_different_issuer(builder: Builder) -> None:
+    """
+    Tests a certificate whose serial number is found on a CRL, but that CRL
+    has a different issuer than the certificate (expected pass).
+
+    Produces a test case where a certificate's serial number appears on a CRL,
+    but the CRL is issued by a different CA than the one that issued the
+    certificate. The certificate should be accepted since the CRL from a
+    different issuer should not affect this certificate's validity.
+    """
+
+    validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
+
+    root_ca_1 = builder.root_ca(
+        issuer=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Root CA 1")]),
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        ),
+    )
+
+    root_ca_2 = builder.root_ca(
+        issuer=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Root CA 2")]),
+        key_usage=ext(
+            x509.KeyUsage(
+                digital_signature=False,
+                key_cert_sign=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        ),
+    )
+
+    leaf = builder.leaf_cert(
+        parent=root_ca_1,
+    )
+
+    crl1 = builder.crl(
+        signer=root_ca_1,
+        revoked=[],
+    )
+
+    crl2 = builder.crl(
+        signer=root_ca_2,
+        revoked=[
+            x509.RevokedCertificateBuilder()
+            .serial_number(leaf.cert.serial_number)  # Same serial as our leaf
+            .revocation_date(validation_time - timedelta(days=1))
+            .build()
+        ],
+    )
+
+    builder.features([Feature.has_crl]).importance(
+        Importance.HIGH
+    ).server_validation().trusted_certs(root_ca_1, root_ca_2).peer_certificate(
+        leaf
+    ).expected_peer_name(models.PeerName(kind=PeerKind.DNS, value="example.com")).crls(
+        crl1, crl2
+    ).validation_time(validation_time).succeeds()
+
+
+@testcase
 def crlnumber_critical(builder: Builder) -> None:
     """
     Tests handling of a CRL that has a critical `CRLNumber` extension.
