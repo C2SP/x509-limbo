@@ -25,22 +25,7 @@ def revoked_certificate_with_crl(builder: Builder) -> None:
     validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
 
     # Create a root CA
-    root = builder.root_ca(
-        key_usage=ext(
-            x509.KeyUsage(
-                digital_signature=False,
-                key_cert_sign=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=True,
-                encipher_only=False,
-                decipher_only=False,
-            ),
-            critical=True,
-        )
-    )
+    root = builder.root_ca()
 
     # Create a leaf certificate
     leaf = builder.leaf_cert(
@@ -79,22 +64,7 @@ def crlnumber_missing(builder: Builder) -> None:
     Per RFC 5280 5.2.3 this extension MUST be included in a CRL.
     """
 
-    root = builder.root_ca(
-        key_usage=ext(
-            x509.KeyUsage(
-                digital_signature=False,
-                key_cert_sign=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=True,
-                encipher_only=False,
-                decipher_only=False,
-            ),
-            critical=True,
-        )
-    )
+    root = builder.root_ca()
 
     leaf = builder.leaf_cert(
         parent=root,
@@ -147,22 +117,7 @@ def certificate_not_on_crl(builder: Builder) -> None:
 
     validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
 
-    root = builder.root_ca(
-        key_usage=ext(
-            x509.KeyUsage(
-                digital_signature=False,
-                key_cert_sign=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=True,
-                encipher_only=False,
-                decipher_only=False,
-            ),
-            critical=True,
-        )
-    )
+    root = builder.root_ca()
 
     leaf = builder.leaf_cert(
         parent=root,
@@ -205,38 +160,10 @@ def certificate_serial_on_crl_different_issuer(builder: Builder) -> None:
 
     root_ca_1 = builder.root_ca(
         issuer=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Root CA 1")]),
-        key_usage=ext(
-            x509.KeyUsage(
-                digital_signature=False,
-                key_cert_sign=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=True,
-                encipher_only=False,
-                decipher_only=False,
-            ),
-            critical=True,
-        ),
     )
 
     root_ca_2 = builder.root_ca(
         issuer=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Root CA 2")]),
-        key_usage=ext(
-            x509.KeyUsage(
-                digital_signature=False,
-                key_cert_sign=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=True,
-                encipher_only=False,
-                decipher_only=False,
-            ),
-            critical=True,
-        ),
     )
 
     leaf = builder.leaf_cert(
@@ -276,22 +203,7 @@ def crlnumber_critical(builder: Builder) -> None:
     be marked as non-critical.
     """
 
-    root = builder.root_ca(
-        key_usage=ext(
-            x509.KeyUsage(
-                digital_signature=False,
-                key_cert_sign=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=True,
-                encipher_only=False,
-                decipher_only=False,
-            ),
-            critical=True,
-        )
-    )
+    root = builder.root_ca()
 
     leaf = builder.leaf_cert(
         parent=root,

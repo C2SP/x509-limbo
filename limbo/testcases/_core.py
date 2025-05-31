@@ -142,7 +142,7 @@ class Builder:
                 key_encipherment=False,
                 data_encipherment=False,
                 key_agreement=False,
-                crl_sign=False,
+                crl_sign=True,
                 encipher_only=False,
                 decipher_only=False,
             ),
