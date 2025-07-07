@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from textwrap import dedent
-from typing import Callable, Literal, Self
+from typing import Literal, Self
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
