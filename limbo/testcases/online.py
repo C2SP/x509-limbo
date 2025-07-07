@@ -1,6 +1,6 @@
 import logging
 import socket
-from datetime import timedelta, timezone
+from datetime import UTC, timedelta
 
 import certifi
 from OpenSSL import SSL
@@ -67,9 +67,9 @@ def compile() -> None:
         # but the point of these testcases is to exercise consistent verification of known-good
         # inputs. Using the peer's own states helps make our generation more reproducible here.
         peer_cert = peer_chain[0]
-        peer_cert_validation_time = peer_cert.cert.not_valid_before.replace(
-            tzinfo=timezone.utc
-        ) + timedelta(seconds=1)
+        peer_cert_validation_time = peer_cert.cert.not_valid_before.replace(tzinfo=UTC) + timedelta(
+            seconds=1
+        )
 
         builder = (
             Builder(id=f"online::{host}", description=f"A valid chain for `{host}`.")
