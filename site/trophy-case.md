@@ -29,3 +29,7 @@ Legend:
 * 🦺 [CL#562344](https://go.dev/cl/562344)
 * 🦺 [CL#562975](https://go.dev/cl/562975)
 * 🦺 [CL#585076](https://go.dev/cl/585076)
+
+## rustls-webpki
+
+* 🦺 [rustls/webpki#382](https://github.com/rustls/webpki/pull/382)
