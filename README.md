@@ -5,7 +5,8 @@
 A suite of testvectors (and associated tooling) for X.509 certificate path
 validation.
 
-This project is maintained by [Trail of Bits](https://www.trailofbits.com/).
+This project is maintained as part of the [C2SP](https://c2sp.org) project.
+It was originally created by [Trail of Bits](https://www.trailofbits.com).
 
 ## How to use this repository
 

@@ -9,8 +9,13 @@ each testcase in the testsuite.
 Check out our [trophy case](trophy-case.md) for examples of bugs found by
 x509-limbo.
 
-This project is maintained by [Trail of Bits](https://www.trailofbits.com/).
+This project is maintained as part of the [C2SP] project. It was
+originally created by [Trail of Bits].
 
 See the [repository README] for more information.
 
 [repository README]: https://github.com/C2SP/x509-limbo
+
+[C2SP]: https://c2sp.org/
+
+[Trail of Bits]: https://www.trailofbits.com/
