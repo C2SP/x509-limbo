@@ -9,6 +9,8 @@ updates:
       pip:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: github-actions
     directory: /
@@ -18,6 +20,8 @@ updates:
       github-actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: cargo
     directory: /
@@ -27,3 +31,5 @@ updates:
       cargo:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7
