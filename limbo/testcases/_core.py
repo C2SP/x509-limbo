@@ -448,10 +448,12 @@ class Builder:
 
     def client_validation(self) -> Self:
         self._validation_kind = "CLIENT"
+        self._expected_peer_name = None
         return self
 
     def server_validation(self) -> Self:
         self._validation_kind = "SERVER"
+        self._expected_peer_names = []
         return self
 
     def trusted_certs(self, *certs: Certificate) -> Self:
