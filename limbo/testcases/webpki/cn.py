@@ -32,7 +32,7 @@ from limbo.testcases._core import Builder, testcase
 
 
 @testcase
-def cabf_cn_ipv4_hex_mismatch(builder: Builder) -> None:
+def ipv4_hex_mismatch(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains an IPv4 address in hexadecimal
     format, which violates CABF BR 7.1.4.3.
@@ -79,7 +79,7 @@ def cabf_cn_ipv4_hex_mismatch(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_ipv4_leading_zeros_mismatch(builder: Builder) -> None:
+def ipv4_leading_zeros_mismatch(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains an IPv4 address with leading
     zeros, which violates CABF BR 7.1.4.3.
@@ -127,7 +127,7 @@ def cabf_cn_ipv4_leading_zeros_mismatch(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_ipv6_uppercase_mismatch(builder: Builder) -> None:
+def ipv6_uppercase_mismatch(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains an IPv6 address with uppercase
     hexadecimal characters, which violates CABF BR 7.1.4.3.
@@ -172,7 +172,7 @@ def cabf_cn_ipv6_uppercase_mismatch(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_ipv6_uncompressed_mismatch(builder: Builder) -> None:
+def ipv6_uncompressed_mismatch(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains an uncompressed IPv6 address
     with leading zeros and no "::" compression, which violates CABF BR 7.1.4.3.
@@ -220,7 +220,7 @@ def cabf_cn_ipv6_uncompressed_mismatch(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_ipv6_non_rfc5952_mismatch(builder: Builder) -> None:
+def ipv6_non_rfc5952_mismatch(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains an IPv6 address that doesn't
     use "::" compression for the longest zero sequence, violating CABF BR 7.1.4.3.
@@ -269,7 +269,7 @@ def cabf_cn_ipv6_non_rfc5952_mismatch(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_punycode_not_in_san(builder: Builder) -> None:
+def punycode_not_in_san(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains a punycode domain that is not
     present in the SAN, violating CABF BR 7.1.4.3.
@@ -310,7 +310,7 @@ def cabf_cn_punycode_not_in_san(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_utf8_vs_punycode_mismatch(builder: Builder) -> None:
+def utf8_vs_punycode_mismatch(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains a UTF-8 internationalized
     domain name while the SAN contains the punycode equivalent, violating
@@ -359,7 +359,7 @@ def cabf_cn_utf8_vs_punycode_mismatch(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_not_in_san(builder: Builder) -> None:
+def not_in_san(builder: Builder) -> None:
     """
     Produces a certificate where the CN contains a domain name that is not
     present in any SAN entry, violating CABF BR 7.1.4.3.
@@ -401,7 +401,7 @@ def cabf_cn_not_in_san(builder: Builder) -> None:
 
 
 @testcase
-def cabf_cn_case_mismatch(builder: Builder) -> None:
+def case_mismatch(builder: Builder) -> None:
     """
     Produces a certificate where the CN differs from the SAN entry only in
     letter case, violating CABF BR 7.1.4.3.
