@@ -7,6 +7,6 @@ edition = "2021"
 limbo-harness-support = { path = "../../harness-support/rust" }
 chrono = "0.4.42"
 pem = "3.0.6"
-serde_json = "1.0.145"
+serde_json = "1.0.148"
 rustls-webpki = { version = "0.103.8", features = ["std", "ring"] }
 rustls-pki-types = "1.13.2"
