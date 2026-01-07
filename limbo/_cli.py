@@ -18,7 +18,14 @@ from limbo import _github, _markdown, testcases
 from limbo.testcases import bettertls, online
 
 from . import __version__
-from .models import ActualResult, Limbo, LimboResult
+from .models import (
+    ActualResult,
+    Limbo,
+    LimboResult,
+    NewTestcaseEntry,
+    RegressionData,
+    RegressionEntry,
+)
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -105,6 +112,30 @@ def main() -> None:
         metavar="DIR",
         help="The current results to check against",
     )
+    regression.add_argument(
+        "--detect-only",
+        action="store_true",
+        help="Only detect regressions, save to --output without posting comments",
+    )
+    regression.add_argument(
+        "--post-only",
+        action="store_true",
+        help="Only post comments from pre-computed regression data in --input",
+    )
+    regression.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        metavar="FILE",
+        help="Output file for regression data (used with --detect-only)",
+    )
+    regression.add_argument(
+        "-i",
+        "--input",
+        type=Path,
+        metavar="FILE",
+        help="Input file with regression data (used with --post-only)",
+    )
     regression.set_defaults(func=_regression)
 
     # `limbo extract`
@@ -184,7 +215,8 @@ def _harness(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
-def _regression(args: argparse.Namespace) -> None:
+def _detect_regressions(args: argparse.Namespace) -> RegressionData:
+    """Detect regressions and new testcases, returning structured data."""
     previous_results = TypeAdapter(list[LimboResult]).validate_python(
         requests.get("https://x509-limbo.com/_api/all-results.json").json()
     )
@@ -193,8 +225,8 @@ def _regression(args: argparse.Namespace) -> None:
     for result in args.current.glob("*.json"):
         current_results.append(LimboResult.model_validate_json(result.read_text()))
 
-    # mapping of harness -> [(testcase-id, previous-result, current-result)]
-    all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]] = defaultdict(list)
+    # Detect regressions: harness -> list of RegressionEntry
+    all_regressions: dict[str, list[RegressionEntry]] = defaultdict(list)
     for previous_result in previous_results:
         current_result = next(
             (r for r in current_results if r.harness == previous_result.harness), None
@@ -207,16 +239,22 @@ def _regression(args: argparse.Namespace) -> None:
 
         common_testcases = previous_by_id.keys() & current_by_id.keys()
         for tc in common_testcases:
-            if previous_by_id[tc].actual_result != current_by_id[tc].actual_result:
+            prev_actual = previous_by_id[tc].actual_result
+            curr_actual = current_by_id[tc].actual_result
+            if prev_actual != curr_actual:
                 all_regressions[previous_result.harness].append(
-                    (tc, previous_by_id[tc].actual_result, current_by_id[tc].actual_result)
+                    RegressionEntry(
+                        testcase_id=tc,
+                        previous_result=prev_actual.value,
+                        current_result=curr_actual.value,
+                    )
                 )
 
+    # Detect new testcases: harness -> list of NewTestcaseEntry
     limbo = Limbo.model_validate_json(args.limbo.read_text())
     # Assumption: all previous results have the same set of testcase IDs
     previous_tc_ids = {r.id for r in previous_results[0].results}
-    # mapping of harness -> [(testcase-id, expected, actual, content)]
-    new_results: dict[str, list[tuple[str, str, str, str | None]]] = defaultdict(list)
+    new_testcases: dict[str, list[NewTestcaseEntry]] = defaultdict(list)
     for current_result in current_results:
         new_tc_ids = current_result.by_id.keys() - previous_tc_ids
         for new_tc_id in new_tc_ids:
@@ -224,36 +262,133 @@ def _regression(args: argparse.Namespace) -> None:
             context = current_result.by_id[new_tc_id].context
             expected_result = limbo.by_id[new_tc_id].expected_result.value
 
-            new_results[current_result.harness].append(
-                (new_tc_id, expected_result, actual_result, context)
+            new_testcases[current_result.harness].append(
+                NewTestcaseEntry(
+                    testcase_id=new_tc_id,
+                    expected_result=expected_result,
+                    actual_result=actual_result,
+                    context=context,
+                )
             )
 
+    # Get PR number from GitHub event
+    pr_number: int | None = None
     if os.getenv("GITHUB_ACTIONS"):
-        if all_regressions:
-            sampled_regressions = _sample_regressions(all_regressions)
+        event = _github.github_event()
+        pr_number = event.get("number")
 
-            template = _markdown.template("sampled-regressions.md")
-            _github.step_summary(
-                template.render(
-                    sampled_regressions=sampled_regressions, testcase_link=_markdown.testcase_link
-                )
-            )
-            template = _markdown.template("regressions.md")
-            _github.comment(
-                template.render(regressions_url=_github.workflow_url()), update="@@regressions@@"
-            )
-            _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
-        else:
-            # Avoid spamming the user with "no regression" comments.
-            if not _github.has_label(_github.NO_REGRESSIONS_LABEL):
-                _github.comment(":shipit: No regressions found.", update="@@regressions@@")
-                _github.label(
-                    add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL]
+    return RegressionData(
+        regressions=dict(all_regressions),
+        new_testcases=dict(new_testcases),
+        workflow_url=_github.workflow_url() if os.getenv("GITHUB_ACTIONS") else "",
+        pr_number=pr_number,
+    )
+
+
+def _post_regressions(data: RegressionData) -> None:
+    """Post regression comments and labels based on pre-computed data."""
+    if not os.getenv("GITHUB_ACTIONS"):
+        logger.warning("Not running in GitHub Actions, skipping comment/label posting")
+        return
+
+    if data.regressions:
+        template = _markdown.template("regressions.md")
+        _github.comment(
+            template.render(regressions_url=data.workflow_url), update="@@regressions@@"
+        )
+        _github.label(add=[_github.REGRESSIONS_LABEL], remove=[_github.NO_REGRESSIONS_LABEL])
+    else:
+        # Avoid spamming the user with "no regression" comments.
+        if not _github.has_label(_github.NO_REGRESSIONS_LABEL):
+            _github.comment(":shipit: No regressions found.", update="@@regressions@@")
+            _github.label(add=[_github.NO_REGRESSIONS_LABEL], remove=[_github.REGRESSIONS_LABEL])
+
+    if data.new_testcases:
+        # Convert to tuple format for template
+        new_results: dict[str, list[tuple[str, str, str, str | None]]] = {}
+        for harness, entries in data.new_testcases.items():
+            new_results[harness] = [
+                (e.testcase_id, e.expected_result, e.actual_result, e.context) for e in entries
+            ]
+        template = _markdown.template("new-testcases.md")
+        _github.comment(template.render(new_results=new_results), update="@@new-testcases@@")
+
+
+def _regression(args: argparse.Namespace) -> None:
+    """Run regression checks against the last result set."""
+    if args.detect_only and args.post_only:
+        logger.error("Cannot use both --detect-only and --post-only")
+        sys.exit(1)
+
+    if args.detect_only:
+        if not args.output:
+            logger.error("--detect-only requires --output")
+            sys.exit(1)
+
+        data = _detect_regressions(args)
+        args.output.write_text(data.model_dump_json(indent=2))
+
+        # Still write to step summary for visibility in first workflow
+        if os.getenv("GITHUB_ACTIONS"):
+            summary_parts = []
+
+            if data.regressions:
+                all_regressions: dict[str, list[tuple[str, ActualResult, ActualResult]]] = {}
+                for harness, entries in data.regressions.items():
+                    all_regressions[harness] = [
+                        (
+                            e.testcase_id,
+                            ActualResult(e.previous_result),
+                            ActualResult(e.current_result),
+                        )
+                        for e in entries
+                    ]
+                sampled = _sample_regressions(all_regressions)
+                template = _markdown.template("sampled-regressions.md")
+                summary_parts.append(
+                    template.render(
+                        sampled_regressions=sampled, testcase_link=_markdown.testcase_link
+                    )
                 )
 
-        if new_results:
-            template = _markdown.template("new-testcases.md")
-            _github.comment(template.render(new_results=new_results), update="@@new-testcases@@")
+            if data.new_testcases:
+                new_results: dict[str, list[tuple[str, str, str, str | None]]] = {}
+                for harness, new_entries in data.new_testcases.items():
+                    new_results[harness] = [
+                        (e.testcase_id, e.expected_result, e.actual_result, e.context)
+                        for e in new_entries
+                    ]
+                template = _markdown.template("new-testcases.md")
+                summary_parts.append(template.render(new_results=new_results))
+
+            if summary_parts:
+                _github.step_summary("\n\n".join(summary_parts))
+
+        logger.info(f"Regression data saved to {args.output}")
+        return
+
+    if args.post_only:
+        if not args.input:
+            logger.error("--post-only requires --input")
+            sys.exit(1)
+
+        data = RegressionData.model_validate_json(args.input.read_text())
+
+        if data.pr_number is None:
+            logger.error(
+                "regression data is missing pr_number - was it generated outside GitHub Actions?"
+            )
+            sys.exit(1)
+
+        # Set PR number override for _github module
+        os.environ["LIMBO_PR_NUMBER"] = str(data.pr_number)
+
+        _post_regressions(data)
+        return
+
+    # Legacy mode: detect and post in one go (for local testing or same-repo PRs)
+    data = _detect_regressions(args)
+    _post_regressions(data)
 
 
 def _sample_regressions(
