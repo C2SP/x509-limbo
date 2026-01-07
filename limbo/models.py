@@ -451,35 +451,3 @@ class LimboResult(BaseModel):
         Returns a cached mapping of every testcase result, keyed by its ID.
         """
         return {r.id: r for r in self.results}
-
-
-class RegressionEntry(BaseModel):
-    """Represents a single regression (changed test result)."""
-
-    testcase_id: str = Field(..., description="The testcase ID that regressed")
-    previous_result: str = Field(..., description="The previous result value")
-    current_result: str = Field(..., description="The current result value")
-
-
-class NewTestcaseEntry(BaseModel):
-    """Represents a new testcase not in the previous results."""
-
-    testcase_id: str = Field(..., description="The new testcase ID")
-    expected_result: str = Field(..., description="The expected result")
-    actual_result: str = Field(..., description="The actual result from the harness")
-    context: str | None = Field(None, description="Additional context if available")
-
-
-class RegressionData(BaseModel):
-    """Data structure for passing regression detection results between workflows."""
-
-    regressions: dict[str, list[RegressionEntry]] = Field(
-        default_factory=dict,
-        description="Map of harness name to list of regressions",
-    )
-    new_testcases: dict[str, list[NewTestcaseEntry]] = Field(
-        default_factory=dict,
-        description="Map of harness name to list of new testcases",
-    )
-    workflow_url: str = Field(..., description="GitHub Actions workflow URL")
-    pr_number: int | None = Field(None, description="Pull request number")
