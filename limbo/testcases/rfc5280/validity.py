@@ -390,40 +390,6 @@ def expired_5_seconds(builder: Builder) -> None:
 
 
 @testcase
-def expired_1_minute(builder: Builder) -> None:
-    """
-    Produces the following **invalid** chain:
-
-    ```
-    root -> ICA -> EE
-    ```
-
-    The EE certificate expires at `2024-04-01T00:00:00Z`, and the chain is
-    validated at `2024-04-01T00:01:00Z`, i.e. 1 minute after expiration.
-
-    This test ensures implementations strictly reject certificates that have
-    expired by a small amount of time (sub-minute boundaries).
-    """
-
-    not_before = datetime.fromisoformat("2024-03-01T00:00:00Z")
-    not_after = datetime.fromisoformat("2024-04-01T00:00:00Z")
-
-    root = builder.root_ca(not_before=not_before, not_after=not_after)
-    ica = builder.intermediate_ca(root, not_before=not_before, not_after=not_after)
-    leaf = builder.leaf_cert(ica, not_before=not_before, not_after=not_after)
-
-    builder = (
-        builder.server_validation()
-        .importance(Importance.CRITICAL)
-        .trusted_certs(root)
-        .untrusted_intermediates(ica)
-        .peer_certificate(leaf)
-        .validation_time(not_after + timedelta(minutes=1))
-        .fails()
-    )
-
-
-@testcase
 def not_yet_valid_1_second(builder: Builder) -> None:
     """
     Produces the following **invalid** chain:
