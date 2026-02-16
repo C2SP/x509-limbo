@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from functools import cached_property
 from typing import Annotated, Literal
 
@@ -16,7 +16,7 @@ from pydantic import (
 )
 
 
-class ExpectedResult(str, Enum):
+class ExpectedResult(StrEnum):
     """
     Represents an expected testcase evaluation result.
     """
@@ -25,7 +25,7 @@ class ExpectedResult(str, Enum):
     FAILURE = "FAILURE"
 
 
-class ActualResult(str, Enum):
+class ActualResult(StrEnum):
     """
     Represents the actual result of a testcase evaluation.
     """
@@ -35,7 +35,7 @@ class ActualResult(str, Enum):
     SKIPPED = "SKIPPED"
 
 
-class PeerKind(str, Enum):
+class PeerKind(StrEnum):
     """
     Different types of peer subjects.
     """
@@ -54,7 +54,7 @@ class PeerName(BaseModel):
     value: StrictStr = Field(..., description="The peer's name")
 
 
-class SignatureAlgorithm(str, Enum):
+class SignatureAlgorithm(StrEnum):
     """
     Valid X.509 signature algorithms.
     """
@@ -94,7 +94,7 @@ class SignatureAlgorithm(str, Enum):
     GOSTR3410_2012_WITH_3411_2012_512 = "GOSTR3410_2012_WITH_3411_2012_512"
 
 
-class KeyUsage(str, Enum):
+class KeyUsage(StrEnum):
     """
     X.509 key usages.
 
@@ -112,7 +112,7 @@ class KeyUsage(str, Enum):
     decipher_only = "decipherOnly"
 
 
-class KnownEKUs(str, Enum):
+class KnownEKUs(StrEnum):
     """
     Well-known extended key usages, from RFC 5280.
 
@@ -143,7 +143,7 @@ and only explicitly added when merging multiple testcase suites.
 """
 
 
-class Feature(str, Enum):
+class Feature(StrEnum):
     """
     Feature tags for testcases.
     """
@@ -221,7 +221,7 @@ class Feature(str, Enum):
     """
 
 
-class Importance(str, Enum):
+class Importance(StrEnum):
     """
     A subjective ranking of a testcase's importance.
     """
@@ -256,7 +256,7 @@ class Importance(str, Enum):
     """
 
 
-class ValidationKind(str, Enum):
+class ValidationKind(StrEnum):
     """
     The kind of validation to perform.
     """
