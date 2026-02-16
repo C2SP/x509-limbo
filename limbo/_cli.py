@@ -229,15 +229,24 @@ def _regression(args: argparse.Namespace) -> None:
             )
 
     if os.getenv("GITHUB_ACTIONS"):
+        # Always write to step summary (works even for fork PRs where comments fail)
+        summary_parts = []
         if all_regressions:
             sampled_regressions = _sample_regressions(all_regressions)
-
             template = _markdown.template("sampled-regressions.md")
-            _github.step_summary(
+            summary_parts.append(
                 template.render(
                     sampled_regressions=sampled_regressions, testcase_link=_markdown.testcase_link
                 )
             )
+        if new_results:
+            template = _markdown.template("new-testcases.md")
+            summary_parts.append(template.render(new_results=new_results))
+        if summary_parts:
+            _github.step_summary("\n\n".join(summary_parts))
+
+        # Try to post comments/labels (may fail with 403 for fork PRs)
+        if all_regressions:
             template = _markdown.template("regressions.md")
             _github.comment(
                 template.render(regressions_url=_github.workflow_url()), update="@@regressions@@"

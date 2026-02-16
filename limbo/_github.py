@@ -17,6 +17,41 @@ import requests
 logger = logging.getLogger(__name__)
 
 
+def _check_response(resp: requests.Response, *, allow_404: bool = False) -> bool:
+    """
+    Check a response for errors, handling permission errors gracefully.
+
+    For PRs from third-party forks, the GITHUB_TOKEN has restricted permissions
+    and write operations will fail with 403. This function logs a warning
+    instead of raising an exception in that case.
+
+    Args:
+        resp: The response to check.
+        allow_404: If True, treat 404 as a non-error (for idempotent deletes).
+
+    Returns:
+        True if the request succeeded, False if it failed due to permissions.
+
+    Raises:
+        requests.HTTPError: For non-permission-related errors.
+    """
+    if resp.ok:
+        return True
+
+    if allow_404 and resp.status_code == 404:
+        return True
+
+    if resp.status_code == 403:
+        logger.warning(
+            f"Insufficient permissions for {resp.request.method} {resp.request.url} "
+            f"(this is expected for PRs from third-party forks)"
+        )
+        return False
+
+    resp.raise_for_status()
+    return False  # unreachable, but satisfies type checker
+
+
 REGRESSIONS_LABEL = ":skull: regressions"
 NO_REGRESSIONS_LABEL = ":see_no_evil: no-regressions"
 
@@ -52,26 +87,28 @@ def comment(msg: str, *, update: str | None = None) -> None:
         url = f"https://api.github.com/repos/{repo}/issues/comments/{comment_id}"
         logger.info(f"updating comment {comment_id} on {repo} #{number}")
 
-        requests.patch(
+        resp = requests.patch(
             url,
             headers={
                 "Authorization": f"Bearer {github_token()}",
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={"body": msg},
-        ).raise_for_status()
+        )
+        _check_response(resp)
     else:
         url = f"https://api.github.com/repos/{repo}/issues/{number}/comments"
         logger.info(f"leaving a comment on {repo} #{number}")
 
-        requests.post(
+        resp = requests.post(
             url,
             headers={
                 "Authorization": f"Bearer {github_token()}",
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={"body": msg},
-        ).raise_for_status()
+        )
+        _check_response(resp)
 
 
 def find_comment(token: str) -> int | None:
@@ -97,7 +134,8 @@ def find_comment(token: str) -> int | None:
         },
         params={"per_page": 100},
     )
-    resp.raise_for_status()
+    if not _check_response(resp):
+        return None
 
     comments = resp.json()
     for comment in comments:
@@ -117,31 +155,34 @@ def label(*, add: list[str], remove: list[str]) -> None:
 
     if add:
         logger.info(f"adding labels to {repo} #{number}: {add}")
-        requests.post(
+        resp = requests.post(
             url,
             headers={
                 "Authorization": f"Bearer {github_token()}",
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={"labels": add},
-        ).raise_for_status()
+        )
+        _check_response(resp)
 
-    for label in remove:
-        logger.info(f"removing label:{label} from {repo} #{number}")
+    for lbl in remove:
+        logger.info(f"removing label:{lbl} from {repo} #{number}")
         resp = requests.delete(
-            f"{url}/{label}",
+            f"{url}/{lbl}",
             headers={
                 "Authorization": f"Bearer {github_token()}",
                 "X-GitHub-Api-Version": "2022-11-28",
             },
         )
-
-        # 404 is expected if the label doesn't exist
-        if resp.status_code != 404:
-            resp.raise_for_status()
+        _check_response(resp, allow_404=True)
 
 
 def has_label(label: str) -> bool:
+    """
+    Check if the current PR has a given label.
+
+    Returns False if the label is not present or if permissions are insufficient.
+    """
     event = github_event()
     if "pull_request" not in event:
         raise ValueError("wrong GitHub event: need pull_request")
@@ -150,8 +191,15 @@ def has_label(label: str) -> bool:
     repo = event["repository"]["full_name"]
     url = f"https://api.github.com/repos/{repo}/issues/{number}/labels"
 
-    resp = requests.get(url)
-    resp.raise_for_status()
+    resp = requests.get(
+        url,
+        headers={
+            "Authorization": f"Bearer {github_token()}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    if not _check_response(resp):
+        return False
 
     labels = resp.json()
     return any(lbl["name"] == label for lbl in labels)
