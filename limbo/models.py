@@ -189,6 +189,16 @@ class Feature(StrEnum):
     Tests that exercise "pedantic" EKU handling under CABF.
     """
 
+    pedantic_smime_eku = "pedantic-smime-eku"
+    """
+    Tests that exercise "pedantic" EKU handling under S/MIME BR.
+    """
+
+    pedantic_smime_subscriber_key = "pedantic-smime-subscriber-key"
+    """
+    Tests that exercise "pedantic" handling of subscriber key types under S/MIME BR.
+    """
+
     pedantic_serial_number = "pedantic-serial-number"
     """
     Tests that exercise "pedantic" serial number handling.
@@ -202,7 +212,7 @@ class Feature(StrEnum):
 
     pedantic_rfc5280 = "pedantic-rfc5280"
     """
-    Tests that exercise "pednatic" corners of the RFC 5280 certificate profile.
+    Tests that exercise "pedantic" corners of the RFC 5280 certificate profile.
     """
 
     rfc5280_incompatible_with_webpki = "rfc5280-incompatible-with-webpki"
