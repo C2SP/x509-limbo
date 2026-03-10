@@ -281,3 +281,61 @@ def cve_2024_0567(builder: Builder) -> None:
         .expected_peer_name(PeerName(kind=PeerKind.DNS, value="cve-2024-0567.example.com"))
         .succeeds()
     )
+
+
+@testcase
+def cve_2025_61727(builder: Builder):
+    """
+    Tests CVE-2025-61727.
+
+    Produces the following chain:
+
+    ```
+    root -> ICA (NC: forbid: bar.example.com) -> EE (SAN: *.example.com)
+    ```
+
+    This chain exercises an ambiguity between RFC 5280 and RFC 9525:
+    RFC 5280 says that name constraints apply to subjects and SANs,
+    while RFC 9525 defines wildcard semantics and matching of peer names
+    against wildcards. Together, neither spec defines how name constraints
+    apply to peer names when a subject matches a peer name but doesn't
+    directly match a name constraint.
+
+    In practice, validators should behave defensively and reject chains
+    where a subject name *might* match a peer name that would violate the
+    name constraint, even if the subject name itself doesn't match the name
+    constraint. For example, `*.example.com` does not match the
+    `bar.example.com` constraint, but *would* accept `bar.example.com` as a peer
+    name.
+    """
+
+    root = builder.root_ca()
+
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.DNSName("bar.example.com")],
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("*.example.com")]),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="bar.example.com"))
+        .fails()
+    )
