@@ -284,7 +284,7 @@ def cve_2024_0567(builder: Builder) -> None:
 
 
 @testcase
-def cve_2025_61727(builder: Builder):
+def cve_2025_61727(builder: Builder) -> None:
     """
     Tests CVE-2025-61727.
 
