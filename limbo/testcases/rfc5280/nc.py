@@ -8,7 +8,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from limbo.assets import ext
-from limbo.models import Feature, KnownEKUs, PeerName
+from limbo.models import Feature, KnownEKUs, PeerKind, PeerName
 from limbo.testcases._core import Builder, testcase
 
 
@@ -71,7 +71,7 @@ def excluded_dns_match(builder: Builder) -> None:
     builder = builder.server_validation()
     builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
         leaf
-    ).expected_peer_name(PeerName(kind="DNS", value="example.com")).fails()
+    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).fails()
 
 
 @testcase
@@ -100,7 +100,7 @@ def permitted_dns_match(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
+        PeerName(kind=PeerKind.DNS, value="example.com")
     ).succeeds()
 
 
@@ -136,7 +136,7 @@ def permitted_dns_match_noncritical(builder: Builder) -> None:
         .features([Feature.rfc5280_incompatible_with_webpki])
         .trusted_certs(root)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
         .fails()
     )
 
@@ -175,7 +175,7 @@ def permitted_dns_match_more(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="foo.bar.example.com")
+        PeerName(kind=PeerKind.DNS, value="foo.bar.example.com")
     ).succeeds()
 
 
@@ -212,7 +212,7 @@ def excluded_dns_match_second(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
+        PeerName(kind=PeerKind.DNS, value="example.com")
     ).fails()
 
 
@@ -670,7 +670,7 @@ def excluded_self_issued_leaf(builder: Builder) -> None:
     builder = builder.server_validation()
     builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(
         leaf
-    ).expected_peer_name(PeerName(kind="DNS", value="not-example.com")).fails()
+    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="not-example.com")).fails()
 
 
 @testcase
@@ -704,7 +704,7 @@ def excluded_match_permitted_and_excluded(builder: Builder) -> None:
     )
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
+        PeerName(kind=PeerKind.DNS, value="example.com")
     ).fails()
 
 
@@ -735,7 +735,7 @@ def permitted_different_constraint_type(builder: Builder) -> None:
     )
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
+        PeerName(kind=PeerKind.DNS, value="example.com")
     ).succeeds()
 
 
@@ -766,7 +766,7 @@ def excluded_different_constraint_type(builder: Builder) -> None:
     )
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
+        PeerName(kind=PeerKind.DNS, value="example.com")
     ).succeeds()
 
 
@@ -797,7 +797,7 @@ def invalid_dnsname_wildcard(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="foo.example.com")
+        PeerName(kind=PeerKind.DNS, value="foo.example.com")
     ).fails()
 
 
@@ -832,7 +832,7 @@ def invalid_dnsname_leading_period(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="foo.example.com")
+        PeerName(kind=PeerKind.DNS, value="foo.example.com")
     ).fails()
 
 
@@ -972,7 +972,7 @@ def not_allowed_in_ee_noncritical(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
+        PeerName(kind=PeerKind.DNS, value="example.com")
     ).fails()
 
 
@@ -1005,7 +1005,7 @@ def not_allowed_in_ee_critical(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
-        PeerName(kind="DNS", value="example.com")
+        PeerName(kind=PeerKind.DNS, value="example.com")
     ).fails()
 
 
@@ -1059,7 +1059,7 @@ def intermediate_with_san_rejected_by_intermediate_nc(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica1, ica2)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="permitted.example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="permitted.example.com"))
         .fails()
     )
 
@@ -1113,7 +1113,7 @@ def intermediate_with_san_rejected_by_root_nc(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica1, ica2)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="permitted.example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="permitted.example.com"))
         .fails()
     )
 
@@ -1173,7 +1173,7 @@ def restrictive_permits_in_intermediates_narrows(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica1, ica2)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="foo.example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="foo.example.com"))
         .fails()
     )
 
@@ -1236,7 +1236,7 @@ def restrictive_permits_in_intermediates_widens(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica1, ica2)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="foo.example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="foo.example.com"))
         .fails()
     )
 
@@ -1281,7 +1281,7 @@ def nc_permits_invalid_dns_san(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(intermediate)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="foo.example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="foo.example.com"))
         .fails()
     )
 
@@ -1453,7 +1453,7 @@ def nc_forbids_alternate_chain_ica(builder: Builder) -> None:
         .trusted_certs(trusted_root)
         .untrusted_intermediates(ica_a, ica_b_1, ica_b_2)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="permitted.example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="permitted.example.com"))
         .succeeds()
     )
 
@@ -1521,7 +1521,7 @@ def nc_forbids_same_chain_ica(builder: Builder) -> None:
         .trusted_certs(root_a, root_b)
         .untrusted_intermediates(ica_a, ica_b_1, ica_b_2)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="unconstrained.example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="unconstrained.example.com"))
         .succeeds()
     )
 
@@ -1977,7 +1977,7 @@ def nc_forbids_othername(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
         .fails()
     )
 
@@ -2027,6 +2027,50 @@ def nc_forbids_othername_noop(builder: Builder) -> None:
         .trusted_certs(root)
         .untrusted_intermediates(ica)
         .peer_certificate(leaf)
-        .expected_peer_name(PeerName(kind="DNS", value="example.com"))
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
         .succeeds()
+    )
+
+
+@testcase
+def nc_forbids_dnsname_wildcard_san(builder: Builder) -> None:
+    """
+    Produces the following chain:
+
+    ```
+    root -> ICA (forbid: bar.example.com) -> EE (SAN: *.example.com)
+    ```
+
+    This chain should forbid `bar.example.com`.
+    """
+
+    root = builder.root_ca()
+
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.DNSName("bar.example.com")],
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("*.example.com")]),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="bar.example.com"))
+        .fails()
     )
