@@ -11,6 +11,7 @@ from limbo.models import PeerKind, PeerName
 from limbo.testcases._core import Builder, testcase
 
 from .aki import *  # noqa: F403
+from .crl import *  # noqa: F403
 from .eku import *  # noqa: F403
 from .nc import *  # noqa: F403
 from .pc import *  # noqa: F403
