@@ -140,6 +140,34 @@ def crl_very_large(builder: Builder) -> None:
 
 
 @testcase
+def crl_duplicate_revoked_serial(builder: Builder) -> None:
+    """
+    Tests that a CRL with a duplicate revoked serial number is rejected.
+
+    For more context, see <https://github.com/cabforum/servercert/issues/589>.
+    """
+
+    validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(parent=root)
+
+    revoked = (
+        x509.RevokedCertificateBuilder()
+        .serial_number(x509.random_serial_number())
+        .revocation_date(validation_time - timedelta(days=1))
+        .build()
+    )
+    crl = builder.crl(signer=root, revoked=[revoked, revoked])
+
+    builder.features([Feature.has_crl]).server_validation().trusted_certs(root).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).crls(
+        crl
+    ).validation_time(validation_time).fails()
+
+
+@testcase
 def crl_unknown_critical_extension(builder: Builder) -> None:
     """
     Tests that a CRL with an unknown critical extension is rejected.
@@ -210,11 +238,9 @@ def crl_unknown_noncritical_extension(builder: Builder) -> None:
 
 
 @testcase
-def crl_duplicate_revoked_serial(builder: Builder) -> None:
+def entry_unknown_critical_extension(builder: Builder) -> None:
     """
-    Tests that a CRL with a duplicate revoked serial number is rejected.
-
-    For more context, see <https://github.com/cabforum/servercert/issues/589>.
+    Tests that a CRL entry with an unknown critical extension is rejected.
     """
 
     validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
@@ -224,11 +250,52 @@ def crl_duplicate_revoked_serial(builder: Builder) -> None:
 
     revoked = (
         x509.RevokedCertificateBuilder()
-        .serial_number(x509.random_serial_number())
+        .serial_number(leaf.cert.serial_number)
         .revocation_date(validation_time - timedelta(days=1))
+        .add_extension(
+            x509.UnrecognizedExtension(x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.1"), b""),
+            critical=True,
+        )
         .build()
     )
-    crl = builder.crl(signer=root, revoked=[revoked, revoked])
+    crl = builder.crl(
+        signer=root,
+        revoked=[revoked],
+    )
+
+    builder.features([Feature.has_crl]).server_validation().trusted_certs(root).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).crls(
+        crl
+    ).validation_time(validation_time).fails()
+
+
+@testcase
+def entry_unknown_noncritical_extension(builder: Builder) -> None:
+    """
+    Tests that a CRL entry with an unknown non-critical extension is accepted
+    and revokes the certificate.
+    """
+
+    validation_time = datetime.fromisoformat("2024-01-01T00:00:00Z")
+
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(parent=root)
+
+    revoked = (
+        x509.RevokedCertificateBuilder()
+        .serial_number(leaf.cert.serial_number)
+        .revocation_date(validation_time - timedelta(days=1))
+        .add_extension(
+            x509.UnrecognizedExtension(x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.1"), b""),
+            critical=False,
+        )
+        .build()
+    )
+    crl = builder.crl(
+        signer=root,
+        revoked=[revoked],
+    )
 
     builder.features([Feature.has_crl]).server_validation().trusted_certs(root).peer_certificate(
         leaf
