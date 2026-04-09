@@ -120,7 +120,7 @@ test-gnutls:
 	$(MAKE) run ARGS="harness --output ./results/gnutls.json -- ./$(VENV_BIN)/python ./harness/gnutls/test-gnutls"
 
 .PHONY: test
-test: test-go test-openssl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
+test: test-go test-openssl test-libressl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
 
 .PHONY: site
 site: $(NEEDS_VENV)
