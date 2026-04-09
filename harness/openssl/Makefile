@@ -15,3 +15,6 @@ clean:
 
 openssl-%: openssl-%.dockerfile
 	docker build -f $< . -t x509-limbo-$@
+
+libressl-%: libressl-%.dockerfile
+	docker build -f $< . -t x509-limbo-$@

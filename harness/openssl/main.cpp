@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <string_view>
 
 #include <openssl/bio.h>
 #include <openssl/pem.h>
@@ -13,12 +14,27 @@
 #include "date.hpp"
 #include "json.hpp"
 
-#ifdef OPENSSL_VERSION_STR
-#define HARNESS_OPENSSL_VERSION_STR OPENSSL_VERSION_STR
+static constexpr std::string_view harness_version()
+{
+#if defined(LIBRESSL_VERSION_TEXT)
+  // LIBRESSL_VERSION_TEXT is "LibreSSL X.Y.Z"; strip the prefix.
+  constexpr std::string_view text = LIBRESSL_VERSION_TEXT;
+  constexpr auto pos = text.rfind(' ');
+  static_assert(pos != std::string_view::npos);
+  return text.substr(pos + 1);
+#elif defined(OPENSSL_VERSION_STR)
+  return OPENSSL_VERSION_STR;
 #elif defined(SHLIB_VERSION_NUMBER)
-#define HARNESS_OPENSSL_VERSION_STR SHLIB_VERSION_NUMBER
+  return SHLIB_VERSION_NUMBER;
 #else
-#error "unsupported OpenSSL version: " #OPENSSL_VERSION
+#error "unsupported OpenSSL version"
+#endif
+}
+
+#if defined(LIBRESSL_VERSION_NUMBER)
+#define HARNESS_NAME "libressl-"
+#else
+#define HARNESS_NAME "openssl-"
 #endif
 
 using json = nlohmann::json;
@@ -84,7 +100,13 @@ STACK_OF_X509_ptr x509_stack(const json &certs)
     barf("unexpected type: expected an array of certs");
   }
 
+#if defined(LIBRESSL_VERSION_NUMBER)
+  // LibreSSL doesn't have `sk_X509_new_reserve`.
+  auto *stack = sk_X509_new_null();
+#else
   auto *stack = sk_X509_new_reserve(nullptr, certs.size());
+#endif
+
   for (auto &cert : certs)
   {
     auto cert_pem = cert.template get<std::string>();
@@ -280,7 +302,7 @@ int main()
 
   json limbo_result = {
       {"version", 1},
-      {"harness", std::string("openssl-") + HARNESS_OPENSSL_VERSION_STR},
+      {"harness", std::string(HARNESS_NAME) + std::string(harness_version())},
       {"results", std::move(results)},
   };
   std::cout << std::setw(2) << limbo_result << std::endl;
