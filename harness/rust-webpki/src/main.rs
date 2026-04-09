@@ -43,12 +43,9 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
             "max-chain-depth testcases are not supported by this API",
         );
     }
-    
+
     if tc.features.contains(&Feature::HasCrl) {
-        return TestcaseResult::skip(
-            tc,
-            "CRLs are not supported by this API",
-        );
+        return TestcaseResult::skip(tc, "CRLs are not supported by this API");
     }
 
     if !matches!(tc.validation_kind, ValidationKind::Server) {
@@ -80,13 +77,19 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         .map(|ta| pem::parse(ta).unwrap())
         .collect::<Vec<_>>();
 
-    let Ok(trust_anchors) = trust_anchor_ders
+    let trust_anchors = trust_anchor_ders
         .iter()
-        .map(|ta| webpki::TrustAnchor::try_from_cert_der(ta.contents()))
-        .collect::<Result<Vec<_>, _>>()
-    else {
-        return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
-    };
+        .filter_map(|der| {
+            webpki::TrustAnchor::try_from_cert_der(der.contents())
+                .inspect_err(|e| {
+                    eprintln!(
+                        "warning: {}: skipping invalid trust anchor: {e}",
+                        tc.id.to_string()
+                    );
+                })
+                .ok()
+        })
+        .collect::<Vec<_>>();
 
     let validation_time = webpki::Time::try_from(SystemTime::from(
         tc.validation_time.unwrap_or(Utc::now().into()),
