@@ -18,3 +18,6 @@ openssl-%: openssl-%.dockerfile
 
 libressl-%: libressl-%.dockerfile
 	docker build -f $< . -t x509-limbo-$@
+
+boringssl: boringssl.dockerfile
+	docker build -f $< . -t x509-limbo-boringssl

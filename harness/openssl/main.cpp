@@ -16,12 +16,16 @@
 
 static constexpr std::string_view harness_version()
 {
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
 #if defined(LIBRESSL_VERSION_TEXT)
   // LIBRESSL_VERSION_TEXT is "LibreSSL X.Y.Z"; strip the prefix.
   constexpr std::string_view text = LIBRESSL_VERSION_TEXT;
   constexpr auto pos = text.rfind(' ');
   static_assert(pos != std::string_view::npos);
   return text.substr(pos + 1);
+#elif defined(OPENSSL_IS_BORINGSSL)
+  return STRINGIFY(BORINGSSL_API_VERSION);
 #elif defined(OPENSSL_VERSION_STR)
   return OPENSSL_VERSION_STR;
 #elif defined(SHLIB_VERSION_NUMBER)
@@ -29,10 +33,16 @@ static constexpr std::string_view harness_version()
 #else
 #error "unsupported OpenSSL version"
 #endif
+#undef STRINGIFY
+#undef STRINGIFY_
 }
 
 #if defined(LIBRESSL_VERSION_NUMBER)
 #define HARNESS_NAME "libressl-"
+#elif defined(OPENSSL_IS_BORINGSSL)
+// NOTE: We add the "legacy" suffix to distinguish from BoringSSL's libpki
+// implementation of path validation, which isn't tested here.
+#define HARNESS_NAME "boringssl-legacy-"
 #else
 #define HARNESS_NAME "openssl-"
 #endif
@@ -100,8 +110,8 @@ STACK_OF_X509_ptr x509_stack(const json &certs)
     barf("unexpected type: expected an array of certs");
   }
 
-#if defined(LIBRESSL_VERSION_NUMBER)
-  // LibreSSL doesn't have `sk_X509_new_reserve`.
+#if defined(LIBRESSL_VERSION_NUMBER) || defined(OPENSSL_IS_BORINGSSL)
+  // LibreSSL/BoringSSL doesn't have `sk_X509_new_reserve`.
   auto *stack = sk_X509_new_null();
 #else
   auto *stack = sk_X509_new_reserve(nullptr, certs.size());
@@ -216,10 +226,12 @@ json evaluate_testcase(const json &testcase)
 
   auto param = X509_STORE_CTX_get0_param(ctx.get());
 
+#if !defined(OPENSSL_IS_BORINGSSL)
   // The default authentication level is 1, which corresponds to 80 bits
   // of security. Level 2 corresponds to 112 bits and includes RSA 2048,
   // which brings the validation logic very slightly closer to the Web PKI.
   X509_VERIFY_PARAM_set_auth_level(param, 2);
+#endif
 
   if (testcase["expected_peer_name"].is_object())
   {
