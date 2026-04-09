@@ -71,13 +71,19 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         .map(|ta| cert_der_from_pem(ta))
         .collect::<Vec<_>>();
 
-    let Ok(trust_anchors) = trust_anchor_ders
+    let trust_anchors = trust_anchor_ders
         .iter()
-        .map(webpki::anchor_from_trusted_cert)
-        .collect::<Result<Vec<_>, _>>()
-    else {
-        return TestcaseResult::fail(tc, "trusted certs: trust anchor extraction failed");
-    };
+        .filter_map(|der| {
+            webpki::anchor_from_trusted_cert(der)
+                .inspect_err(|e| {
+                    eprintln!(
+                        "warning: {}: skipping invalid trust anchor: {e}",
+                        tc.id.to_string()
+                    );
+                })
+                .ok()
+        })
+        .collect::<Vec<_>>();
 
     let validation_time = rustls_pki_types::UnixTime::since_unix_epoch(
         (tc.validation_time.unwrap_or(Utc::now()) - DateTime::UNIX_EPOCH)
