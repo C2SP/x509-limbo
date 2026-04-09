@@ -7,7 +7,7 @@ from datetime import datetime
 from cryptography import x509
 
 from limbo.assets import ASSETS_PATH, Certificate, ext
-from limbo.models import PeerName
+from limbo.models import PeerKind, PeerName
 from limbo.testcases._core import Builder, testcase
 
 from .aki import *  # noqa: F403
@@ -113,6 +113,82 @@ def unknown_critical_extension_root(builder: Builder) -> None:
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
+
+
+@testcase
+def unknown_critical_extension_unrelated_root(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    rootA (used) -> EE
+
+    rootB (unused)
+    ```
+
+    The trusted set contains two roots: rootA is used in the chain, while rootB is not.
+    rootB has an extension, 1.3.6.1.4.1.55738.666.1, that no implementation
+    should recognize. However, because the extension is in an unused root, it should not cause
+    the chain to fail, as the validator should ignore rootB entirely and not eagerly
+    evaluate its extensions.
+    """
+
+    root_a = builder.root_ca()
+    root_b = builder.root_ca(
+        issuer=x509.Name.from_rfc4514_string("CN=unrelated-root"),
+        extra_extension=ext(
+            x509.UnrecognizedExtension(x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.1"), b""),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(root_a)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root_a, root_b)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .succeeds()
+    )
+
+
+@testcase
+def unknown_critical_extension_unrelated_intermediate(builder: Builder) -> None:
+    """
+    Produces the following **valid** graph:
+
+    ```
+    root -> intermediateA (used) -> EE
+    root -> intermediateB (unused)
+    ```
+
+    The untrusted intermediate set contains two intermediates: intermediateA is used in the chain,
+    while intermediateB is not. intermediateB has an extension, 1.3.6.1.4.1.55738.666.1,
+    that no implementation should recognize. However, because the extension is in an unused
+    intermediate, it should not cause the chain to fail, as the validator should ignore
+    intermediateB entirely and not eagerly evaluate its extensions.
+    """
+
+    root = builder.root_ca()
+    intermediate_a = builder.intermediate_ca(root, pathlen=0)
+    intermediate_b = builder.intermediate_ca(
+        root,
+        issuer=x509.Name.from_rfc4514_string("CN=unrelated-intermediate"),
+        extra_extension=ext(
+            x509.UnrecognizedExtension(x509.ObjectIdentifier("1.3.6.1.4.1.55738.666.1"), b""),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(intermediate_a)
+
+    builder = builder.server_validation()
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(intermediate_a, intermediate_b)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .succeeds()
+    )
 
 
 @testcase
