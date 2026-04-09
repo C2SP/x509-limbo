@@ -97,6 +97,11 @@ test-libressl:
 	$(MAKE) run ARGS="harness --output ./results/libressl-4.1.json -- docker run --rm -i x509-limbo-libressl-4.1"
 	$(MAKE) run ARGS="harness --output ./results/libressl-4.2.json -- docker run --rm -i x509-limbo-libressl-4.2"
 
+.PHONY: test-boringssl
+test-boringssl:
+	$(MAKE) -C harness/openssl boringssl
+	$(MAKE) run ARGS="harness --output ./results/boringssl-legacy.json -- docker run --rm -i x509-limbo-boringssl"
+
 .PHONY: test-rust-webpki
 test-rust-webpki:
 	@cargo build --bin rust-webpki-harness
@@ -120,7 +125,7 @@ test-gnutls:
 	$(MAKE) run ARGS="harness --output ./results/gnutls.json -- ./$(VENV_BIN)/python ./harness/gnutls/test-gnutls"
 
 .PHONY: test
-test: test-go test-openssl test-libressl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
+test: test-go test-openssl test-libressl test-boringssl test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
 
 .PHONY: site
 site: $(NEEDS_VENV)
