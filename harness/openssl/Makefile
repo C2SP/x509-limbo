@@ -21,3 +21,6 @@ libressl-%: libressl-%.dockerfile
 
 boringssl: boringssl.dockerfile
 	docker build -f $< . -t x509-limbo-boringssl
+
+aws-lc: aws-lc.dockerfile
+	docker build -f $< . -t x509-limbo-aws-lc
