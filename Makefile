@@ -89,6 +89,14 @@ test-openssl:
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.5.json -- docker run --rm -i x509-limbo-openssl-3.5"
 	$(MAKE) run ARGS="harness --output ./results/openssl-3.6.json -- docker run --rm -i x509-limbo-openssl-3.6"
 
+.PHONY: test-libressl
+test-libressl:
+	$(MAKE) -C harness/openssl libressl-3.9 libressl-4.0 libressl-4.1 libressl-4.2
+	$(MAKE) run ARGS="harness --output ./results/libressl-3.9.json -- docker run --rm -i x509-limbo-libressl-3.9"
+	$(MAKE) run ARGS="harness --output ./results/libressl-4.0.json -- docker run --rm -i x509-limbo-libressl-4.0"
+	$(MAKE) run ARGS="harness --output ./results/libressl-4.1.json -- docker run --rm -i x509-limbo-libressl-4.1"
+	$(MAKE) run ARGS="harness --output ./results/libressl-4.2.json -- docker run --rm -i x509-limbo-libressl-4.2"
+
 .PHONY: test-rust-webpki
 test-rust-webpki:
 	@cargo build --bin rust-webpki-harness

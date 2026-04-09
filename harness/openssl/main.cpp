@@ -13,6 +13,12 @@
 #include "date.hpp"
 #include "json.hpp"
 
+#if defined(LIBRESSL_VERSION_NUMBER)
+#define HARNESS_NAME "libressl-"
+#else
+#define HARNESS_NAME "openssl-"
+#endif
+
 #ifdef OPENSSL_VERSION_STR
 #define HARNESS_OPENSSL_VERSION_STR OPENSSL_VERSION_STR
 #elif defined(SHLIB_VERSION_NUMBER)
@@ -84,7 +90,13 @@ STACK_OF_X509_ptr x509_stack(const json &certs)
     barf("unexpected type: expected an array of certs");
   }
 
+#if defined(LIBRESSL_VERSION_NUMBER)
+  // LibreSSL doesn't have `sk_X509_new_reserve`.
+  auto *stack = sk_X509_new_null();
+#else
   auto *stack = sk_X509_new_reserve(nullptr, certs.size());
+#endif
+
   for (auto &cert : certs)
   {
     auto cert_pem = cert.template get<std::string>();
@@ -280,7 +292,7 @@ int main()
 
   json limbo_result = {
       {"version", 1},
-      {"harness", std::string("openssl-") + HARNESS_OPENSSL_VERSION_STR},
+      {"harness", std::string(HARNESS_NAME) + HARNESS_OPENSSL_VERSION_STR},
       {"results", std::move(results)},
   };
   std::cout << std::setw(2) << limbo_result << std::endl;
