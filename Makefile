@@ -92,11 +92,12 @@ test-openssl:
 
 .PHONY: test-libressl
 test-libressl:
-	$(MAKE) -C harness/openssl libressl-3.9 libressl-4.0 libressl-4.1 libressl-4.2
+	$(MAKE) -C harness/openssl libressl-3.9 libressl-4.0 libressl-4.1 libressl-4.2 libressl-4.3
 	$(MAKE) run ARGS="harness --output ./results/libressl-3.9.json -- docker run --rm -i x509-limbo-libressl-3.9"
 	$(MAKE) run ARGS="harness --output ./results/libressl-4.0.json -- docker run --rm -i x509-limbo-libressl-4.0"
 	$(MAKE) run ARGS="harness --output ./results/libressl-4.1.json -- docker run --rm -i x509-limbo-libressl-4.1"
 	$(MAKE) run ARGS="harness --output ./results/libressl-4.2.json -- docker run --rm -i x509-limbo-libressl-4.2"
+	$(MAKE) run ARGS="harness --output ./results/libressl-4.3.json -- docker run --rm -i x509-limbo-libressl-4.3"
 
 .PHONY: test-boringssl
 test-boringssl:
