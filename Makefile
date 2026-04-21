@@ -72,6 +72,7 @@ build-harnesses:
 	$(MAKE) -C harness/openssl
 	cargo build --bin rust-webpki-harness
 	cargo build --bin rust-rustls-harness
+	cargo build --bin rust-wtx-harness
 
 .PHONY: test-go
 test-go:
@@ -119,6 +120,11 @@ test-rustls-webpki:
 	@cargo build --bin rust-rustls-harness
 	$(MAKE) run ARGS="harness ./target/debug/rust-rustls-harness --output ./results/rustls-webpki.json"
 
+.PHONY: test-wtx
+test-wtx:
+	@cargo build --bin rust-wtx-harness
+	$(MAKE) run ARGS="harness ./target/debug/rust-wtx-harness --output ./results/wtx.json"
+
 .PHONY: test-pyca-cryptography
 test-pyca-cryptography: $(NEEDS_VENV)
 	$(MAKE) run ARGS="harness --output ./results/pyca-cryptography.json -- ./$(VENV_BIN)/python ./harness/pyca-cryptography/main.py"
@@ -132,7 +138,7 @@ test-gnutls:
 	$(MAKE) run ARGS="harness --output ./results/gnutls.json -- ./$(VENV_BIN)/python ./harness/gnutls/test-gnutls"
 
 .PHONY: test
-test: test-go test-openssl test-libressl test-boringssl test-aws-lc test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
+test: test-go test-openssl test-libressl test-boringssl test-aws-lc test-rust-webpki test-rustls-webpki test-wtx test-pyca-cryptography test-certvalidator test-gnutls
 
 .PHONY: site
 site: $(NEEDS_VENV)

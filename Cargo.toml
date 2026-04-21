@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["harness-support/rust", "harness/rust-webpki", "harness/rust-rustls"]
+members = ["harness-support/rust", "harness/rust-webpki", "harness/rust-rustls", "harness/wtx"]
