@@ -1,5 +1,5 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
+requires = ["flit_core >=3.12.0,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
@@ -12,7 +12,7 @@ authors = [
     { name = "The Python Cryptographic Authority and individual contributors", email = "cryptography-dev@python.org" },
 ]
 dependencies = [
-    "pydantic ~= 2.4",
+    "pydantic ~= 2.12",
     # For the `certvalidator` test harness.
     "certvalidator ~= 0.11",
     # TODO: Remove pending https://github.com/wbond/oscrypto/issues/78
@@ -21,7 +21,7 @@ dependencies = [
     "pyyaml ~= 6.0",
     "pyOpenSSL",
     "certifi",
-    "requests ~= 2.31",
+    "requests ~= 2.33",
     "Jinja2",
 ]
 requires-python = ">=3.11"
@@ -30,8 +30,8 @@ requires-python = ">=3.11"
 lint = [
     # NOTE: ruff is under active development, so we pin conservatively here
     # and let Dependabot periodically perform this update.
-    "ruff < 0.15.9",
-    "mypy >= 1.0",
+    "ruff < 0.15.10",
+    "mypy >= 1.20.0",
     "types-pyyaml",
     "types-pyOpenSSL",
     "types-requests",
