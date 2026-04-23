@@ -116,7 +116,9 @@ def evaluate_testcase(certtool: str, testcase: Testcase) -> TestcaseResult:
             return skip(testcase, f"unsupported peer name kind: {kind}")
 
     with pemfile(testcase.trusted_certs) as trust_root, pemfile(
-        [*testcase.untrusted_intermediates, testcase.peer_certificate]
+        # gnutls treats the first certificate in --infile as the EE cert
+        # See: https://github.com/C2SP/x509-limbo/issues/603
+        [testcase.peer_certificate, *testcase.untrusted_intermediates]
     ) as untrusted_chain:
         certtool_args.extend(
             [f"--load-ca-certificate={trust_root.name}", f"--infile={untrusted_chain.name}"]
