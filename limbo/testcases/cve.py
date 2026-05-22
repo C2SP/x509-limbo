@@ -339,3 +339,49 @@ def cve_2025_61727(builder: Builder) -> None:
         .expected_peer_name(PeerName(kind=PeerKind.DNS, value="bar.example.com"))
         .fails()
     )
+
+
+@testcase
+def cve_2025_61727_permits_variant(builder: Builder) -> None:
+    """
+    Like CVE-2025-61727, but with a single permitted subtree of `foo.example.com`:
+
+    ```
+    root -> ICA (NC: permit: foo.example.com) -> EE (SAN: *.example.com)
+    ```
+
+    In practice, like above, validators should behave defensively and reject chains where a subject
+    name *might* match a peer name that would violate the name constraint, even if the subject name
+    itself doesn't match the name constraint.
+    """
+
+    root = builder.root_ca()
+
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("foo.example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName([x509.DNSName("*.example.com")]),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="bar.example.com"))
+        .fails()
+    )
