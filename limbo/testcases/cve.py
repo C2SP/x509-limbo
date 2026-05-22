@@ -342,7 +342,7 @@ def cve_2025_61727(builder: Builder) -> None:
 
 
 @testcase
-def cve_2025_61727_permits_variant(builder: Builder) -> None:
+def cve_2025_61727_nc_permits_variant(builder: Builder) -> None:
     """
     Like CVE-2025-61727, but with a single permitted subtree of `foo.example.com`:
 
