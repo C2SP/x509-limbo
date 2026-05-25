@@ -17,11 +17,11 @@ dependencies = [
     "certvalidator ~= 0.11",
     # TODO: Remove pending https://github.com/wbond/oscrypto/issues/78
     "oscrypto @ git+https://github.com/wbond/oscrypto.git@1547f535001ba568b239b8797465536759c742a3",
-    "cryptography ~= 46.0",
+    "cryptography ~= 48.0",
     "pyyaml ~= 6.0",
     "pyOpenSSL",
     "certifi",
-    "requests ~= 2.33",
+    "requests ~= 2.34",
     "Jinja2",
 ]
 requires-python = ">=3.11"
@@ -30,8 +30,8 @@ requires-python = ">=3.11"
 lint = [
     # NOTE: ruff is under active development, so we pin conservatively here
     # and let Dependabot periodically perform this update.
-    "ruff < 0.15.12",
-    "mypy >= 1.20.1",
+    "ruff < 0.15.14",
+    "mypy >= 2.1.0",
     "types-pyyaml",
     "types-pyOpenSSL",
     "types-requests",
