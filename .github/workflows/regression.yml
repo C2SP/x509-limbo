@@ -15,6 +15,8 @@ jobs:
       cancel-in-progress: true
       group: ${{ github.workflow }}-${{ github.ref }}
 
+    # NOTE: This timeout was not chosen scientifically.
+    # We expect all harnesses to complete in much less time than this.
     timeout-minutes: 60
 
     steps:
