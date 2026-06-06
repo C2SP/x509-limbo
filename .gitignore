@@ -6,3 +6,6 @@ results.json
 results/
 
 __pycache__/
+
+# builds
+target/
