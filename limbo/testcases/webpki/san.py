@@ -179,6 +179,59 @@ def public_suffix_wildcard_san(builder: Builder) -> None:
 
 
 @testcase
+def public_suffix_multi_label_wildcard_san(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains a Subject Alternative Name with the dNSName `*.co.uk`.
+    Like the `*.com` case, conformant CAs should not issue such a certificate,
+    per CABF, and clients should reject it.
+
+    Unlike the `*.com` case, the wildcard here is followed by two labels.
+    Implementations that approximate the "public suffix" rule with a simple
+    "wildcard must be followed by at least two labels" heuristic will
+    incorrectly accept this certificate; rejecting it requires a real PSL
+    lookup (or an equivalent enumeration of multi-label public suffixes).
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("*.co.uk")]), critical=False),
+    )
+
+    builder = builder.server_validation().features([Feature.pedantic_public_suffix_wildcard])
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.co.uk")
+    ).fails()
+
+
+@testcase
+def public_suffix_private_namespace_wildcard_san(builder: Builder) -> None:
+    """
+    Produces a chain with an EE cert.
+
+    This EE cert contains a Subject Alternative Name with the dNSName
+    `*.s3.amazonaws.com`. The `s3.amazonaws.com` suffix is listed in the
+    Public Suffix List's PRIVATE DOMAINS section, so per CABF a conformant
+    CA should not issue this certificate and clients should reject it.
+
+    The wildcard here is followed by three labels, so neither a "≥2 labels"
+    nor a "≥3 labels" heuristic suffices to reject it. Doing so correctly
+    requires consulting the PSL (including its private-domains section).
+    """
+    root = builder.root_ca()
+    leaf = builder.leaf_cert(
+        root,
+        san=ext(x509.SubjectAlternativeName([x509.DNSName("*.s3.amazonaws.com")]), critical=False),
+    )
+
+    builder = builder.server_validation().features([Feature.pedantic_public_suffix_wildcard])
+    builder.trusted_certs(root).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind="DNS", value="example.s3.amazonaws.com")
+    ).fails()
+
+
+@testcase
 def leftmost_wildcard_san(builder: Builder) -> None:
     """
     Produces a chain with an EE cert.
