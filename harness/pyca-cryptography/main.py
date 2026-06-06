@@ -77,6 +77,8 @@ LIMBO_SKIP_TESTCASES = {
     # with what webpki and rustls do, but inconsistent with Go and OpenSSL.
     "rfc5280::ca-as-leaf",
     "pathlen::validation-ignores-pathlen-in-leaf",
+    # Not fixed upstream yet.
+    "pathological::pathological-chain-same-subject-same-key",
 }
 
 
@@ -95,6 +97,8 @@ def _skip(tc: Testcase, msg: str) -> TestcaseResult:
 
 
 def evaluate_testcase(testcase: Testcase) -> TestcaseResult:
+    print(f"Evaluating: {testcase.id}", file=sys.stderr)
+
     if testcase.id in LIMBO_SKIP_TESTCASES:
         return _skip(testcase, "testcase skipped (explicitly unsupported case)")
 
