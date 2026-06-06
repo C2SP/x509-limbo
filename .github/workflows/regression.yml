@@ -11,6 +11,14 @@ jobs:
       issues: write
       pull-requests: write
 
+    concurrency:
+      cancel-in-progress: true
+      group: ${{ github.workflow }}-${{ github.ref }}
+
+    # NOTE: This timeout was not chosen scientifically.
+    # We expect all harnesses to complete in much less time than this.
+    timeout-minutes: 60
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -27,4 +35,3 @@ jobs:
         run: make run ARGS="regression"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-

@@ -444,3 +444,143 @@ def nc_dos_3(builder: Builder) -> None:
         .expected_peer_name(PeerName(kind="DNS", value="t0.test"))
         .fails()
     )
+
+
+def _unrooted_intermediate_chain(
+    builder: Builder, *, same_subject: bool, same_key: bool, count: int = 100
+) -> None:
+    """
+    Builds a `count`-long chain of intermediate CAs, where each intermediate is
+    signed by the previous one (the first being self-signed), and a leaf signed
+    by the final intermediate.
+
+    Whether the intermediates share a subject and/or a key is controlled by
+    `same_subject` and `same_key`. None of these intermediates chain up to a
+    trusted root, so no valid chain can be built; the point is to exercise the
+    implementation's path-building algorithm, which may consider every
+    same-subject (and especially every same-subject, same-key) intermediate as
+    a potential parent of every other.
+
+    This mirrors Go's `TestPathologicalChains`.
+    """
+    # When all intermediates share a key, generate it once up front.
+    shared_key = ec.generate_private_key(ec.SECP256R1()) if same_key else None
+
+    intermediates: list[CertificatePair] = []
+    parent: CertificatePair | None = None
+    for i in range(count):
+        cn = "Pathological CA" if same_subject else f"Pathological CA #{i}"
+        subject = x509.Name.from_rfc4514_string(f"CN={cn}")
+        key = shared_key if shared_key is not None else ec.generate_private_key(ec.SECP256R1())
+
+        # NOTE: AKI/SKI/SAN are disabled so that path building must disambiguate
+        # candidate parents by subject/issuer name (and signature) alone.
+        if parent is None:
+            # The first intermediate is self-signed.
+            parent = builder.root_ca(
+                issuer=subject,
+                subject=subject,
+                key=key,
+                san=None,
+                aki=None,
+                ski=None,
+            )
+        else:
+            parent = builder.intermediate_ca(
+                parent,
+                subject=subject,
+                key=key,
+                san=None,
+                aki=None,
+                ski=None,
+            )
+        intermediates.append(parent)
+
+    leaf = builder.leaf_cert(intermediates[-1])
+
+    # NOTE: The trusted root is unrelated to the pathological chain, so no valid
+    # path to a trust anchor exists.
+    root = builder.root_ca()
+    builder.server_validation().features([Feature.denial_of_service]).trusted_certs(
+        root
+    ).untrusted_intermediates(*intermediates).peer_certificate(leaf).fails()
+
+
+@testcase
+def pathological_chain_distinct_subject_distinct_key(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    ICA #0 (self-signed) <- ICA #1 <- ... <- ICA #99 <- EE
+    ```
+
+    A chain of 100 intermediate CAs, each with a distinct subject and a distinct
+    key, none of which chain up to a trusted root. No valid chain can be built.
+
+    This is the "easy" pathological case from Go's `TestPathologicalChains`:
+    each intermediate has a unique subject and key, so a path builder should be
+    able to prune candidate parents quickly.
+    """
+    _unrooted_intermediate_chain(builder, same_subject=False, same_key=False)
+
+
+@testcase
+def pathological_chain_same_subject_distinct_key(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    ICA (self-signed) <- ICA <- ... <- ICA <- EE
+    ```
+
+    A chain of 100 intermediate CAs that all share a single subject but each
+    have a distinct key, none of which chain up to a trusted root. No valid
+    chain can be built.
+
+    Because every intermediate shares a subject, a path builder may consider all
+    100 of them as candidate parents for each intermediate, exercising the
+    quadratic blowup described in Go's `TestPathologicalChains`.
+    """
+    _unrooted_intermediate_chain(builder, same_subject=True, same_key=False)
+
+
+@testcase
+def pathological_chain_distinct_subject_same_key(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    ICA #0 (self-signed) <- ICA #1 <- ... <- ICA #99 <- EE
+    ```
+
+    A chain of 100 intermediate CAs that each have a distinct subject but all
+    share a single key, none of which chain up to a trusted root. No valid chain
+    can be built.
+
+    Because every intermediate shares a key, each intermediate's signature
+    verifies against every other intermediate's public key, exercising the
+    pathological behavior described in Go's `TestPathologicalChains`.
+    """
+    _unrooted_intermediate_chain(builder, same_subject=False, same_key=True)
+
+
+@testcase
+def pathological_chain_same_subject_same_key(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    ICA (self-signed) <- ICA <- ... <- ICA <- EE
+    ```
+
+    A chain of 100 intermediate CAs that all share both a single subject and a
+    single key, none of which chain up to a trusted root. No valid chain can be
+    built.
+
+    This is the worst case from Go's `TestPathologicalChains`: every
+    intermediate shares both subject and key, so every intermediate appears to
+    have signed every other, producing the largest possible set of candidate
+    parents for each step of path building.
+    """
+    _unrooted_intermediate_chain(builder, same_subject=True, same_key=True)

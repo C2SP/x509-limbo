@@ -174,13 +174,14 @@ def _harness(args: argparse.Namespace) -> None:
         limbo_json = Limbo(version=1, testcases=testcases).json()
 
     try:
+        # NOTE: Only stdout is captured (it holds the results we persist);
+        # stderr is left to inherit our own, so the harness's progress output
+        # streams live instead of being buffered until the process exits.
         result = subprocess.run(
-            args.harness, input=limbo_json, encoding="utf-8", capture_output=True, check=True
+            args.harness, input=limbo_json, encoding="utf-8", stdout=subprocess.PIPE, check=True
         )
-        print(result.stderr, file=sys.stderr)
         args.output.write_text(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(e.stderr, file=sys.stderr)
+    except subprocess.CalledProcessError:
         sys.exit(1)
 
 
