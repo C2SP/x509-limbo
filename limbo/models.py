@@ -33,6 +33,7 @@ class ActualResult(StrEnum):
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
     SKIPPED = "SKIPPED"
+    HANG = "HANG"
 
 
 class PeerKind(StrEnum):

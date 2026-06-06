@@ -168,6 +168,7 @@ for harness_result in harness_results:
         unexpected_failures: list[TestcaseResult] = []
         unexpected_passes: list[TestcaseResult] = []
         skipped_testcases: list[TestcaseResult] = []
+        hung_testcases: list[TestcaseResult] = []
         for testcase_result in harness_result.results:
             try:
                 # The local results might be newer than the latest test suite,
@@ -185,6 +186,8 @@ for harness_result in harness_results:
                     unexpected_passes.append(testcase_result)
                 case (_, "SKIPPED"):
                     skipped_testcases.append(testcase_result)
+                case (_, "HANG"):
+                    hung_testcases.append(testcase_result)
 
         sections: dict[str, tuple[str, list[TestcaseResult]]] = {
             "Unexpected verifications": (
@@ -198,6 +201,10 @@ for harness_result in harness_results:
             "Skipped tests": (
                 "These testcases were skipped due to a harness or implementation limitation.",
                 skipped_testcases,
+            ),
+            "Hung tests": (
+                "These testcases timed out, suggesting a hang during verification.",
+                hung_testcases,
             ),
         }
 

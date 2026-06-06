@@ -9,6 +9,7 @@ pub enum ActualResult {
     Success,
     Failure,
     Skipped,
+    Hang,
 }
 
 #[derive(Serialize)]
