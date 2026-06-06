@@ -1,6 +1,6 @@
 import ipaddress
+import multiprocessing as mp
 import sys
-from concurrent.futures import ThreadPoolExecutor
 
 from cryptography import __version__ as pyca_version
 from cryptography import x509
@@ -19,6 +19,10 @@ from limbo.models import (
     TestcaseResult,
     ValidationKind,
 )
+
+# Certificate validation should, extremely conservatively, absolutely never take
+# more than this many seconds. Anything slower is treated as a hang.
+TIMEOUT_SECONDS = 5
 
 LIMBO_UNSUPPORTED_FEATURES = {
     # NOTE: Path validation is required to reject wildcards on public suffixes,
@@ -145,22 +149,58 @@ def evaluate_testcase(testcase: Testcase) -> TestcaseResult:
         return TestcaseResult(id=testcase.id, actual_result=ActualResult.FAILURE, context=str(e))
 
 
+def _worker(testcase_json: str, conn) -> None:
+    result = evaluate_testcase(Testcase.model_validate_json(testcase_json))
+    conn.send(result.model_dump_json())
+    conn.close()
+
+
+def _evaluate_with_cancellation(testcase: Testcase) -> TestcaseResult:
+    ctx = mp.get_context()
+    recv_conn, send_conn = ctx.Pipe(duplex=False)
+    proc = ctx.Process(target=_worker, args=(testcase.model_dump_json(), send_conn), daemon=True)
+    proc.start()
+    send_conn.close()  # the parent only reads; closing our copy lets us see EOF
+
+    try:
+        if recv_conn.poll(TIMEOUT_SECONDS):
+            try:
+                return TestcaseResult.model_validate_json(recv_conn.recv())
+            except EOFError:
+                # The worker died without sending a result (e.g. a crash in the
+                # native core). Report it rather than hanging or raising.
+                proc.join()
+                print(f"CRASH: {testcase.id} (exit code {proc.exitcode})", file=sys.stderr)
+                return TestcaseResult(
+                    id=testcase.id,
+                    actual_result=ActualResult.FAILURE,
+                    context=f"worker crashed without a result (exit code {proc.exitcode})",
+                )
+        # Nothing within the timeout and the worker is still alive: a true hang.
+        print(f"HANG: {testcase.id}", file=sys.stderr)
+        return TestcaseResult(
+            id=testcase.id, actual_result=ActualResult.HANG, context="testcase timed out"
+        )
+    finally:
+        if proc.is_alive():
+            proc.terminate()
+        proc.join()
+        recv_conn.close()
+
+
 def main():
     limbo = Limbo.model_validate_json(sys.stdin.read())
 
     results: list[TestcaseResult] = []
     for testcase in limbo.testcases:
-        # NOTE: This is not for true parallelism, just a way to give us cancellation.
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            fut = executor.submit(evaluate_testcase, testcase)
-            try:
-                # Certificate validation should, extremely conservatively,
-                # absolutely never take more than 5 seconds.
-                result = fut.result(timeout=5)
-            except TimeoutError:
-                result = TestcaseResult(
-                    id=testcase.id, actual_result=ActualResult.HANG, context="testcase timed out"
-                )
+        # Only denial-of-service testcases can plausibly hang, and the
+        # out-of-process timeout machinery costs a subprocess spawn per case. So
+        # gate it on that feature and run everything else inline, avoiding that
+        # overhead across the full suite.
+        if Feature.denial_of_service in testcase.features:
+            result = _evaluate_with_cancellation(testcase)
+        else:
+            result = evaluate_testcase(testcase)
         results.append(result)
 
     print(
