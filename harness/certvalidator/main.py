@@ -83,9 +83,8 @@ def main():
                 # absolutely never take more than 5 seconds.
                 result = fut.result(timeout=5)
             except TimeoutError:
-                # NOTE: We need a better result type here.
                 result = TestcaseResult(
-                    id=testcase.id, actual_result=ActualResult.SKIPPED, context="testcase timed out"
+                    id=testcase.id, actual_result=ActualResult.HANG, context="testcase timed out"
                 )
         results.append(result)
 
