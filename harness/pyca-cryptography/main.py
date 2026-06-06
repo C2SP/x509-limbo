@@ -1,5 +1,6 @@
 import ipaddress
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 from cryptography import __version__ as pyca_version
 from cryptography import x509
@@ -149,7 +150,18 @@ def main():
 
     results: list[TestcaseResult] = []
     for testcase in limbo.testcases:
-        results.append(evaluate_testcase(testcase))
+        # NOTE: This is not for true parallelism, just a way to give us cancellation.
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            fut = executor.submit(evaluate_testcase, testcase)
+            try:
+                # Certificate validation should, extremely conservatively,
+                # absolutely never take more than 5 seconds.
+                result = fut.result(timeout=5)
+            except TimeoutError:
+                result = TestcaseResult(
+                    id=testcase.id, actual_result=ActualResult.HANG, context="testcase timed out"
+                )
+        results.append(result)
 
     print(
         LimboResult(
