@@ -357,3 +357,34 @@ def max_chain_depth_1_self_issued(builder: Builder) -> None:
         .max_chain_depth(1)
         .succeeds()
     )
+
+
+@testcase
+def max_chain_depth_too_long(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA1 -> ICA2 -> ICA3 -> ICA4 -> leaf
+    ```
+
+    When validating with a maximum chain depth of 3, there
+    may only be 3 logical intermediates. However, this chain has
+    4.
+    """
+
+    root = builder.root_ca()
+    ica_1 = builder.intermediate_ca(root)
+    ica_2 = builder.intermediate_ca(ica_1)
+    ica_3 = builder.intermediate_ca(ica_2)
+    ica_4 = builder.intermediate_ca(ica_3)
+    leaf = builder.leaf_cert(ica_4)
+
+    builder = builder.server_validation().features([Feature.max_chain_depth])
+    builder = (
+        builder.trusted_certs(root)
+        .untrusted_intermediates(ica_1, ica_2, ica_3, ica_4)
+        .peer_certificate(leaf)
+        .max_chain_depth(3)
+        .fails()
+    )
