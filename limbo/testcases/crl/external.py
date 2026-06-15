@@ -9,9 +9,9 @@ from limbo.testcases._core import Builder, testcase
 
 def _external_crl_testcase(builder: Builder, name: str) -> Builder:
     validation_time = datetime.fromisoformat("2025-01-15T00:00:00Z")
-    root = ASSETS_PATH / "crl_cases_ca.pem"
-    leaf = ASSETS_PATH / "crl_cases_leaf.pem"
-    crl = ASSETS_PATH / f"{name}.crl"
+    root = ASSETS_PATH / "crl" / "crl_cases_ca.pem"
+    leaf = ASSETS_PATH / "crl" / "crl_cases_leaf.pem"
+    crl = ASSETS_PATH / "crl" / f"{name}.crl"
 
     return (
         builder.features([Feature.has_crl])
