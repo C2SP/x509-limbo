@@ -30,13 +30,12 @@ def crl_invalid_version(builder: Builder) -> None:
     """
     Tests a Certificate Revocation List (CRL) with an invalid version.
 
-    Encapsulates a simple test case where a certificate has been revoked by the CA
-    through a malformed CRL with an invalid `version` field. The CA certificate
-    and CRL are provided, and the leaf certificate is expected to be accepted as
-    the CRL is invalid.
+    The CRL revokes an arbitrary certificate but has an invalid `version` field.
+    The leaf certificate should be rejected because the CRL is invalid and cannot
+    establish the leaf's revocation status.
     """
 
-    _external_crl_testcase(builder, "bad_version").succeeds()
+    _external_crl_testcase(builder, "bad_version").fails()
 
 
 @testcase
@@ -44,12 +43,13 @@ def crl_update_generalizedtime_2025(builder: Builder) -> None:
     """
     Tests a Certificate Revocation List (CRL) with invalid (re)issue date encodings.
 
-    The CRL includes `This Update` and `Next Update` fields encoding dates in the year
-    2025 as `GeneralizedTime`. This is forbidden per RFC 5280 5.2.1.4 and 5.2.1.5, thus
-    the leaf certificate that the CRL revokes should be accepted.
+    The CRL revokes an arbitrary certificate but includes `thisUpdate` and
+    `nextUpdate` fields encoding dates in the year 2025 as `GeneralizedTime`.
+    This is forbidden per RFC 5280 5.2.1.4 and 5.2.1.5; path building should fail
+    because the CRL is invalid and cannot establish the leaf's revocation status.
     """
 
-    _external_crl_testcase(builder, "generalized_time_2025").succeeds()
+    _external_crl_testcase(builder, "generalized_time_2025").fails()
 
 
 @testcase
@@ -57,9 +57,9 @@ def crl_missing_next_update(builder: Builder) -> None:
     """
     Tests a Certificate Revocation List (CRL) missing the nextUpdate field.
 
-    The CRL revokes the leaf certificate but omits `nextUpdate`. This is forbidden
-    per RFC 5280 5.1.2.5, thus the leaf certificate should be accepted as the CRL
-    is invalid.
+    The CRL revokes an arbitrary certificate but omits `nextUpdate`. This is
+    forbidden per RFC 5280 5.1.2.5, so the leaf certificate should be rejected
+    because the CRL is invalid and cannot establish the leaf's revocation status.
     """
 
-    _external_crl_testcase(builder, "missing_next_update").succeeds()
+    _external_crl_testcase(builder, "missing_next_update").fails()
