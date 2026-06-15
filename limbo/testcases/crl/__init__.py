@@ -10,6 +10,8 @@ from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 from limbo.models import Feature, Importance, PeerKind, PeerName
 from limbo.testcases._core import Builder, ext, testcase
 
+from .cabf import *  # noqa: F403
+from .idp import *  # noqa: F403
 from .structure import *  # noqa: F403
 from .temporal import *  # noqa: F403
 
