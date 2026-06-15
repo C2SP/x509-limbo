@@ -11,6 +11,7 @@ from limbo.models import Feature, Importance, PeerKind, PeerName
 from limbo.testcases._core import Builder, ext, testcase
 
 from .structure import *  # noqa: F403
+from .temporal import *  # noqa: F403
 
 
 @testcase
