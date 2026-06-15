@@ -17,7 +17,7 @@ SEQUENCE {
   GeneralizedTime { "20250130060000Z" }
   SEQUENCE {
     SEQUENCE {
-      INTEGER { `258c6cc5ce5072af167f7df02a85506ca358a4a4` }
+      INTEGER { 1 }
       UTCTime { "250102060000Z" }
     }
   }
