@@ -50,3 +50,16 @@ def crl_update_generalizedtime_2025(builder: Builder) -> None:
     """
 
     _external_crl_testcase(builder, "generalized_time_2025").succeeds()
+
+
+@testcase
+def crl_missing_next_update(builder: Builder) -> None:
+    """
+    Tests a Certificate Revocation List (CRL) missing the nextUpdate field.
+
+    The CRL revokes the leaf certificate but omits `nextUpdate`. This is forbidden
+    per RFC 5280 5.1.2.5, thus the leaf certificate should be accepted as the CRL
+    is invalid.
+    """
+
+    _external_crl_testcase(builder, "missing_next_update").succeeds()
