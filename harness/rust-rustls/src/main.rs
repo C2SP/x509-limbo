@@ -102,15 +102,18 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         ring::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
     ];
 
-    let crls = tc
+    let crls = match tc
         .crls
         .iter()
         .map(|pem| {
             webpki::OwnedCertRevocationList::from_der(crl_der_from_pem(pem).as_ref())
-                .unwrap_or_else(|e| panic!("crl: tc {} DER parse failed: {e}", tc.id.to_string()))
-                .into()
+                .map(|crl| crl.into())
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()
+    {
+        Ok(crls) => crls,
+        Err(e) => return TestcaseResult::fail(tc, &format!("crl: DER parse failed: {e}")),
+    };
     let crls = crls.iter().collect::<Vec<_>>();
 
     let revocation_options = if !crls.is_empty() {
