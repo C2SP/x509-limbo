@@ -14,6 +14,7 @@ from limbo.testcases._core import Builder, testcase
 from .aki import *  # noqa: F403
 from .cn import *  # noqa: F403
 from .eku import *  # noqa: F403
+from .ku import *  # noqa: F403
 from .nc import *  # noqa: F403
 from .san import *  # noqa: F403
 
