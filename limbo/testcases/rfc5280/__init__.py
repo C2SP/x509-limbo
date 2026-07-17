@@ -301,7 +301,7 @@ def intermediate_ca_missing_basic_constraints(builder: Builder) -> None:
     leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
 
 
 @testcase
@@ -437,7 +437,7 @@ def ica_ku_keycertsign(builder: Builder) -> None:
     leaf = builder.leaf_cert(intermediate)
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).peer_certificate(leaf).fails()
+    builder.trusted_certs(root).untrusted_intermediates(intermediate).peer_certificate(leaf).fails()
 
 
 @testcase

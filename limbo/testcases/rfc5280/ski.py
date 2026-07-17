@@ -26,7 +26,12 @@ def critical_ski(builder: Builder) -> None:
     root = builder.root_ca(
         ski=ext(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=True),
     )
-    leaf = builder.leaf_cert(root)
+    leaf = builder.leaf_cert(
+        root,
+        aki=ext(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False
+        ),
+    )
 
     builder = builder.server_validation()
     builder = builder.trusted_certs(root).peer_certificate(leaf).fails()
