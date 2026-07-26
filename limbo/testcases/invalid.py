@@ -17,7 +17,7 @@ class MalformedRSAPrivateKey(rsa.RSAPrivateKey):
         self,
         data: bytes,
         padding: AsymmetricPadding,
-        algorithm: asym_utils.Prehashed | hashes.HashAlgorithm,
+        algorithm: asym_utils.Prehashed | hashes.HashAlgorithm | asym_utils.NoDigestInfo,
     ) -> bytes:
         # SEQUENCE {}
         return b"\x30\x00"
@@ -44,6 +44,9 @@ class MalformedRSAPrivateKey(rsa.RSAPrivateKey):
         raise NotImplementedError
 
     def __copy__(self) -> MalformedRSAPrivateKey:
+        raise NotImplementedError
+
+    def __deepcopy__(self, memo: dict) -> MalformedRSAPrivateKey:
         raise NotImplementedError
 
 
@@ -88,7 +91,7 @@ class MalformedRSAPublicKey(rsa.RSAPublicKey):
         self,
         signature: bytes,
         padding: AsymmetricPadding,
-        algorithm: hashes.HashAlgorithm | None,
+        algorithm: hashes.HashAlgorithm | asym_utils.NoDigestInfo | None,
     ) -> bytes:
         raise NotImplementedError
 
@@ -102,6 +105,9 @@ class MalformedRSAPublicKey(rsa.RSAPublicKey):
         raise NotImplementedError
 
     def __copy__(self) -> MalformedRSAPublicKey:
+        raise NotImplementedError
+
+    def __deepcopy__(self, memo: dict) -> MalformedRSAPublicKey:
         raise NotImplementedError
 
 

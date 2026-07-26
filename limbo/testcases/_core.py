@@ -8,7 +8,7 @@ from typing import Literal, Self
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, mldsa
 from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPrivateKeyTypes
 
 from limbo.assets import (
@@ -30,6 +30,24 @@ from limbo.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def signature_hash(key: CertificateIssuerPrivateKeyTypes) -> hashes.SHA256 | None:
+    """
+    Returns the hash algorithm to sign with under the given key, or `None` for
+    key types that don't take a separate digest (EdDSA and ML-DSA).
+    """
+    match key:
+        case (
+            ed25519.Ed25519PrivateKey()
+            | ed448.Ed448PrivateKey()
+            | mldsa.MLDSA44PrivateKey()
+            | mldsa.MLDSA65PrivateKey()
+            | mldsa.MLDSA87PrivateKey()
+        ):
+            return None
+        case _:
+            return hashes.SHA256()
 
 
 class Builder:
@@ -116,9 +134,9 @@ class Builder:
             builder = builder.add_extension(extra_extension.ext, critical=extra_extension.critical)
 
         if parent:
-            cert = builder.sign(parent.key, algorithm=hashes.SHA256())
+            cert = builder.sign(parent.key, algorithm=signature_hash(parent.key))
         else:
-            cert = builder.sign(key, algorithm=hashes.SHA256())
+            cert = builder.sign(key, algorithm=signature_hash(key))
 
         return CertificatePair(cert, key)
 
@@ -360,7 +378,7 @@ class Builder:
 
         certificate = builder.sign(
             private_key=parent.key,
-            algorithm=hashes.SHA256(),
+            algorithm=signature_hash(parent.key),
         )
 
         return CertificatePair(certificate, key)
@@ -407,7 +425,7 @@ class Builder:
 
         crl = builder.sign(
             private_key=key,
-            algorithm=hashes.SHA256(),
+            algorithm=signature_hash(key),
         )
 
         return crl

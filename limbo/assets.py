@@ -13,6 +13,7 @@ from typing import Generic, TypeVar
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import dsa, ec, rsa
 from cryptography.hazmat.primitives.asymmetric.types import CertificateIssuerPrivateKeyTypes
 from cryptography.x509 import ExtensionType
 
@@ -51,9 +52,17 @@ class CertificatePair(Certificate):
 
     @cached_property
     def key_pem(self) -> str:
+        # NOTE: Not every key type has a "traditional" (i.e. non-PKCS#8)
+        # serialization; ML-DSA and EdDSA keys are PKCS#8 only.
+        match self.key:
+            case dsa.DSAPrivateKey() | ec.EllipticCurvePrivateKey() | rsa.RSAPrivateKey():
+                format = serialization.PrivateFormat.TraditionalOpenSSL
+            case _:
+                format = serialization.PrivateFormat.PKCS8
+
         return self.key.private_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            format=format,
             encryption_algorithm=serialization.NoEncryption(),
         ).decode()
 
