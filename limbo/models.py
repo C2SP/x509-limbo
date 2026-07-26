@@ -90,6 +90,9 @@ class SignatureAlgorithm(StrEnum):
     DSA_WITH_SHA512 = "DSA_WITH_SHA512"
     ED25519 = "ED25519"
     ED448 = "ED448"
+    ML_DSA_44 = "ML_DSA_44"
+    ML_DSA_65 = "ML_DSA_65"
+    ML_DSA_87 = "ML_DSA_87"
     GOSTR3411_94_WITH_3410_2001 = "GOSTR3411_94_WITH_3410_2001"
     GOSTR3410_2012_WITH_3411_2012_256 = "GOSTR3410_2012_WITH_3411_2012_256"
     GOSTR3410_2012_WITH_3411_2012_512 = "GOSTR3410_2012_WITH_3411_2012_512"
@@ -219,6 +222,11 @@ class Feature(StrEnum):
     has_crl = "has-crl"
     """
     Tests that use Certificate Revocation Lists (CRLs).
+    """
+
+    has_mldsa = "has-mldsa"
+    """
+    Tests that use ML-DSA keys or signatures, per RFC 9881.
     """
 
 
