@@ -6,8 +6,8 @@ use limbo_harness_support::models::{
 use pki_types::pem::PemObject;
 use pki_types::{CertificateDer, CertificateRevocationListDer, ServerName, UnixTime};
 use webpki::{
-    anchor_from_trusted_cert, ring, EndEntityCert, ExpirationPolicy, KeyUsage,
-    OwnedCertRevocationList, RevocationCheckDepth, RevocationOptionsBuilder, UnknownStatusPolicy,
+    anchor_from_trusted_cert, EndEntityCert, ExpirationPolicy, KeyUsage, OwnedCertRevocationList,
+    RevocationCheckDepth, RevocationOptionsBuilder, UnknownStatusPolicy, ALL_VERIFICATION_ALGS,
 };
 
 fn main() {
@@ -100,17 +100,6 @@ fn run_validation(tc: &Testcase) -> Result<(), String> {
             .build()
     });
 
-    let sig_algs = &[
-        ring::ECDSA_P256_SHA256,
-        ring::ECDSA_P384_SHA384,
-        ring::RSA_PKCS1_2048_8192_SHA256,
-        ring::RSA_PKCS1_2048_8192_SHA384,
-        ring::RSA_PKCS1_2048_8192_SHA512,
-        ring::RSA_PSS_2048_8192_SHA256_LEGACY_KEY,
-        ring::RSA_PSS_2048_8192_SHA384_LEGACY_KEY,
-        ring::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
-    ];
-
     let leaf_der = cert_der_from_pem(&tc.peer_certificate);
     let leaf =
         EndEntityCert::try_from(&leaf_der).map_err(|e| format!("leaf cert parse failed: {e}"))?;
@@ -122,7 +111,7 @@ fn run_validation(tc: &Testcase) -> Result<(), String> {
     );
 
     leaf.verify_for_usage(
-        sig_algs,
+        ALL_VERIFICATION_ALGS,
         &trust_anchors,
         &intermediates[..],
         validation_time,
