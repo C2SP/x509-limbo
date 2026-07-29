@@ -3,6 +3,7 @@ use limbo_harness_support::load_limbo;
 use limbo_harness_support::models::{
     Feature, LimboResult, Testcase, TestcaseResult, ValidationKind,
 };
+use pki_types::pem::PemObject;
 use pki_types::{CertificateDer, CertificateRevocationListDer, ServerName, UnixTime};
 use webpki::{
     anchor_from_trusted_cert, ring, EndEntityCert, ExpirationPolicy, KeyUsage,
@@ -101,7 +102,10 @@ fn run_validation(tc: &Testcase) -> Result<(), String> {
         .crls
         .iter()
         .map(|pem| {
-            OwnedCertRevocationList::from_der(crl_der_from_pem(pem).as_ref())
+            let der = CertificateRevocationListDer::from_pem_slice(pem.as_bytes())
+                .map_err(|e| format!("CRL PEM parse failed: {e}"))?;
+
+            OwnedCertRevocationList::from_der(der.as_ref())
                 .map(Into::into)
                 .map_err(|e| format!("CRL DER parse failed: {e}"))
         })
@@ -142,11 +146,7 @@ fn run_validation(tc: &Testcase) -> Result<(), String> {
 }
 
 fn cert_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> CertificateDer<'static> {
-    let pem = pem::parse(bytes).expect("cert: PEM parse failed");
-    CertificateDer::from(pem.contents()).into_owned()
-}
-
-fn crl_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> CertificateRevocationListDer<'static> {
-    let pem = pem::parse(bytes).expect("crl: PEM parse failed");
-    CertificateRevocationListDer::from(pem.into_contents())
+    CertificateDer::from_pem_slice(bytes.as_ref())
+        .expect("cert PEM parse failed")
+        .into_owned()
 }
