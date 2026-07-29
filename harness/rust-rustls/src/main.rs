@@ -26,17 +26,8 @@ fn main() {
     serde_json::to_writer_pretty(std::io::stdout(), &result).unwrap();
 }
 
-fn cert_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> CertificateDer<'static> {
-    let pem = pem::parse(bytes).expect("cert: PEM parse failed");
-    CertificateDer::from(pem.contents()).into_owned()
-}
-
-fn crl_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> CertificateRevocationListDer<'static> {
-    let pem = pem::parse(bytes).expect("crl: PEM parse failed");
-    CertificateRevocationListDer::from(pem.into_contents())
-}
-
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
+    // Check for skipped features first
     if tc.features.contains(&Feature::MaxChainDepth) {
         return TestcaseResult::skip(
             tc,
@@ -56,10 +47,17 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::skip(tc, "key_usage not supported yet");
     }
 
+    match run_validation(tc) {
+        Ok(()) => TestcaseResult::success(tc),
+        Err(err) => TestcaseResult::fail(tc, &err),
+    }
+}
+
+/// Run validation and return Ok(()) on success, or an error message on failure
+fn run_validation(tc: &Testcase) -> Result<(), String> {
     let leaf_der = cert_der_from_pem(&tc.peer_certificate);
-    let Ok(leaf) = EndEntityCert::try_from(&leaf_der) else {
-        return TestcaseResult::fail(tc, "leaf cert: X.509 parse failed");
-    };
+    let leaf =
+        EndEntityCert::try_from(&leaf_der).map_err(|e| format!("leaf cert parse failed: {e}"))?;
 
     let intermediates = tc
         .untrusted_intermediates
@@ -75,17 +73,12 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
 
     let trust_anchors = trust_anchor_ders
         .iter()
-        .filter_map(|der| {
-            anchor_from_trusted_cert(der)
-                .inspect_err(|e| {
-                    eprintln!(
-                        "warning: {}: skipping invalid trust anchor: {e}",
-                        tc.id.as_str()
-                    );
-                })
-                .ok()
-        })
+        .filter_map(|der| anchor_from_trusted_cert(der).ok())
         .collect::<Vec<_>>();
+
+    if trust_anchors.is_empty() && !trust_anchor_ders.is_empty() {
+        return Err("trust anchor extraction failed".into());
+    }
 
     let validation_time = UnixTime::since_unix_epoch(
         (tc.validation_time.unwrap_or(Utc::now()) - DateTime::UNIX_EPOCH)
@@ -109,10 +102,10 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         .iter()
         .map(|pem| {
             OwnedCertRevocationList::from_der(crl_der_from_pem(pem).as_ref())
-                .unwrap_or_else(|e| panic!("crl: tc {} DER parse failed: {e}", tc.id.as_str()))
-                .into()
+                .map(Into::into)
+                .map_err(|e| format!("CRL DER parse failed: {e}"))
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let crls = crls.iter().collect::<Vec<_>>();
 
     let revocation_options = if !crls.is_empty() {
@@ -125,7 +118,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         None
     };
 
-    if let Err(e) = leaf.verify_for_usage(
+    leaf.verify_for_usage(
         sig_algs,
         &trust_anchors,
         &intermediates[..],
@@ -133,22 +126,27 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         KeyUsage::server_auth(),
         revocation_options,
         None,
-    ) {
-        return TestcaseResult::fail(tc, &e.to_string());
-    }
+    )
+    .map_err(|e| e.to_string())?;
 
     // Verify subject name if expected
     if let Some(peer_name) = tc.expected_peer_name.as_ref() {
         let subject_name = ServerName::try_from(peer_name.value.as_str())
-            .unwrap_or_else(|_| panic!("invalid expected peer name: {peer_name:?}"));
+            .map_err(|_| format!("invalid expected peer name: {:?}", peer_name))?;
 
-        if leaf
-            .verify_is_valid_for_subject_name(&subject_name)
-            .is_err()
-        {
-            return TestcaseResult::fail(tc, "subject name validation failed");
-        }
+        leaf.verify_is_valid_for_subject_name(&subject_name)
+            .map_err(|_| "subject name validation failed")?;
     }
 
-    TestcaseResult::success(tc)
+    Ok(())
+}
+
+fn cert_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> CertificateDer<'static> {
+    let pem = pem::parse(bytes).expect("cert: PEM parse failed");
+    CertificateDer::from(pem.contents()).into_owned()
+}
+
+fn crl_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> CertificateRevocationListDer<'static> {
+    let pem = pem::parse(bytes).expect("crl: PEM parse failed");
+    CertificateRevocationListDer::from(pem.into_contents())
 }
