@@ -263,17 +263,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-webpki-harness"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "limbo-harness-support",
- "pem",
- "serde_json",
- "webpki",
-]
-
-[[package]]
 name = "rustls-pki-types"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -548,16 +537,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d046c5d029ba91a1ed14da14dca44b68bf2f124cfbaf741c54151fdb3e0750b"
-
-[[package]]
-name = "webpki"
-version = "0.22.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed63aea5ce73d0ff405984102c42de94fc55a6b75765d621c65262469b3c9b53"
-dependencies = [
- "ring",
- "untrusted",
-]
 
 [[package]]
 name = "windows-core"
