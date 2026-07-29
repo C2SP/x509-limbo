@@ -84,17 +84,16 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
                 .inspect_err(|e| {
                     eprintln!(
                         "warning: {}: skipping invalid trust anchor: {e}",
-                        tc.id.to_string()
+                        tc.id.as_str()
                     );
                 })
                 .ok()
         })
         .collect::<Vec<_>>();
 
-    let validation_time = webpki::Time::try_from(SystemTime::from(
-        tc.validation_time.unwrap_or(Utc::now().into()),
-    ))
-    .expect("SystemTime to webpki::Time conversion failed");
+    let validation_time =
+        webpki::Time::try_from(SystemTime::from(tc.validation_time.unwrap_or(Utc::now())))
+            .expect("SystemTime to webpki::Time conversion failed");
 
     let sig_algs = &[
         &webpki::ECDSA_P256_SHA256,
@@ -123,12 +122,12 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         None => return TestcaseResult::skip(tc, "implementation requires peer names"),
         Some(pn) => match pn.kind {
             PeerKind::Dns => webpki::DnsNameRef::try_from_ascii_str(&pn.value)
-                .expect(&format!("invalid expected DNS name: {}", &pn.value)),
+                .unwrap_or_else(|_| panic!("invalid expected DNS name: {}", pn.value)),
             _ => return TestcaseResult::skip(tc, "implementation requires DNS peer names"),
         },
     };
 
-    if let Err(_) = leaf.verify_is_valid_for_dns_name(dns_name) {
+    if leaf.verify_is_valid_for_dns_name(dns_name).is_err() {
         TestcaseResult::fail(tc, "DNS name validation failed")
     } else {
         TestcaseResult::success(tc)
