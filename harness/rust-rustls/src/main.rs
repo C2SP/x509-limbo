@@ -137,19 +137,18 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::fail(tc, &e.to_string());
     }
 
-    let Some(peer_name) = tc.expected_peer_name.as_ref() else {
-        return TestcaseResult::skip(tc, "implementation requires peer names");
-    };
+    // Verify subject name if expected
+    if let Some(peer_name) = tc.expected_peer_name.as_ref() {
+        let subject_name = ServerName::try_from(peer_name.value.as_str())
+            .unwrap_or_else(|_| panic!("invalid expected peer name: {peer_name:?}"));
 
-    let subject_name = ServerName::try_from(peer_name.value.as_str())
-        .unwrap_or_else(|_| panic!("invalid expected peer name: {peer_name:?}"));
-
-    if leaf
-        .verify_is_valid_for_subject_name(&subject_name)
-        .is_err()
-    {
-        TestcaseResult::fail(tc, "subject name validation failed")
-    } else {
-        TestcaseResult::success(tc)
+        if leaf
+            .verify_is_valid_for_subject_name(&subject_name)
+            .is_err()
+        {
+            return TestcaseResult::fail(tc, "subject name validation failed");
+        }
     }
+
+    TestcaseResult::success(tc)
 }
