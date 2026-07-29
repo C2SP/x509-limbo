@@ -78,7 +78,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
                 .inspect_err(|e| {
                     eprintln!(
                         "warning: {}: skipping invalid trust anchor: {e}",
-                        tc.id.to_string()
+                        tc.id.as_str()
                     );
                 })
                 .ok()
@@ -107,7 +107,7 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         .iter()
         .map(|pem| {
             webpki::OwnedCertRevocationList::from_der(crl_der_from_pem(pem).as_ref())
-                .unwrap_or_else(|e| panic!("crl: tc {} DER parse failed: {e}", tc.id.to_string()))
+                .unwrap_or_else(|e| panic!("crl: tc {} DER parse failed: {e}", tc.id.as_str()))
                 .into()
         })
         .collect::<Vec<_>>();
