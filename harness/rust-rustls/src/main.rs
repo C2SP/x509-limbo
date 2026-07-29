@@ -117,7 +117,7 @@ fn run_validation(tc: &Testcase) -> Result<(), String> {
         EndEntityCert::try_from(&leaf_der).map_err(|e| format!("leaf cert parse failed: {e}"))?;
 
     let validation_time = UnixTime::since_unix_epoch(
-        (tc.validation_time.unwrap_or(Utc::now()) - DateTime::UNIX_EPOCH)
+        (tc.validation_time.unwrap_or_else(Utc::now) - DateTime::UNIX_EPOCH)
             .to_std()
             .expect("invalid validation time!"),
     );
