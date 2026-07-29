@@ -91,15 +91,14 @@ fn run_validation(tc: &Testcase) -> Result<(), String> {
         .collect::<Result<Vec<_>, _>>()?;
     let crls = crls.iter().collect::<Vec<_>>();
 
-    let revocation_options = if !crls.is_empty() {
-        let opts = RevocationOptionsBuilder::new(crls.as_slice()).unwrap();
-        opts.with_depth(RevocationCheckDepth::Chain);
-        opts.with_status_policy(UnknownStatusPolicy::Deny);
-        opts.with_expiration_policy(ExpirationPolicy::Enforce);
-        Some(opts.build())
-    } else {
-        None
-    };
+    let revocation_options = (!crls.is_empty()).then(|| {
+        RevocationOptionsBuilder::new(crls.as_slice())
+            .unwrap()
+            .with_depth(RevocationCheckDepth::Chain)
+            .with_status_policy(UnknownStatusPolicy::Deny)
+            .with_expiration_policy(ExpirationPolicy::Enforce)
+            .build()
+    });
 
     let sig_algs = &[
         ring::ECDSA_P256_SHA256,
