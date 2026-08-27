@@ -70,7 +70,6 @@ testcases: $(NEEDS_VENV)
 build-harnesses:
 	$(MAKE) -C harness/gocryptox509
 	$(MAKE) -C harness/openssl
-	cargo build --bin rust-webpki-harness
 	cargo build --bin rust-rustls-harness
 
 .PHONY: test-go
@@ -109,11 +108,6 @@ test-aws-lc:
 	$(MAKE) -C harness/openssl aws-lc
 	$(MAKE) run ARGS="harness --output ./results/aws-lc.json -- docker run --rm -i x509-limbo-aws-lc"
 
-.PHONY: test-rust-webpki
-test-rust-webpki:
-	@cargo build --bin rust-webpki-harness
-	$(MAKE) run ARGS="harness ./target/debug/rust-webpki-harness --output ./results/rust-webpki.json"
-
 .PHONY: test-rustls-webpki
 test-rustls-webpki:
 	@cargo build --bin rust-rustls-harness
@@ -132,7 +126,7 @@ test-gnutls:
 	$(MAKE) run ARGS="harness --output ./results/gnutls.json -- ./$(VENV_BIN)/python ./harness/gnutls/test-gnutls"
 
 .PHONY: test
-test: test-go test-openssl test-libressl test-boringssl test-aws-lc test-rust-webpki test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
+test: test-go test-openssl test-libressl test-boringssl test-aws-lc test-rustls-webpki test-pyca-cryptography test-certvalidator test-gnutls
 
 .PHONY: site
 site: $(NEEDS_VENV)

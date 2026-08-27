@@ -1,9 +1,14 @@
 use chrono::{DateTime, Utc};
-use limbo_harness_support::{
-    load_limbo,
-    models::{Feature, LimboResult, Testcase, TestcaseResult, ValidationKind},
+use limbo_harness_support::load_limbo;
+use limbo_harness_support::models::{
+    Feature, LimboResult, Testcase, TestcaseResult, ValidationKind,
 };
-use webpki::ring;
+use pki_types::pem::PemObject;
+use pki_types::{CertificateDer, CertificateRevocationListDer, ServerName, UnixTime};
+use webpki::{
+    anchor_from_trusted_cert, EndEntityCert, ExpirationPolicy, KeyUsage, OwnedCertRevocationList,
+    RevocationCheckDepth, RevocationOptionsBuilder, UnknownStatusPolicy, ALL_VERIFICATION_ALGS,
+};
 
 fn main() {
     let limbo = load_limbo();
@@ -22,19 +27,8 @@ fn main() {
     serde_json::to_writer_pretty(std::io::stdout(), &result).unwrap();
 }
 
-fn cert_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> rustls_pki_types::CertificateDer<'static> {
-    let pem = pem::parse(bytes).expect("cert: PEM parse failed");
-    rustls_pki_types::CertificateDer::from(pem.contents()).into_owned()
-}
-
-fn crl_der_from_pem<B: AsRef<[u8]>>(
-    bytes: B,
-) -> rustls_pki_types::CertificateRevocationListDer<'static> {
-    let pem = pem::parse(bytes).expect("crl: PEM parse failed");
-    rustls_pki_types::CertificateRevocationListDer::from(pem.into_contents())
-}
-
 fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
+    // Check for skipped features first
     if tc.features.contains(&Feature::MaxChainDepth) {
         return TestcaseResult::skip(
             tc,
@@ -54,17 +48,14 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
         return TestcaseResult::skip(tc, "key_usage not supported yet");
     }
 
-    let leaf_der = cert_der_from_pem(&tc.peer_certificate);
-    let Ok(leaf) = webpki::EndEntityCert::try_from(&leaf_der) else {
-        return TestcaseResult::fail(tc, "leaf cert: X.509 parse failed");
-    };
+    match run_validation(tc) {
+        Ok(()) => TestcaseResult::success(tc),
+        Err(err) => TestcaseResult::fail(tc, &err),
+    }
+}
 
-    let intermediates = tc
-        .untrusted_intermediates
-        .iter()
-        .map(|ic| cert_der_from_pem(ic))
-        .collect::<Vec<_>>();
-
+/// Run validation and return Ok(()) on success, or an error message on failure
+fn run_validation(tc: &Testcase) -> Result<(), String> {
     let trust_anchor_ders = tc
         .trusted_certs
         .iter()
@@ -73,81 +64,77 @@ fn evaluate_testcase(tc: &Testcase) -> TestcaseResult {
 
     let trust_anchors = trust_anchor_ders
         .iter()
-        .filter_map(|der| {
-            webpki::anchor_from_trusted_cert(der)
-                .inspect_err(|e| {
-                    eprintln!(
-                        "warning: {}: skipping invalid trust anchor: {e}",
-                        tc.id.to_string()
-                    );
-                })
-                .ok()
-        })
+        .filter_map(|der| anchor_from_trusted_cert(der).ok())
         .collect::<Vec<_>>();
 
-    let validation_time = rustls_pki_types::UnixTime::since_unix_epoch(
-        (tc.validation_time.unwrap_or(Utc::now()) - DateTime::UNIX_EPOCH)
-            .to_std()
-            .expect("invalid validation time!"),
-    );
+    if trust_anchors.is_empty() && !trust_anchor_ders.is_empty() {
+        return Err("trust anchor extraction failed".into());
+    }
 
-    let sig_algs = &[
-        ring::ECDSA_P256_SHA256,
-        ring::ECDSA_P384_SHA384,
-        ring::RSA_PKCS1_2048_8192_SHA256,
-        ring::RSA_PKCS1_2048_8192_SHA384,
-        ring::RSA_PKCS1_2048_8192_SHA512,
-        ring::RSA_PSS_2048_8192_SHA256_LEGACY_KEY,
-        ring::RSA_PSS_2048_8192_SHA384_LEGACY_KEY,
-        ring::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
-    ];
+    let intermediates = tc
+        .untrusted_intermediates
+        .iter()
+        .map(|ic| cert_der_from_pem(ic))
+        .collect::<Vec<_>>();
 
     let crls = tc
         .crls
         .iter()
         .map(|pem| {
-            webpki::OwnedCertRevocationList::from_der(crl_der_from_pem(pem).as_ref())
-                .unwrap_or_else(|e| panic!("crl: tc {} DER parse failed: {e}", tc.id.to_string()))
-                .into()
+            let der = CertificateRevocationListDer::from_pem_slice(pem.as_bytes())
+                .map_err(|e| format!("CRL PEM parse failed: {e}"))?;
+
+            OwnedCertRevocationList::from_der(der.as_ref())
+                .map(Into::into)
+                .map_err(|e| format!("CRL DER parse failed: {e}"))
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let crls = crls.iter().collect::<Vec<_>>();
 
-    let revocation_options = if !crls.is_empty() {
-        let opts = webpki::RevocationOptionsBuilder::new(crls.as_slice()).unwrap();
-        opts.with_depth(webpki::RevocationCheckDepth::Chain);
-        opts.with_status_policy(webpki::UnknownStatusPolicy::Deny);
-        opts.with_expiration_policy(webpki::ExpirationPolicy::Enforce);
-        Some(opts.build())
-    } else {
-        None
-    };
+    let revocation_options = (!crls.is_empty()).then(|| {
+        RevocationOptionsBuilder::new(crls.as_slice())
+            .unwrap()
+            .with_depth(RevocationCheckDepth::Chain)
+            .with_status_policy(UnknownStatusPolicy::Deny)
+            .with_expiration_policy(ExpirationPolicy::Enforce)
+            .build()
+    });
 
-    if let Err(e) = leaf.verify_for_usage(
-        sig_algs,
+    let leaf_der = cert_der_from_pem(&tc.peer_certificate);
+    let leaf =
+        EndEntityCert::try_from(&leaf_der).map_err(|e| format!("leaf cert parse failed: {e}"))?;
+
+    let validation_time = UnixTime::since_unix_epoch(
+        (tc.validation_time.unwrap_or_else(Utc::now) - DateTime::UNIX_EPOCH)
+            .to_std()
+            .expect("invalid validation time!"),
+    );
+
+    leaf.verify_for_usage(
+        ALL_VERIFICATION_ALGS,
         &trust_anchors,
         &intermediates[..],
         validation_time,
-        webpki::KeyUsage::server_auth(),
+        KeyUsage::server_auth(),
         revocation_options,
         None,
-    ) {
-        return TestcaseResult::fail(tc, &e.to_string());
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Verify subject name if expected
+    if let Some(peer_name) = tc.expected_peer_name.as_ref() {
+        let subject_name = ServerName::try_from(peer_name.value.as_str())
+            .map_err(|_| format!("invalid expected peer name: {:?}", peer_name))?;
+
+        leaf.verify_is_valid_for_subject_name(&subject_name)
+            .map_err(|_| "subject name validation failed")?;
     }
 
-    let Some(peer_name) = tc.expected_peer_name.as_ref() else {
-        return TestcaseResult::skip(tc, "implementation requires peer names");
-    };
+    Ok(())
+}
 
-    let subject_name = rustls_pki_types::ServerName::try_from(peer_name.value.as_str())
-        .unwrap_or_else(|_| panic!("invalid expected peer name: {peer_name:?}"));
-
-    if leaf
-        .verify_is_valid_for_subject_name(&subject_name)
-        .is_err()
-    {
-        TestcaseResult::fail(tc, "subject name validation failed")
-    } else {
-        TestcaseResult::success(tc)
-    }
+fn cert_der_from_pem<B: AsRef<[u8]>>(bytes: B) -> CertificateDer<'static> {
+    CertificateDer::from_pem_slice(bytes.as_ref())
+        .expect("cert PEM parse failed")
+        .into_owned()
 }
