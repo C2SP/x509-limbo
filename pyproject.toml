@@ -31,8 +31,8 @@ requires-python = ">=3.11"
 lint = [
     # NOTE: ruff is under active development, so we pin conservatively here
     # and let Dependabot periodically perform this update.
-    "ruff < 0.16.3",
-    "mypy >= 2.3.0",
+    "ruff < 0.16.4",
+    "mypy >= 2.3.1",
     "types-pyyaml",
     "types-pyOpenSSL",
     "types-requests",
