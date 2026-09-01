@@ -709,6 +709,79 @@ def excluded_match_permitted_and_excluded(builder: Builder) -> None:
 
 
 @testcase
+def permitted_empty_sequence_excluded_nonempty(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> leaf
+    ```
+
+    The ICA contains a NameConstraints extension whose permittedSubtrees is
+    present but empty, alongside an excluded dNSName of "bad.example". The
+    leaf's SubjectAlternativeName is "example.com", which does not match the
+    excluded subtree.
+
+    An empty permittedSubtrees violates RFC 5280 4.2.1.10, and permits nothing:
+
+    > GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree
+    """
+
+    # NOTE: Set inner attributes directly to bypass validation.
+    nc = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+    )
+    nc._permitted_subtrees = []
+    nc._excluded_subtrees = [x509.DNSName("bad.example")]
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(root, name_constraints=ext(nc, critical=True))
+    leaf = builder.leaf_cert(
+        ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).fails()
+
+
+@testcase
+def permitted_nonempty_excluded_nonempty(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> ICA -> leaf
+    ```
+
+    The ICA contains a NameConstraints extension with a permitted dNSName of
+    "example.com" and an excluded dNSName of "bad.example". The leaf's
+    SubjectAlternativeName matches the permitted subtree and does not match
+    the excluded one.
+    """
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.DNSName("bad.example")],
+            ),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(
+        ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
+    )
+
+    builder = builder.server_validation()
+    builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).succeeds()
+
+
+@testcase
 def permitted_different_constraint_type(builder: Builder) -> None:
     """
     Produces the following **valid** chain:
