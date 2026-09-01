@@ -718,23 +718,13 @@ def permitted_empty_sequence_excluded_nonempty(builder: Builder) -> None:
     ```
 
     The ICA contains a NameConstraints extension whose permittedSubtrees is
-    present but empty, alongside a non-empty excludedSubtrees of "bad.example".
-    The leaf's SubjectAlternativeName is "example.com", which does not match
-    the excluded subtree.
+    present but empty, alongside an excluded dNSName of "bad.example". The
+    leaf's SubjectAlternativeName is "example.com", which does not match the
+    excluded subtree.
 
-    This is invalid for two independent reasons. First, an empty
-    `GeneralSubtrees` violates the ASN.1 syntax in RFC 5280 4.2.1.10:
+    An empty permittedSubtrees violates RFC 5280 4.2.1.10, and permits nothing:
 
     > GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree
-
-    Second, even if the encoding is accepted, RFC 5280 6.1.4 (g)(1) intersects
-    the permitted subtree state with the extension's permittedSubtrees, and an
-    intersection with the empty set is empty. RFC 5280 6.1.3 (b) then requires
-    each name to fall within permitted_subtrees, which no name can do once that
-    set is empty, so every certificate below this ICA must be rejected.
-
-    Implementations that only reject a NameConstraints extension when *both*
-    subtree fields are empty will accept this chain.
     """
 
     # NOTE: Set inner attributes directly to bypass validation.
@@ -767,14 +757,8 @@ def permitted_nonempty_excluded_nonempty(builder: Builder) -> None:
 
     The ICA contains a NameConstraints extension with a permitted dNSName of
     "example.com" and an excluded dNSName of "bad.example". The leaf's
-    SubjectAlternativeName matches the permitted subtree and does not match the
-    excluded one.
-
-    This is the control for
-    `rfc5280::nc::permitted-empty-sequence-excluded-nonempty`: the two chains
-    differ only in whether permittedSubtrees is empty, so an implementation that
-    passes here and passes there is accepting the empty case on its merits
-    rather than failing both for an unrelated reason.
+    SubjectAlternativeName matches the permitted subtree and does not match
+    the excluded one.
     """
     root = builder.root_ca()
     ica = builder.intermediate_ca(
