@@ -709,6 +709,83 @@ def excluded_match_permitted_and_excluded(builder: Builder) -> None:
 
 
 @testcase
+def permitted_empty_sequence_excluded_nonempty(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> leaf
+    ```
+
+    The ICA contains a NameConstraints extension whose permittedSubtrees is
+    present but empty, alongside an excluded dNSName of "bad.example". The
+    leaf's SubjectAlternativeName is "example.com", which does not match the
+    excluded subtree.
+
+    An empty permittedSubtrees violates RFC 5280 4.2.1.10, and permits nothing:
+
+    > GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree
+    """
+
+    # NOTE: Set inner attributes directly to bypass validation.
+    nc = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+    )
+    nc._permitted_subtrees = []
+    nc._excluded_subtrees = [x509.DNSName("bad.example")]
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(root, name_constraints=ext(nc, critical=True))
+    leaf = builder.leaf_cert(
+        ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
+    )
+
+    builder = builder.server_validation()
+    builder.features([Feature.pedantic_rfc5280]).trusted_certs(root).untrusted_intermediates(
+        ica
+    ).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind=PeerKind.DNS, value="example.com")
+    ).fails()
+
+
+@testcase
+def permitted_nonempty_excluded_nonempty(builder: Builder) -> None:
+    """
+    Produces the following **valid** chain:
+
+    ```
+    root -> ICA -> leaf
+    ```
+
+    The ICA contains a NameConstraints extension with a permitted dNSName of
+    "example.com" and an excluded dNSName of "bad.example". The leaf's
+    SubjectAlternativeName matches the permitted subtree and does not match
+    the excluded one.
+    """
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.DNSName("example.com")],
+                excluded_subtrees=[x509.DNSName("bad.example")],
+            ),
+            critical=True,
+        ),
+    )
+    leaf = builder.leaf_cert(
+        ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
+    )
+
+    builder = builder.server_validation()
+    builder.features([Feature.pedantic_rfc5280]).trusted_certs(root).untrusted_intermediates(
+        ica
+    ).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind=PeerKind.DNS, value="example.com")
+    ).succeeds()
+
+
+@testcase
 def permitted_different_constraint_type(builder: Builder) -> None:
     """
     Produces the following **valid** chain:
@@ -1615,6 +1692,98 @@ def nc_permits_email_domain(builder: Builder) -> None:
 
 
 @testcase
+def nc_permits_email_domain_rejects_subdomain(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (permit email: example.com) -> EE
+    ```
+
+    Per RFC 5280 4.2.1.10, a bare email name constraint applies only to
+    mailboxes at that exact host, and a leading period is required to cover
+    subdomains. The EE contains an rfc822Name of "foo@sub.example.com",
+    alongside a dNSName used for server identification.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DNSName("example.com"), x509.RFC822Name("foo@sub.example.com")]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .fails()
+    )
+
+
+@testcase
+def nc_permits_email_subdomains_rejects_apex(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (permit: .example.com) -> EE (SAN: foo@example.com)
+    ```
+
+    Per RFC 5280 4.2.1.10, an email name constraint with a leading period
+    permits mailboxes on subdomains but not on the named host itself. The EE
+    contains an rfc822Name of "foo@example.com", alongside a dNSName used for
+    server identification.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name(".example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DNSName("example.com"), x509.RFC822Name("foo@example.com")]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .fails()
+    )
+
+
+@testcase
 def nc_permits_email_literal_asterisk_exact_match(builder: Builder) -> None:
     """
     Produces the following **valid** graph:
@@ -1921,6 +2090,107 @@ def nc_permits_email_literal_mid_asterisk(builder: Builder) -> None:
         .peer_certificate(leaf)
         .expected_peer_names(PeerName(kind="RFC822", value="user*@example.com"))
         .succeeds()
+    )
+
+
+@testcase
+def nc_permits_uri_host_rejects_subdomain(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (permit URI: example.com) -> EE
+    ```
+
+    Per RFC 5280 4.2.1.10, a URI name constraint without a leading period
+    specifies one exact host, not a domain. The EE contains one URI on that
+    host and another on "sub.example.com", alongside a dNSName used for
+    server identification. The subdomain URI is not permitted.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.UniformResourceIdentifier("example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [
+                    x509.DNSName("example.com"),
+                    x509.UniformResourceIdentifier("https://example.com/allowed"),
+                    x509.UniformResourceIdentifier("https://sub.example.com/not-allowed"),
+                ]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .fails()
+    )
+
+
+@testcase
+def nc_permits_uri_subdomains_rejects_apex(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (permit URI: .example.com) -> EE (SAN: https://example.com)
+    ```
+
+    Per RFC 5280 4.2.1.10, a URI name constraint with a leading period permits
+    hosts with one or more additional labels but not the named host itself. The
+    EE contains a URI on "example.com", alongside a dNSName used for server
+    identification.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.UniformResourceIdentifier(".example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [
+                    x509.DNSName("example.com"),
+                    x509.UniformResourceIdentifier("https://example.com/not-allowed"),
+                ]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .fails()
     )
 
 
