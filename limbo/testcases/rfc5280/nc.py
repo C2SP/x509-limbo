@@ -741,9 +741,11 @@ def permitted_empty_sequence_excluded_nonempty(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
-        leaf
-    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).fails()
+    builder.features([Feature.pedantic_rfc5280]).trusted_certs(root).untrusted_intermediates(
+        ica
+    ).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind=PeerKind.DNS, value="example.com")
+    ).fails()
 
 
 @testcase
@@ -776,9 +778,11 @@ def permitted_nonempty_excluded_nonempty(builder: Builder) -> None:
     )
 
     builder = builder.server_validation()
-    builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
-        leaf
-    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).succeeds()
+    builder.features([Feature.pedantic_rfc5280]).trusted_certs(root).untrusted_intermediates(
+        ica
+    ).peer_certificate(leaf).expected_peer_name(
+        PeerName(kind=PeerKind.DNS, value="example.com")
+    ).succeeds()
 
 
 @testcase
