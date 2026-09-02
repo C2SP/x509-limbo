@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+
+# test-macos-security: run macOS's `security verify-cert` against the Limbo testsuite.
+
+import platform
+import shutil
+import subprocess
+import sys
+from contextlib import contextmanager
+from sys import stdin
+from tempfile import NamedTemporaryFile
+from typing import ContextManager, NoReturn
+
+from limbo.models import (
+    ActualResult,
+    Limbo,
+    LimboResult,
+    PeerName,
+    Testcase,
+    TestcaseResult,
+    ValidationKind,
+)
+
+
+def log(msg: str) -> None:
+    print(f"[+] {msg}", file=sys.stderr)
+
+
+def die(msg: str) -> NoReturn:
+    log(msg)
+    sys.exit(1)
+
+
+@contextmanager
+def pemfile(pems: list[str]) -> ContextManager[NamedTemporaryFile]:
+    with NamedTemporaryFile(mode="w+") as tmp:
+        tmp.write("\n".join(pems))
+        tmp.flush()
+        yield tmp
+
+
+def skip(testcase: Testcase, context: str) -> TestcaseResult:
+    return TestcaseResult(id=testcase.id, actual_result=ActualResult.SKIPPED, context=context)
+
+
+def evaluate_testcase(security: str, testcase: Testcase) -> TestcaseResult:
+    # `security verify-cert` supports client policies, but doesn't seem to
+    # support checking against multiple expected peer names.
+    if testcase.validation_kind != ValidationKind.SERVER:
+        return skip(testcase, "non-SERVER testcases not yet supported")
+
+    if testcase.signature_algorithms:
+        return skip(testcase, "custom signature algorithms not supported")
+
+    if testcase.key_usage:
+        return skip(testcase, "custom key usages not supported")
+
+    # TODO: These could be supported relatively easily.
+    if testcase.extended_key_usage != []:
+        return skip(testcase, "custom EKUs not yet supported")
+
+    security_args = [
+        security,
+        "verify-cert",
+        "-L",  # local certs only
+        "-N",  # don't search any keychains
+    ]
+
+    # NOTE: ssl policy enables CT checks, which (soft) fail.
+    security_args.extend(["-p", "ssl"])
+
+    # if testcase == ValidationKind.CLIENT:
+    #     security_args.append("-C")  # enable client policies
+
+    if testcase.validation_time:
+        security_args.extend(["-d", testcase.validation_time.isoformat()])
+
+    match testcase.expected_peer_name:
+        case None:
+            pass
+        case PeerName(kind=_, value=value):
+            # all types of names go through -n
+            security_args.extend(["-n", value])
+
+    # NOTE: For the untrusted chain list, the peer cert must come first.
+    with pemfile(
+        [testcase.peer_certificate, *testcase.untrusted_intermediates]
+    ) as untrusted_chain, pemfile(testcase.trusted_certs) as trusted_chain:
+        security_args.extend(["-c", untrusted_chain.name])
+        security_args.extend(["-r", trusted_chain.name])
+
+        log(f"running {testcase.id} with {security_args=}")
+        status = subprocess.run(security_args, capture_output=True, text=True)
+
+    match status.returncode:
+        case 0:
+            return TestcaseResult(
+                id=testcase.id,
+                actual_result=ActualResult.SUCCESS,
+                context=status.stdout.splitlines()[0],
+            )
+        case 1:
+            return TestcaseResult(
+                id=testcase.id,
+                actual_result=ActualResult.FAILURE,
+                context=status.stderr.splitlines()[0],
+            )
+        case other:
+            return TestcaseResult(
+                id=testcase.id,
+                actual_result=ActualResult.FAILURE,
+                context=f"abnormal termination/abort: exit code {other}: {status.stderr.splitlines()[0]}",
+            )
+
+
+def main():
+    if sys.platform != "darwin":
+        die("this harness only works on macOS")
+
+    # Should always be /usr/bin/security, but who knows.
+    security = shutil.which("security")
+    if not security:
+        die("no `security` binary to test against?")
+
+    macos_version, _, machine = platform.mac_ver()
+
+    log(f"running harness with {security=}")
+
+    limbo = Limbo.model_validate_json(stdin.read())
+
+    results: list[TestcaseResult] = []
+    for testcase in limbo.testcases:
+        results.append(evaluate_testcase(security, testcase))
+
+    result = LimboResult(version=1, harness=f"macos-{macos_version}-{machine}", results=results)
+    print(result.model_dump_json(indent=2))
+
+
+if __name__ == "__main__":
+    main()
