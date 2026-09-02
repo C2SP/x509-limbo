@@ -813,7 +813,7 @@ def permitted_nonempty_excluded_empty_sequence(builder: Builder) -> None:
         ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
     )
 
-    builder = builder.server_validation()
+    builder = builder.server_validation().features([Feature.pedantic_rfc5280])
     builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
         leaf
     ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).fails()
