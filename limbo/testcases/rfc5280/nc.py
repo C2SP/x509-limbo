@@ -1692,6 +1692,52 @@ def nc_permits_email_domain(builder: Builder) -> None:
 
 
 @testcase
+def nc_permits_email_domain_rejects_subdomain(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (permit email: example.com) -> EE
+    ```
+
+    Per RFC 5280 4.2.1.10, a bare email name constraint applies only to
+    mailboxes at that exact host, and a leading period is required to cover
+    subdomains. The EE contains an rfc822Name of "foo@sub.example.com",
+    alongside a dNSName used for server identification.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.RFC822Name("example.com")], excluded_subtrees=None
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [x509.DNSName("example.com"), x509.RFC822Name("foo@sub.example.com")]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .fails()
+    )
+
+
+@testcase
 def nc_permits_email_literal_asterisk_exact_match(builder: Builder) -> None:
     """
     Produces the following **valid** graph:
@@ -1998,6 +2044,57 @@ def nc_permits_email_literal_mid_asterisk(builder: Builder) -> None:
         .peer_certificate(leaf)
         .expected_peer_names(PeerName(kind="RFC822", value="user*@example.com"))
         .succeeds()
+    )
+
+
+@testcase
+def nc_permits_uri_host_rejects_subdomain(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (permit URI: example.com) -> EE
+    ```
+
+    Per RFC 5280 4.2.1.10, a URI name constraint without a leading period
+    specifies one exact host, not a domain. The EE contains one URI on that
+    host and another on "sub.example.com", alongside a dNSName used for
+    server identification. The subdomain URI is not permitted.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.UniformResourceIdentifier("example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [
+                    x509.DNSName("example.com"),
+                    x509.UniformResourceIdentifier("https://example.com/allowed"),
+                    x509.UniformResourceIdentifier("https://sub.example.com/not-allowed"),
+                ]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .fails()
     )
 
 
