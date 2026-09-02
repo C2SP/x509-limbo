@@ -2145,6 +2145,56 @@ def nc_permits_uri_host_rejects_subdomain(builder: Builder) -> None:
 
 
 @testcase
+def nc_permits_uri_subdomains_rejects_apex(builder: Builder) -> None:
+    """
+    Produces the following **invalid** graph:
+
+    ```
+    root -> ICA (permit URI: .example.com) -> EE (SAN: https://example.com)
+    ```
+
+    Per RFC 5280 4.2.1.10, a URI name constraint with a leading period permits
+    hosts with one or more additional labels but not the named host itself. The
+    EE contains a URI on "example.com", alongside a dNSName used for server
+    identification.
+    """
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(
+        root,
+        name_constraints=ext(
+            x509.NameConstraints(
+                permitted_subtrees=[x509.UniformResourceIdentifier(".example.com")],
+                excluded_subtrees=None,
+            ),
+            critical=True,
+        ),
+        san=None,
+    )
+    leaf = builder.leaf_cert(
+        ica,
+        san=ext(
+            x509.SubjectAlternativeName(
+                [
+                    x509.DNSName("example.com"),
+                    x509.UniformResourceIdentifier("https://example.com/not-allowed"),
+                ]
+            ),
+            critical=False,
+        ),
+    )
+
+    builder = (
+        builder.server_validation()
+        .trusted_certs(root)
+        .untrusted_intermediates(ica)
+        .peer_certificate(leaf)
+        .expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com"))
+        .fails()
+    )
+
+
+@testcase
 def nc_forbids_othername(builder: Builder) -> None:
     """
     Produces the following **invalid** graph:
