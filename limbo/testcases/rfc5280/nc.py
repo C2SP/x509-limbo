@@ -786,6 +786,40 @@ def permitted_nonempty_excluded_nonempty(builder: Builder) -> None:
 
 
 @testcase
+def permitted_nonempty_excluded_empty_sequence(builder: Builder) -> None:
+    """
+    Produces the following **invalid** chain:
+
+    ```
+    root -> ICA -> leaf
+    ```
+
+    The ICA contains a NameConstraints extension with a permitted dNSName of
+    "example.com" alongside an excludedSubtrees that is present but empty. The
+    leaf's SubjectAlternativeName matches the permitted subtree.
+
+    An excludedSubtrees that is present but empty violates RFC 5280 4.2.1.10.
+    """
+
+    # NOTE: Set inner attributes directly to bypass validation.
+    nc = x509.NameConstraints(
+        permitted_subtrees=[x509.DNSName("example.com")], excluded_subtrees=None
+    )
+    nc._excluded_subtrees = []
+
+    root = builder.root_ca()
+    ica = builder.intermediate_ca(root, name_constraints=ext(nc, critical=True))
+    leaf = builder.leaf_cert(
+        ica, san=ext(x509.SubjectAlternativeName([x509.DNSName("example.com")]), critical=False)
+    )
+
+    builder = builder.server_validation().features([Feature.pedantic_rfc5280])
+    builder.trusted_certs(root).untrusted_intermediates(ica).peer_certificate(
+        leaf
+    ).expected_peer_name(PeerName(kind=PeerKind.DNS, value="example.com")).fails()
+
+
+@testcase
 def permitted_different_constraint_type(builder: Builder) -> None:
     """
     Produces the following **valid** chain:
