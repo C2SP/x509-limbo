@@ -101,7 +101,7 @@ X509_CRL_ptr pem_to_crl(const std::string &pem)
 
   if (!PEM_read_bio_X509_CRL(crl_bio.get(), &crl, 0, NULL))
   {
-    barf("failed to parse CRL");
+    return X509_CRL_ptr(nullptr, X509_CRL_free);
   }
 
   return X509_CRL_ptr(crl, X509_CRL_free);
@@ -196,7 +196,23 @@ json evaluate_testcase(const json &testcase)
     for (auto &crl_pem : testcase["crls"])
     {
       auto crl = pem_to_crl(crl_pem.template get<std::string>());
-      X509_STORE_add_crl(store.get(), crl.get());
+      if (!crl)
+      {
+        return {
+            {"id", id},
+            {"actual_result", "FAILURE"},
+            {"context", "failed to parse CRL"},
+        };
+      }
+
+      if (X509_STORE_add_crl(store.get(), crl.get()) != 1)
+      {
+        return {
+            {"id", id},
+            {"actual_result", "FAILURE"},
+            {"context", "failed to add CRL to certificate store"},
+        };
+      }
     }
 
     // Enable CRL checking

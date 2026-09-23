@@ -1,4 +1,4 @@
-SHELL := /bin/bash
+SHELL := /usr/bin/env bash
 
 PY_MODULE := limbo
 
@@ -50,6 +50,10 @@ edit:
 .PHONY: run
 run: $(NEEDS_VENV)
 	@./$(VENV_BIN)/python -m $(PY_MODULE) $(ARGS)
+
+.PHONY: assets
+assets: $(NEEDS_VENV)
+	$(MAKE) -C $(PY_MODULE)/_assets/crl VENV_BIN=$(abspath $(VENV_BIN))
 
 limbo-schema.json: $(NEEDS_VENV) $(PY_MODULE)/models.py
 	$(MAKE) run ARGS="schema -o limbo-schema.json"
