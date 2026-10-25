@@ -54,14 +54,24 @@ def root_with_aki_authoritycertissuer(builder: Builder) -> None:
     > Field                 Description
     > ...
     > authorityCertIssuer   MUST NOT be present
+
+    RFC 5280 requires authorityCertIssuer and authorityCertSerialNumber to
+    appear together (see the AuthorityKeyIdentifier definition in Appendix A.1):
+
+    > authorityCertIssuer and authorityCertSerialNumber MUST both
+    > be present or both be absent
+
+    The authorityCertSerialNumber field is therefore present as well, so that
+    the extension is well-formed and the chain fails because of the CABF rule
+    and not because of an RFC 5280 syntax violation.
     """
 
     key = ec.generate_private_key(ec.SECP256R1())
+    key_identifier = x509.AuthorityKeyIdentifier.from_issuer_public_key(
+        key.public_key()
+    ).key_identifier
     dirname = x509.DirectoryName(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "myCN")]))
-    aki = x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key())
-    # Manually add the authorityCertIssuer field, since cryptography's API doesn't allow to
-    # add it without also specifying the authorityCertSerialNumber field
-    aki._authority_cert_issuer = [dirname]
+    aki = x509.AuthorityKeyIdentifier(key_identifier, [dirname], 1234)
 
     root = builder.root_ca(key=key, aki=ext(aki, critical=False))
     leaf = builder.leaf_cert(root)
@@ -87,14 +97,24 @@ def root_with_aki_authoritycertserialnumber(builder: Builder) -> None:
     > Field                         Description
     > ...
     > authorityCertSerialNumber     MUST NOT be present
+
+    RFC 5280 requires authorityCertIssuer and authorityCertSerialNumber to
+    appear together (see the AuthorityKeyIdentifier definition in Appendix A.1):
+
+    > authorityCertIssuer and authorityCertSerialNumber MUST both
+    > be present or both be absent
+
+    The authorityCertIssuer field is therefore present as well, so that the
+    extension is well-formed and the chain fails because of the CABF rule and
+    not because of an RFC 5280 syntax violation.
     """
 
     key = ec.generate_private_key(ec.SECP256R1())
-    aki = x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key())
-    # Manually add the authorityCertSerialNumber field, since cryptography's
-    # API doesn't allow to add it without also specifying the
-    # authorityCertIssuer field
-    aki._authority_cert_serial_number = 1234
+    key_identifier = x509.AuthorityKeyIdentifier.from_issuer_public_key(
+        key.public_key()
+    ).key_identifier
+    dirname = x509.DirectoryName(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "myCN")]))
+    aki = x509.AuthorityKeyIdentifier(key_identifier, [dirname], 1234)
 
     root = builder.root_ca(key=key, aki=ext(aki, critical=False))
     leaf = builder.leaf_cert(root)
