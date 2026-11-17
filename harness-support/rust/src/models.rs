@@ -1,7 +1,15 @@
 use serde::Serialize;
 use typify::import_types;
 
-import_types!(schema = "../../limbo-schema.json");
+import_types!(
+    schema = "../../limbo-schema.json",
+    convert = {
+        {
+            type = "string",
+            format = "date-time",
+        } = ::jiff::Timestamp,
+    },
+);
 
 #[derive(Serialize)]
 #[serde(rename_all = "UPPERCASE")]
